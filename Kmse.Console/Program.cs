@@ -2,7 +2,9 @@
 using Autofac.Extensions.DependencyInjection;
 using AutofacSerilogIntegration;
 using CommandLine;
+using Kmse.Console.Logging;
 using Kmse.Core.Infrastructure;
+using Kmse.Core.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -68,6 +70,7 @@ public class Program
                 containerBuilder.RegisterLogger();
                 containerBuilder.RegisterInstance(options);
                 containerBuilder.RegisterModule<EmulatorModule>();
+                containerBuilder.RegisterType<SerilogMemoryLogger>().As<IMemoryLogger>();
             })
             .ConfigureServices((context, services) =>
             {
