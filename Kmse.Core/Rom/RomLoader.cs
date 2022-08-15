@@ -1,22 +1,31 @@
-﻿using Serilog;
+﻿using System.IO.Abstractions;
+using Serilog;
 
 namespace Kmse.Core.Rom;
 
 public class RomLoader : IRomLoader
 {
     private readonly ILogger _logger;
+    private readonly IFileSystem _fileSystem;
     private Memory<byte> _currentRom;
     private bool _dumpHeader;
 
-    public RomLoader(ILogger logger)
+    public RomLoader(ILogger logger, IFileSystem fileSystem)
     {
         _logger = logger;
+        _fileSystem = fileSystem;
     }
 
     public async Task<bool> LoadRom(string filename, CancellationToken cancellationToken)
     {
         _logger.Information("Loading ROM from file {Filename}", filename);
-        var data = await File.ReadAllBytesAsync(filename, cancellationToken);
+        if (!_fileSystem.File.Exists(filename))
+        {
+            _logger.Error("ROM file {Filename} does not exist", filename);
+            return false;
+        }
+
+        var data = await _fileSystem.File.ReadAllBytesAsync(filename, cancellationToken);
 
         _currentRom = new Memory<byte>(data);
 
