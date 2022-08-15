@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Kmse.Console": {
+      "commandName": "Project",
+      "commandLineArgs": "-f ..\\..\\..\\Validation\\zexdoc.sms"
+    }
+  }
+}

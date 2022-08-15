@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32804.467
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kmse.Core", "Kmse.Core\Kmse.Core.csproj", "{C19A410E-37E9-4807-BCD8-39D2F2337903}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kmse.Console", "Kmse.Console\Kmse.Console.csproj", "{42767F17-059C-4D2F-9C48-16FB2C25E652}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C19A410E-37E9-4807-BCD8-39D2F2337903}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C19A410E-37E9-4807-BCD8-39D2F2337903}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C19A410E-37E9-4807-BCD8-39D2F2337903}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C19A410E-37E9-4807-BCD8-39D2F2337903}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42767F17-059C-4D2F-9C48-16FB2C25E652}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42767F17-059C-4D2F-9C48-16FB2C25E652}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42767F17-059C-4D2F-9C48-16FB2C25E652}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42767F17-059C-4D2F-9C48-16FB2C25E652}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D1D5D57F-1DA6-49B6-8862-855742256F19}
+	EndGlobalSection
+EndGlobal
