@@ -2,6 +2,7 @@
 {
     public interface IIoPortLogger
     {
+        void Debug(string port, string message);
         void Information(string port, string message);
         void Error(string port, string message);
         

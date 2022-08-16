@@ -12,6 +12,11 @@ public class SerilogIoLogger : IIoPortLogger
         _logger = logger;
     }
 
+    public void Debug(string port, string message)
+    {
+        _logger.Debug("{Port}: {Message}", port, message);
+    }
+
     public void Information(string port, string message)
     {
         _logger.Information("{Port}: {Message}", port, message);
