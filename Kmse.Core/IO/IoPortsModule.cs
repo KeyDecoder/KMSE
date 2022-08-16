@@ -6,7 +6,7 @@ using Kmse.Core.IO.Vdp;
 
 namespace Kmse.Core.IO;
 
-public class IOPortsModule : Module
+public class IoPortsModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {

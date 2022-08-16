@@ -26,20 +26,30 @@ namespace Kmse.Core.IO;
 /// </remarks>
 public class MasterSystemIoManager : IMasterSystemIoManager
 {
-    private readonly IControllerPort _controllerPort;
-    private readonly IDebugConsolePort _debugConsolePort;
+    private IControllerPort _controllerPort;
+    private IDebugConsolePort _debugConsolePort;
     private readonly IIoPortLogger _logger;
-    private readonly ISoundPort _soundPort;
-    private readonly IVdpPort _vdpPort;
+    private ISoundPort _soundPort;
+    private IVdpPort _vdpPort;
 
-    public MasterSystemIoManager(IIoPortLogger logger, IVdpPort vdpPort, IControllerPort controllerPort,
-        ISoundPort soundPort, IDebugConsolePort debugConsolePort)
+    public MasterSystemIoManager(IIoPortLogger logger)
     {
         _logger = logger;
+    }
+
+    public void Initialize(IVdpPort vdpPort, IControllerPort controllerPort, ISoundPort soundPort,
+        IDebugConsolePort debugConsolePort)
+    {
         _vdpPort = vdpPort;
         _controllerPort = controllerPort;
         _soundPort = soundPort;
         _debugConsolePort = debugConsolePort;
+    }
+
+    public void Reset()
+    {
+        ClearMaskableInterrupt();
+        ClearNonMaskableInterrupt();
     }
 
     public bool NonMaskableInterrupt { get; private set; }

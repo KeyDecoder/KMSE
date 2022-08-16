@@ -1,5 +1,4 @@
-﻿using Kmse.Core.Cartridge;
-using Kmse.Core.Memory;
+﻿using Kmse.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -7,29 +6,45 @@ namespace Kmse.Console;
 
 internal class EmulatorService : BackgroundService
 {
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILogger _log;
-    private readonly Func<IMasterSystemCartridge> _masterSystemCartridgeFactory;
-    private readonly IMasterSystemMemory _memory;
+    private readonly IMasterSystemConsole _masterSystemConsole;
     private readonly string _romFilename;
 
-    public EmulatorService(ILogger log, Options options, Func<IMasterSystemCartridge> masterSystemCartridgeFactory, IMasterSystemMemory memory)
+    public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole,
+        IHostApplicationLifetime applicationLifetime)
     {
         _log = log;
-        _masterSystemCartridgeFactory = masterSystemCartridgeFactory;
-        _memory = memory;
+        _masterSystemConsole = masterSystemConsole;
+        _applicationLifetime = applicationLifetime;
         _romFilename = options.Filename;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var cartridge = _masterSystemCartridgeFactory();
-        await cartridge.LoadRomFromFile(_romFilename, stoppingToken);
-        _memory.LoadCartridge(cartridge);
+        await Task.Yield();
+        stoppingToken.Register(() => _masterSystemConsole.PowerOff());
 
-        // Read and write some memory for testing
-        System.Console.WriteLine(_memory[0]);
-        System.Console.WriteLine(_memory[1]);
-        System.Console.WriteLine(_memory[2]);
-        _memory[0xE000] = 0x01;
+        await _masterSystemConsole.LoadCartridge(_romFilename, stoppingToken);
+        _masterSystemConsole.PowerOn();
+
+        // Run two tasks, one to run the main CPU loop and one to capture key inputs
+        // Key inputs is temporary until we wire up proper inputs
+
+        var task = Task.Run(() => { _masterSystemConsole.Run(); }, stoppingToken);
+
+        var controlTask = Task.Run(() =>
+        {
+            System.Console.WriteLine("Press Enter key to stop");
+            System.Console.ReadLine();
+            _masterSystemConsole.PowerOff();
+        });
+
+        await Task.WhenAll(task, controlTask);
+
+        _log.Information("Stopping");
+        System.Console.WriteLine("Press any key to exit");
+        System.Console.ReadKey();
+        _applicationLifetime.StopApplication();
     }
 }

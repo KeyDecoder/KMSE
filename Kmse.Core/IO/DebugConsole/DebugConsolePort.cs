@@ -16,6 +16,10 @@ internal class DebugConsolePort : IDebugConsolePort
         _output = output;
     }
 
+    public void Reset()
+    {
+    }
+
     public void WritePort(ushort port, byte value)
     {
         switch (port)

@@ -1,5 +1,6 @@
 ﻿using Kmse.Core.Memory;
 using Serilog;
+using System.Net;
 
 namespace Kmse.Console.Logging;
 

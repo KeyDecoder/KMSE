@@ -4,8 +4,10 @@ using AutofacSerilogIntegration;
 using CommandLine;
 using Kmse.Console.Logging;
 using Kmse.Core.Infrastructure;
+using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Logging;
 using Kmse.Core.Memory;
+using Kmse.Core.Z80;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -73,6 +75,8 @@ public class Program
                 containerBuilder.RegisterModule<EmulatorModule>();
                 containerBuilder.RegisterType<SerilogMemoryLogger>().As<IMemoryLogger>();
                 containerBuilder.RegisterType<SerilogIoLogger>().As<IIoPortLogger>();
+                containerBuilder.RegisterType<SerilogDebugConsoleOutput>().As<IDebugConsoleOutput>();
+                containerBuilder.RegisterType<SerilogCpuLogger>().As<ICpuLogger>();
             })
             .ConfigureServices((context, services) =>
             {
