@@ -5,6 +5,7 @@ using Kmse.Core.IO.Controllers;
 using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.Memory;
 using Kmse.Core.Z80;
 
 namespace Kmse.Core;
@@ -24,6 +25,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
     private const double CpuClockDivider = 15.0;
 
     private readonly IMasterSystemCartridge _cartridge;
+    private readonly IMasterSystemMemory _memory;
     private readonly IControllerPort _controllers;
     private readonly IZ80Cpu _cpu;
     private readonly IDebugConsolePort _debugConsole;
@@ -37,8 +39,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
     private bool _running;
 
     public MasterSystemMk2(IZ80Cpu cpu, IMasterSystemIoManager io, IVdpPort vdp, IControllerPort controllers,
-        ISoundPort sound,
-        IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge)
+        ISoundPort sound, IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge, IMasterSystemMemory memory)
     {
         _cpu = cpu;
         _io = io;
@@ -47,11 +48,21 @@ public class MasterSystemMk2 : IMasterSystemConsole
         _sound = sound;
         _debugConsole = debugConsole;
         _cartridge = cartridge;
+        _memory = memory;
+        _cpu.Initialize(_memory, _io);
+        _io.Initialize(_vdp, _controllers, _sound, _debugConsole);
     }
 
     public async Task<bool> LoadCartridge(string filename, CancellationToken cancellationToken)
     {
-        return await _cartridge.LoadRomFromFile(filename, cancellationToken);
+        var result = await _cartridge.LoadRomFromFile(filename, cancellationToken);
+        if (!result)
+        {
+            return false;
+        }
+        _memory.LoadCartridge(_cartridge);
+
+        return true;
     }
 
     public void PowerOn()
