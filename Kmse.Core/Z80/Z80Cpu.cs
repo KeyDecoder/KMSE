@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Text;
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80.Support;
@@ -16,18 +15,39 @@ public class Z80Cpu : IZ80Cpu
 
     private const int NopCycleCount = 4;
 
-    private Z80Register _pc;
-    private Z80Register _stackPointer;
+    private Z80Register _af, _bc, _de, _hl;
+    private Z80Register _afShadow, _bcShadow, _deShadow, _hlShadow;
+    private Z80Register _ix, _iy;
+    private Z80Register _pc, _stackPointer;
+    private byte _iRegister, _rRegister;
+
     private bool _interruptFlipFlop1 = false;
     private bool _interruptFlipFlop2 = false;
 
+    private readonly Dictionary<byte, Instruction> _genericInstructions = new();
+
+    // TODO: Can we improve handling of logging of instructions and fetching of memory reads
     private ushort _currentAddress;
-    private readonly StringBuilder _currentData = new StringBuilder();
+    private readonly StringBuilder _currentData = new();
 
     public Z80Cpu(ICpuLogger cpuLogger)
     {
         _cpuLogger = cpuLogger;
         _pc = new Z80Register();
+        _af = new Z80Register();
+        _bc = new Z80Register();
+        _de = new Z80Register();
+        _hl = new Z80Register();
+        _afShadow = new Z80Register();
+        _bcShadow = new Z80Register();
+        _deShadow = new Z80Register();
+        _hlShadow = new Z80Register();
+        _ix = new Z80Register();
+        _iy = new Z80Register();
+        _stackPointer = new Z80Register();
+        _iRegister = 0;
+        _rRegister = 0;
+        PopulateInstructions();
     }
 
     public void Initialize(IMasterSystemMemory memory, IMasterSystemIoManager io)
@@ -42,6 +62,31 @@ public class Z80Cpu : IZ80Cpu
 
         // Reset program counter back to start
         _pc.Word = 0x00;
+
+        _halted = false;
+        _interruptFlipFlop1 = false;
+        _interruptFlipFlop2 = false;
+
+        _iRegister = 0;
+        _rRegister = 0;
+
+        // Stack pointer starts at highest point in RAM
+        // but various hardware register control writes, generally we set to 0xDFF0
+        // https://www.smspower.org/Development/Stack
+        _stackPointer.Word = 0xDFF0;
+
+        _af.Word = 0x00;
+        _bc.Word = 0x00;
+        _de.Word = 0x00;
+        _hl.Word = 0x00;
+
+        _afShadow.Word = 0x00;
+        _bcShadow.Word = 0x00;
+        _deShadow.Word = 0x00;
+        _hlShadow.Word = 0x00;
+
+        _io.ClearNonMaskableInterrupt();
+        _io.ClearMaskableInterrupt();
     }
 
     public int ExecuteNextCycle()
@@ -71,25 +116,65 @@ public class Z80Cpu : IZ80Cpu
             return NopCycleCount;
         }
 
-        var operation = GetNextOperation();
-        switch (operation)
+        // https://www.smspower.org/Development/InstructionSet
+        var opCode = GetNextOperation();
+
+        // Check for CB, DD, ED, FD instructions and handle differently
+
+        if (!_genericInstructions.TryGetValue(opCode, out var instruction))
         {
-            case 0xF3:
-                DI();
-                break;
-            default:
-                _currentCycleCount += NopCycleCount;
-                break;
+            _cpuLogger.LogInstruction(_currentAddress, "Unhandled", "");
+            _currentCycleCount += NopCycleCount;
+            return _currentCycleCount;
         }
+
+        instruction.Execute();
+        _currentCycleCount += instruction.ClockCycles;
+        _cpuLogger.LogInstruction(_currentAddress, instruction.Name, "");
+
         return _currentCycleCount;
     }
 
-    private void DI()
+    // TODO: Split classes into core management, execution methods and instruction set
+
+    private void PopulateInstructions()
     {
-        _cpuLogger.LogInstruction(_currentAddress, "DI", _currentData.ToString().TrimEnd());
-        _interruptFlipFlop1 = false;
-        _interruptFlipFlop1 = false;
-        _currentCycleCount += 4;
+        AddGenericInstruction(0xF3, "DI", "Disable Interrupts", 4, () => {  _interruptFlipFlop1 = false;  _interruptFlipFlop2 = false; });
+        AddGenericInstruction(0x00, "NOP", "No Operation", 4, () => { });
+        AddGenericInstruction(0x76, "HALT", "Halt", 4, () => { _halted = true; });
+    }
+
+    private void AddGenericInstruction(byte opCode, string name, string description, int cycles, Action handleFunc)
+    {
+        _genericInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc));
+    }
+
+    private void SetFlag(Z80StatusFlags flags)
+    {
+        _af.Low |= (byte)flags;
+    }
+
+    private void ClearFlag(Z80StatusFlags flags)
+    {
+        _af.Low &= (byte)~flags;
+    }
+
+    private void SetClearFlagConditional(Z80StatusFlags flags, bool condition)
+    {
+        if (condition)
+        {
+            SetFlag(flags);
+        }
+        else
+        {
+            ClearFlag(flags);
+        }
+    }
+
+    private bool IsFlagSet(Z80StatusFlags flags)
+    {
+        var currentSetFlags = (Z80StatusFlags)_af.Low & flags;
+        return currentSetFlags == flags;
     }
 
     private byte GetNextOperation()
@@ -136,5 +221,29 @@ public class Z80Cpu : IZ80Cpu
 
         // 4 cycles to write to memory and 2 cycles total to decrement stack pointer (decremented twice)
         _currentCycleCount += 2 + 4;
+    }
+
+    private class Instruction
+    {
+        public Instruction(byte opCode, string name, string description, int cycles, Action handleMethod)
+        {
+            OpCode = opCode;
+            Name = name;
+            Description = description;
+            ClockCycles = cycles;
+            _handleMethod = handleMethod;
+        }
+
+        private readonly Action _handleMethod;
+
+        public byte OpCode { get; }
+        public string Name { get; }
+        public string Description { get; }
+        public int ClockCycles { get; }
+
+        public void Execute()
+        {
+            _handleMethod();
+        }
     }
 }
