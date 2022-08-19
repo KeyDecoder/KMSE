@@ -12,6 +12,11 @@ public class SerilogCpuLogger : ICpuLogger
         _log = log;
     }
 
+    public void LogDebug(string message)
+    {
+        _log.Debug("CPU Debug: {Message}",message);
+    }
+
     public void LogMemoryRead(ushort address, byte data)
     {
         _log.Debug($"0x{address:X4} 0x{data:X2}");
