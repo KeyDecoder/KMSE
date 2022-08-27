@@ -1,13 +1,11 @@
-﻿using System.Reflection.Emit;
-using System.Reflection.Metadata;
-using System.Text;
+﻿using System.Text;
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80;
 
-public class Z80Cpu : IZ80Cpu
+public partial class Z80Cpu : IZ80Cpu
 {
     private readonly ICpuLogger _cpuLogger;
     private int _currentCycleCount;
@@ -163,9 +161,7 @@ public class Z80Cpu : IZ80Cpu
             return NopCycleCount;
         }
 
-        // https://www.smspower.org/Development/InstructionSet
         var opCode = GetNextOperation();
-
         var instruction = opCode switch
         {
             0xCB => ProcessCBOpCode(),
@@ -184,7 +180,11 @@ public class Z80Cpu : IZ80Cpu
         }
 
         instruction.Execute();
-        _currentCycleCount += instruction.ClockCycles;
+        // Note that -1 indicates the clock cycles change dynamically so handled inside the instruction handler
+        if (instruction.ClockCycles > 0)
+        {
+            _currentCycleCount += instruction.ClockCycles;
+        }
 
         // TODO: Need to improve the logging of instructions especially for two byte instructions
         _cpuLogger.LogInstruction(_currentAddress, instruction.Name, "");
@@ -248,134 +248,5 @@ public class Z80Cpu : IZ80Cpu
         }
 
         return instruction;
-    }
-
-    // TODO: Split classes into core management, execution methods and instruction set
-
-    private void PopulateInstructions()
-    {
-        AddGenericInstruction(0x00, "NOP", "No Operation", 4, () => { });
-        AddGenericInstruction(0x76, "HALT", "Halt", 4, () => { _halted = true; });
-
-        // Interrupt instructions
-        AddGenericInstruction(0xF3, "DI", "Disable Interrupts", 4, () => { _interruptFlipFlop1 = false; _interruptFlipFlop2 = false; });
-        AddGenericInstruction(0xFB, "EI", "Enable Interrupts", 4, () => { _interruptFlipFlop1 = true; _interruptFlipFlop2 = true; });
-        AddDoubleByteInstruction(0xED, 0x46, "IM 0", "Set Maskable Interupt to Mode 0", 8, () => { _interruptMode = 0;});
-        AddDoubleByteInstruction(0xED, 0x56, "IM 1", "Set Maskable Interupt to Mode 1", 8, () => { _interruptMode = 1; });
-        AddDoubleByteInstruction(0xED, 0x5E, "IM 2", "Set Maskable Interupt to Mode 2", 8, () => { _interruptMode = 2; });
-    }
-
-    private void AddGenericInstruction(byte opCode, string name, string description, int cycles, Action handleFunc)
-    {
-        _genericInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc));
-    }
-
-    private void AddDoubleByteInstruction(byte prefix, byte opCode, string name, string description, int cycles, Action handleFunc)
-    {
-        switch (prefix)
-        {
-            case 0xCB: _cbInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
-            case 0xDD: _ddInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
-            case 0xED: _edInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
-            case 0xFD: _fdInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
-        }
-    }
-
-    private void SetFlag(Z80StatusFlags flags)
-    {
-        _af.Low |= (byte)flags;
-    }
-
-    private void ClearFlag(Z80StatusFlags flags)
-    {
-        _af.Low &= (byte)~flags;
-    }
-
-    private void SetClearFlagConditional(Z80StatusFlags flags, bool condition)
-    {
-        if (condition)
-        {
-            SetFlag(flags);
-        }
-        else
-        {
-            ClearFlag(flags);
-        }
-    }
-
-    private bool IsFlagSet(Z80StatusFlags flags)
-    {
-        var currentSetFlags = (Z80StatusFlags)_af.Low & flags;
-        return currentSetFlags == flags;
-    }
-
-    private byte GetNextOperation()
-    {
-        var data = _memory[_pc.Word];
-
-        if (_currentAddress == 0)
-        {
-            _currentAddress = _pc.Word;
-        }
-        else
-        {
-            // Only set current data if reading additional information beyond command itself
-            _currentData.Append($"{data:X2} ");
-        }
-
-        _cpuLogger.LogMemoryRead(_pc.Word, data);
-
-        _pc.Word++;
-        return data;
-    }
-
-    private void ResetProgramCounter(ushort address)
-    {
-        // Four cycles to fetch current Pc register
-        _currentCycleCount += 4;
-
-        // Storing PC in Stack so can resume later
-        PushRegisterToStack(_pc);
-
-        // Update PC to execute from new address
-        _pc.Word = address;
-
-        // 1 cycle to jump?
-        _currentCycleCount += 1;
-    }
-
-    private void PushRegisterToStack(Z80Register register)
-    {
-        var currentPointer = _stackPointer.Word;
-        _memory[--currentPointer] = register.High;
-        _memory[--currentPointer] = register.Low;
-        _stackPointer.Word = currentPointer;
-
-        // 4 cycles to write to memory and 2 cycles total to decrement stack pointer (decremented twice)
-        _currentCycleCount += 2 + 4;
-    }
-
-    private class Instruction
-    {
-        public Instruction(byte opCode, string name, string description, int cycles, Action handleMethod)
-        {
-            OpCode = opCode;
-            Name = name;
-            Description = description;
-            ClockCycles = cycles;
-            _handleMethod = handleMethod;
-        }
-
-        private readonly Action _handleMethod;
-
-        public byte OpCode { get; }
-        public string Name { get; }
-        public string Description { get; }
-        public int ClockCycles { get; }
-
-        public void Execute()
-        {
-            _handleMethod();
-        }
     }
 }
