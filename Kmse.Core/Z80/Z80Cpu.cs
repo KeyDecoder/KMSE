@@ -104,14 +104,16 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (_io.NonMaskableInterrupt)
         {
+            // Copy state of IFF1 into IFF2 to keep a copy and reset IFF1 so processing can continue without a masked interrupt occuring
+            // This gets copied back with a RETN occurs
+            _interruptFlipFlop2 = _interruptFlipFlop1;
+            _interruptFlipFlop1 = false;
+
             // Handle NMI by jumping to 0x66
             ResetProgramCounter(0x66);
 
             // If halted then NMI starts it up again
             _halted = false;
-
-            // Clear interrupt since serviced
-            _io.ClearNonMaskableInterrupt();
 
             _currentCycleCount += 11;
             return _currentCycleCount;
@@ -119,11 +121,6 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (_interruptFlipFlop1 && _io.MaskableInterrupt)
         {
-            // Copy state of IFF1 into IFF2 to keep a copy and reset IFF1 so processing can continue
-            _interruptFlipFlop2 = _interruptFlipFlop1;
-            _io.ClearMaskableInterrupt();
-            _interruptFlipFlop1 = false;
-
             if (_interruptMode is 0 or 1)
             {
                 // The SMS hardware generates two types of interrupts: IRQs and NMIs.

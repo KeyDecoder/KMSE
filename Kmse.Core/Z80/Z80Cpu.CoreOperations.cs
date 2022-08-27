@@ -9,6 +9,11 @@ namespace Kmse.Core.Z80
     {
         private byte GetNextOperation()
         {
+            return GetNextByte();
+        }
+
+        private byte GetNextByte()
+        {
             // Note: We don't increment the cycle count here since this operation is included in overall cycle count for each instruction
             var data = _memory[_pc.Word];
 
@@ -25,6 +30,13 @@ namespace Kmse.Core.Z80
             _cpuLogger.LogMemoryRead(_pc.Word, data);
 
             _pc.Word++;
+            return data;
+        }
+
+        private ushort GetNextTwoBytes()
+        {
+            ushort data = GetNextOperation();
+            data += (ushort)(GetNextOperation() << 8);
             return data;
         }
 
@@ -63,6 +75,20 @@ namespace Kmse.Core.Z80
 
             // Update PC to execute from new address
             _pc.Word = address;
+        }
+
+        private void SetProgramCounterFromRegister(Z80Register register)
+        {
+            // Update PC to execute from the value of the register
+            _pc.Word = register.Word;
+        }
+
+        private void ResetProgramCounterFromStack()
+        {
+            var currentPointer = _stackPointer.Word;
+            _pc.Low = _memory[++currentPointer];
+            _pc.High = _memory[++currentPointer];
+            _stackPointer.Word = currentPointer;
         }
 
         private void PushRegisterToStack(Z80Register register)

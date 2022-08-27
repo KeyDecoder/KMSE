@@ -118,17 +118,11 @@ public partial class Z80Cpu
 
     private void PopulateJumpCallAndReturnOperations()
     {
-        AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { });
-        AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { });
-        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump", _ => { });
-        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_hl); });
+        AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_ix); });
+        AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_iy); });
+        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ =>  {  ResetProgramCounter(GetNextTwoBytes()); }); 
 
-        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ => { });
         AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump", _ => { });
         AddStandardInstruction(0xD2, 10, "JP NC,$NN", "Conditional Jump", _ => { });
         AddStandardInstruction(0xFA, 10, "JP M,$NN", "Conditional Jump", _ => { });
@@ -137,6 +131,14 @@ public partial class Z80Cpu
         AddStandardInstruction(0xC2, 10, "JP NZ,$NN", "Conditional Jump", _ => { });
         AddStandardInstruction(0xEA, 10, "JP PE,$NN", "Conditional Jump", _ => { });
         AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump", _ => { });
+
+        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump", _ => { });
+        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { });
+
+        AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
 
         AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { });
         AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call", _ => { });
@@ -148,7 +150,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call", _ => { });
         AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call", _ => { });
 
-        AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { });
+        AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { ResetProgramCounterFromStack(); });
         AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return", _ => { });
         AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "", _ => { });
         AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "", _ => { });
@@ -158,17 +160,17 @@ public partial class Z80Cpu
         AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "", _ => { });
         AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "", _ => { });
 
-        AddStandardInstruction(0xC7, 11, "RST 0", "Restart", _ => { });
-        AddStandardInstruction(0xCF, 11, "RST 08H", "", _ => { });
-        AddStandardInstruction(0xD7, 11, "RST 10H", "", _ => { });
-        AddStandardInstruction(0xDF, 11, "RST 18H", "", _ => { });
-        AddStandardInstruction(0xE7, 11, "RST 20H", "", _ => { });
-        AddStandardInstruction(0xEF, 11, "RST 28H", "", _ => { });
-        AddStandardInstruction(0xF7, 11, "RST 30H", "", _ => { });
-        AddStandardInstruction(0xFF, 11, "RST 38H", "", _ => { });
+        AddStandardInstruction(0xC7, 11, "RST 0", "Restart", _ => { ResetProgramCounter(0x00); });
+        AddStandardInstruction(0xCF, 11, "RST 08H", "", _ => { ResetProgramCounter(0x08); });
+        AddStandardInstruction(0xD7, 11, "RST 10H", "", _ => { ResetProgramCounter(0x10); });
+        AddStandardInstruction(0xDF, 11, "RST 18H", "", _ => { ResetProgramCounter(0x18); });
+        AddStandardInstruction(0xE7, 11, "RST 20H", "", _ => { ResetProgramCounter(0x20); });
+        AddStandardInstruction(0xEF, 11, "RST 28H", "", _ => { ResetProgramCounter(0x28); });
+        AddStandardInstruction(0xF7, 11, "RST 30H", "", _ => { ResetProgramCounter(0x30); });
+        AddStandardInstruction(0xFF, 11, "RST 38H", "", _ => { ResetProgramCounter(0x38); });
         
-        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { });
-        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { });
+        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { ResetProgramCounterFromStack(); _io.ClearMaskableInterrupt(); });
+        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { ResetProgramCounterFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; _io.ClearNonMaskableInterrupt(); });
     }
 
     private void PopulateArthmeticAndLogicalInstructions()
