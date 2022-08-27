@@ -6,24 +6,39 @@
 /// </summary>
 public partial class Z80Cpu
 {
+    // TODO: In future, maybe we can combine these into a single dictionary and lookup but need to evaluate how different the handling is first
+    private readonly Dictionary<byte, Instruction> _genericInstructions = new();
+    private readonly Dictionary<byte, Instruction> _cbInstructions = new();
+    private readonly Dictionary<byte, Instruction> _ddInstructions = new();
+    private readonly Dictionary<byte, Instruction> _edInstructions = new();
+    private readonly Dictionary<byte, Instruction> _fdInstructions = new();
+    private readonly Dictionary<byte, SpecialCbInstruction> _specialDdcbInstructions = new();
+    private readonly Dictionary<byte, SpecialCbInstruction> _specialFdcbInstructions = new();
+    private const int DynamicCycleHandling = -1;
+
     private void AddStandardInstructionWithMask(byte opCode, byte mask, int cycles, string name, string description, Action<Instruction> handleFunc)
     {
         // These op codes do the same thing but generally have some information in the op code itself, but we can handle them with the same function
         // An example being ADD A, r where 80 is base r is low 3 bits (mask is 7) so op codes are 0x80 - 0x87 which all do the same add, just different registers
-        for (var i = opCode; i <= opCode + mask; i++)
+        
+        // NOTE: We don't use i <= opCode+mask since the increment is before the check and this will wrap around (since byte type) and loop forever
+        for (var i = opCode; i < opCode + mask; i++)
         {
             AddStandardInstruction(i, cycles, name, description, handleFunc);
         }
+        AddStandardInstruction((byte)(opCode + mask), cycles, name, description, handleFunc);
     }
 
     private void AddDoubleByteInstructionWithMask(byte prefix, byte opCode, byte mask, int cycles, string name, string description, Action<Instruction> handleFunc)
     {
         // These op codes do the same thing but generally have some information in the op code itself, but we can handle them with the same function
         // An example being ADD A, r where 80 is base r is low 3 bits (mask is 7) so op codes are 0x80 - 0x87 which all do the same add, just different registers
-        for (var i = opCode; i <= opCode + mask; i++)
+        // NOTE: We don't use i <= opCode+mask since the increment is before the check and this will wrap around (since byte type) and loop forever
+        for (var i = opCode; i < opCode + mask; i++)
         {
             AddDoubleByteInstruction(prefix, i, cycles, name, description, handleFunc);
         }
+        AddDoubleByteInstruction(prefix, (byte)(opCode+mask), cycles, name, description, handleFunc);
     }
 
     private void AddStandardInstruction(byte opCode, int cycles, string name, string description, Action<Instruction> handleFunc)
@@ -39,7 +54,42 @@ public partial class Z80Cpu
             case 0xDD: _ddInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
             case 0xED: _edInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
             case 0xFD: _fdInstructions.Add(opCode, new Instruction(opCode, name, description, cycles, handleFunc)); break;
+            default:
+                throw new ArgumentException("Only CB/DD/ED/FD double byte instructions supported");
         }
+    }
+
+    /// <summary>
+    /// Add special instructions which are a double byte start (ie. FD/DD) prefix, then CB and then a value and then normal op code
+    /// These require special handling since not a normal CB XX instruction
+    /// </summary>
+    /// <param name="prefix">First op code, usually 0xFD or 0xDD</param>
+    /// <param name="opCode">Actual op code, after CB and value byte</param>
+    /// <param name="cycles">Number of cycles</param>
+    /// <param name="name">Name of instruction</param>
+    /// <param name="description">Description of instruction</param>
+    /// <param name="handleFunc">Action to call when op code executed</param>
+    private void AddSpecialCbInstruction(byte prefix, byte opCode, int cycles, string name, string description, Action<Instruction> handleFunc)
+    {
+        switch (prefix)
+        {
+            case 0xDD: _specialDdcbInstructions.Add(opCode, new SpecialCbInstruction(opCode, name, description, cycles, handleFunc)); break;
+            case 0xFD: _specialFdcbInstructions.Add(opCode, new SpecialCbInstruction(opCode, name, description, cycles, handleFunc)); break;
+            default:
+                throw new ArgumentException("Only FD/DD special CB instructions supported");
+        }
+    }
+
+    private void AddSpecialCbInstructionWithMask(byte prefix, byte opCode, byte mask, int cycles, string name, string description, Action<Instruction> handleFunc)
+    {
+        // These op codes do the same thing but generally have some information in the op code itself, but we can handle them with the same function
+        // An example being ADD A, r where 80 is base r is low 3 bits (mask is 7) so op codes are 0x80 - 0x87 which all do the same add, just different registers
+        // NOTE: We don't use i <= opCode+mask since the increment is before the check and this will wrap around (since byte type) and loop forever
+        for (var i = opCode; i < opCode + mask; i++)
+        {
+            AddSpecialCbInstruction(prefix, i, cycles, name, description, handleFunc);
+        }
+        AddSpecialCbInstruction(prefix, (byte)(opCode + mask), cycles, name, description, handleFunc);
     }
 
     private void PopulateInstructions()
@@ -69,14 +119,14 @@ public partial class Z80Cpu
     private void PopulateJumpCallAndReturnOperations()
     {
         AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { });
-        AddStandardInstruction(0x10, -1, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
+        AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
         AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { });
         AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { });
         AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump", _ => { });
-        AddStandardInstruction(0x38, -1, "JR C,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x30, -1, "JR NC,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x28, -1, "JR Z,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x20, -1, "JR NZ,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { });
 
         AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ => { });
         AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump", _ => { });
@@ -89,24 +139,24 @@ public partial class Z80Cpu
         AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump", _ => { });
 
         AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { });
-        AddStandardInstruction(0xDC, -1, "CALL C,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xD4, -1, "CALL NC,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xFC, -1, "CALL M,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xF4, -1, "CALL P,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xCC, -1, "CALL Z,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xC4, -1, "CALL NZ,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xEC, -1, "CALL PE,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xE4, -1, "CALL PO,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call", _ => { });
 
         AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { });
-        AddStandardInstruction(0xD8, -1, "RET C", "Conditional Return", _ => { });
-        AddStandardInstruction(0xD0, -1, "RET NC", "", _ => { });
-        AddStandardInstruction(0xF8, -1, "RET M", "", _ => { });
-        AddStandardInstruction(0xF0, -1, "RET P", "", _ => { });
-        AddStandardInstruction(0xC8, -1, "RET Z", "", _ => { });
-        AddStandardInstruction(0xC0, -1, "RET NZ", "", _ => { });
-        AddStandardInstruction(0xE8, -1, "RET PE", "", _ => { });
-        AddStandardInstruction(0xE0, -1, "RET PO", "", _ => { });
+        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return", _ => { });
+        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "", _ => { });
+        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "", _ => { });
+        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "", _ => { });
+        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "", _ => { });
+        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "", _ => { });
+        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "", _ => { });
+        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "", _ => { });
 
         AddStandardInstruction(0xC7, 11, "RST 0", "Restart", _ => { });
         AddStandardInstruction(0xCF, 11, "RST 08H", "", _ => { });
@@ -146,7 +196,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xFD, 0x09, 15, "ADD IY,BC", "Add (IY register)", _ => { });
         AddDoubleByteInstruction(0xFD, 0x19, 15, "ADD IY,DE", "Add", _ => { });
         AddDoubleByteInstruction(0xFD, 0x29, 15, "ADD IY,IY", "Add", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x29, 15, "ADD IY,SP", "Add", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x39, 15, "ADD IY,SP", "Add", _ => { });
         AddDoubleByteInstruction(0xDD, 0x86, 19, "ADD A,(IX+d)", "Add", _ => { });
         AddDoubleByteInstruction(0xFD, 0x86, 19, "ADD A,(IY+d)", "Add", _ => { });
         AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "And", _ => { });
@@ -173,7 +223,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0xA9, 16, "CPD", "Compare and Decrement", _ => { });
         AddDoubleByteInstruction(0xED, 0xB9, 21 / 16, "CPDR", "Compare, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA1, 16, "CPI", "Compare and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB1, -1, "CPIR", "Compare, Increment, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xB1, DynamicCycleHandling, "CPIR", "Compare, Increment, Repeat", _ => { });
 
         AddStandardInstruction(0xE6, 7, "AND N", "And", _ => { });
 
@@ -232,33 +282,56 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xCB, 0x40, 8, "BIT b,r", "Test Bit", _ => { });
         AddDoubleByteInstruction(0xCB, 0x46, 12, "BIT b,(HL)", "Test Bit", _ => { });
         AddDoubleByteInstructionWithMask(0xCB, 0xC0, 0x3F, 8, "SET b,r", "Set bit", _ => { });
+
+        AddSpecialCbInstructionWithMask(0xDD, 0xC6, 7, 23, "SET b,(IX+d)", "Set Bit", _ => { });
+        AddSpecialCbInstructionWithMask(0xFD, 0xC6, 7, 23, "SET b,(IY+d)", "Set Bit", _ => { });
+        AddSpecialCbInstructionWithMask(0xDD, 0x46, 7, 20, "BIT b,(IX+d)", "Test Bit", _ => { });
+        AddSpecialCbInstructionWithMask(0xFD, 0x46, 7, 20, "BIT b,(IY+d)", "Test Bit", _ => { });
+        AddSpecialCbInstructionWithMask(0xDD, 0x86, 7, 23, "RES b,(IX+d)", "Reset bit", _ => { });
+        AddSpecialCbInstructionWithMask(0xFD, 0x86, 7, 23, "RES b,(IY+d)", "Reset bit", _ => { });
     }
 
     private void PopulateRotateAndShiftInstructions()
     {
         AddStandardInstruction(0x17, 4, "RLA", "Rotate Left Accumulator", _ => { });
-        AddStandardInstruction(0x7, 4, "RLCA", "Rotate Left Circular Accumulator", _ => { });
+        AddStandardInstruction(0x07, 4, "RLCA", "Rotate Left Circular Accumulator", _ => { });
         AddStandardInstruction(0x1F, 4, "RRA", "Rotate Right Accumulator", _ => { });
         AddStandardInstruction(0x0F, 4, "RRCA", "Rotate Right Circular Accumulator", _ => { });
 
         AddDoubleByteInstructionWithMask(0xCB, 0x20, 7, 8, "SLA r", "Shift Left Arithmetic", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x26, 15, "SLA (HL)", "Shift Left Arithmetic", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x26, 23, "SLA (IX+d)", "Shift Left Arithmetic", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x26, 23, "SLA (IY+d)", "Shift Left Arithmetic", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x28, 7, 8, "SRA r", "Shift Right Arithmetic", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x2E, 15, "SRA (HL)", "Shift Right Arithmetic", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x2E, 23, "SRA (IX+d)", "Shift Right Arithmetic", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x2E, 23, "SRA (IY+d)", "Shift Right Arithmetic", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x30, 7, 8, "SLL r", "Shift Left Logical*", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x36, 15, "SLL (HL)", "Shift Left Logical*", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x36, 23, "SLL (IX+d)", "Shift Left Logical", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x36, 23, "SLL (IY+d)", "Shift Left Logical", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x38, 7, 8, "SRL r", "Shift Right Logical", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x3E, 15, "SRL (HL)", "Shift Right Logical", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x3E, 23, "SRL (IX+d)", "Shift Right Logical", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x3E, 23, "SRL (IY+d)", "Shift Right Logical", _ => { });
 
         AddDoubleByteInstructionWithMask(0xCB, 0x10, 7, 8, "RL r", "Rotate Left", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x16, 15, "RL (HL)", "Rotate Left", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x16, 23, "RL (IX+d)", "Rotate Left", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x16, 23, "RL (IY+d)", "Rotate Left", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x00, 7, 8, "RLC r", "Rotate Left Circular", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x06, 15, "RLC (HL)", "Rotate Left Circular", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x06, 23, "RLC (IX+d)", "Rotate Left Circular", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x06, 23, "RLC (IY+d)", "Rotate Left Circular", _ => { });
+        
         AddDoubleByteInstruction(0xED, 0x6F, 18, "RLD", "Rotate Left 4 bits", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x18, 7, 8, "RR r", "Rotate Right", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x1E, 15, "RR (HL)", "Rotate Right", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x1E, 23, "RR (IX+d)", "Rotate Right", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x1E, 23, "RR (IY+d)", "Rotate Right", _ => { });
+
         AddDoubleByteInstructionWithMask(0xCB, 0x08, 7, 8, "RRC r", "Rotate Right Circular", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x0E, 15, "RRC (HL)", "Rotate Right Circular", _ => { });
+        AddSpecialCbInstruction(0xDD, 0x0E, 23, "RRC (IX+d)", "Rotate Right Circular", _ => { });
+        AddSpecialCbInstruction(0xFD, 0x0E, 23, "RRC (IY+d)", "Rotate Right Circular", _ => { });
+
         AddDoubleByteInstruction(0xED, 0x67, 18, "RRD", "Rotate Right 4 bits", _ => { });
         AddStandardInstruction(0xDE, 7, "SBC A,N", "Rotate Right 4 bits", _ => { });
     }
@@ -317,11 +390,25 @@ public partial class Z80Cpu
         AddStandardInstruction(0x22, 16, "LD (NN),HL", "Load", _ => { });
         AddDoubleByteInstructionWithMask(0xDD, 0x70, 7, 19, "LD (IX+d),r", "Load", _ => { });
         AddDoubleByteInstructionWithMask(0xFD, 0x70, 7, 19, "LD (IY+d),r", "Load", _ => { });
+        AddDoubleByteInstruction(0xED, 0x4B, 20, "LD BC, (NN)", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xED, 0x5B, 20, "LD DE, (NN)", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xED, 0x7B, 20, "LD SP, (NN)", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xDD, 0x2A, 20, "LD IX, (NN)", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xDD, 0x21, 14, "LD IX, NN", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x2A, 20, "LD IY, (NN)", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x21, 14, "LD IY, NN", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xED, 0x43, 20, "LD(NN), BC", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xED, 0x53, 20, "LD(NN), DE", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xDD, 0x22, 20, "LD(NN), IX", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x22, 20, "LD(NN), IY", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xDD, 0x36, 19, "LD(IX + d), N", "Load(16 - bit)", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x36, 19, "LD(IY + d), N", "Load(16 - bit)", _ => { });
 
         AddDoubleByteInstruction(0xED, 0xA8, 16, "LDD", "Load and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB8, -1, "LDDR", "Load, Decrement, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xB8, DynamicCycleHandling, "LDDR", "Load, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB0, -1, "LDIR", "Load, Increment, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xB0, DynamicCycleHandling, "LDIR", "Load, Increment, Repeat", _ => { });
         
         AddStandardInstruction(0xF1, 10, "POP AF	Pop", "", _ => { });
         AddStandardInstruction(0xC1, 10, "POP BC", "", _ => { });
@@ -362,7 +449,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { });
         AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { });
         AddDoubleByteInstruction(0xED, 0xAA, 16, "IND", "Input and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xBA, -1, "INDR", "Input, Decrement, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ => { });
         AddDoubleByteInstruction(0xED, 0xB2, 21 / 16, "INIR", "Input, Increment, Repeat", _ => { });
 
@@ -376,9 +463,16 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Output", _ => { });
         AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Output", _ => { });
         AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xBB, -1, "OTDR", "Output, Decrement, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB3, -1, "OTIR", "Output, Increment, Repeat", _ => { });
+        AddDoubleByteInstruction(0xED, 0xB3, DynamicCycleHandling, "OTIR", "Output, Increment, Repeat", _ => { });
+    }
+
+    private enum CbInstructionModes : byte
+    {
+        Normal = 0x00,
+        DD = 0xDD,
+        FD = 0xFD
     }
 
     private class Instruction
@@ -402,6 +496,22 @@ public partial class Z80Cpu
         public void Execute()
         {
             _handleMethod(this);
+        }
+    }
+
+    /// <summary>
+    ///     Special CB instructions where they are DD/FD CB XX
+    /// </summary>
+    private class SpecialCbInstruction : Instruction
+    {
+        public byte DataByte { get; private set; }
+
+        public SpecialCbInstruction(byte opCode, string name, string description, int cycles,
+            Action<Instruction> handleMethod) : base(opCode, name, description, cycles, handleMethod) { }
+
+        public void SetDataByte(byte data)
+        {
+            DataByte = data;
         }
     }
 }
