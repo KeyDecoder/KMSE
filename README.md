@@ -1,5 +1,7 @@
 # KMSE
 
+[![dotnet package](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml)
+
 KMSE (KeyDecoder's Master System Emulator) is an emulator for Sega Master System console, written in C#, focused on the Mark II.  This is just a fun research project emulating my favorite console.
 
 As a child of the 80s/90s, I played the Master System so much growing up.  Loved playing Alex Kidd in Miracle World which was built into the console (I can still remember the Janken combinations of each boss).
