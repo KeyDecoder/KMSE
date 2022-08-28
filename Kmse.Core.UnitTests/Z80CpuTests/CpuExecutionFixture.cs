@@ -2,7 +2,6 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
-using Kmse.Core.Z80.Support;
 using NSubstitute;
 using NUnit.Framework;
 

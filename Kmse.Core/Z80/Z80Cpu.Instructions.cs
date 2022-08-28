@@ -1,4 +1,7 @@
-﻿namespace Kmse.Core.Z80;
+﻿using Kmse.Core.Z80.Support;
+using System.Data.Common;
+
+namespace Kmse.Core.Z80;
 
 /// <summary>
 /// Generate the list of instructions and how to handle them
@@ -121,53 +124,54 @@ public partial class Z80Cpu
         AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_hl); });
         AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_ix); });
         AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_iy); });
-        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ =>  {  ResetProgramCounter(GetNextTwoBytes()); }); 
+        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ =>  { SetProgramCounter(GetNextTwoBytes()); });
 
-        AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xD2, 10, "JP NC,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xFA, 10, "JP M,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xF2, 10, "JP P,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xCA, 10, "JP Z,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xC2, 10, "JP NZ,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xEA, 10, "JP PE,$NN", "Conditional Jump", _ => { });
-        AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump", _ => { });
+        AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump If Carry Set", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.CarryC, GetNextTwoBytes()); });
+        AddStandardInstruction(0xD2, 10, "JP NC,$NN", "Conditional Jump If Carry Not Set", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.CarryC, GetNextTwoBytes()); });
+        AddStandardInstruction(0xFA, 10, "JP M,$NN", "Conditional Jump If Negative", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.SignS, GetNextTwoBytes()); });
+        AddStandardInstruction(0xF2, 10, "JP P,$NN", "Conditional Jump If Positive", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.SignS, GetNextTwoBytes()); });
+        AddStandardInstruction(0xCA, 10, "JP Z,$NN", "Conditional Jump if Zero", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.ZeroZ, GetNextTwoBytes()); });
+        AddStandardInstruction(0xC2, 10, "JP NZ,$NN", "Conditional Jump If Not Zero", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.ZeroZ, GetNextTwoBytes()); });
+        AddStandardInstruction(0xEA, 10, "JP PE,$NN", "Conditional Jump If Parity Even", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.ParityOverflowPV, GetNextTwoBytes()); });
+        AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump If Parity Odd", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, GetNextTwoBytes()); });
 
-        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump", _ => { });
-        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { });
-        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { });
+        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump By Offset", _ => { JumpByOffset(GetNextByte()); });
+        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfFlag(Z80StatusFlags.CarryC, GetNextByte()); });
+        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfNotFlag(Z80StatusFlags.CarryC, GetNextByte()); });
+        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, GetNextByte()); });
+        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, GetNextByte()); });
 
+        // TODO: Implement once decrement method has been implemented
         AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
 
-        AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { });
-        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call", _ => { });
-        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call", _ => { });
+        AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { SaveAndUpdateProgramCounter(GetNextTwoBytes()); });
+        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { CallIfFlagCondition(Z80StatusFlags.CarryC, GetNextTwoBytes()); });
+        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { CallIfNotFlagCondition(Z80StatusFlags.CarryC, GetNextTwoBytes()); });
+        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { CallIfFlagCondition(Z80StatusFlags.SignS, GetNextTwoBytes()); });
+        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { CallIfNotFlagCondition(Z80StatusFlags.SignS, GetNextTwoBytes()); });
+        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { CallIfFlagCondition(Z80StatusFlags.ZeroZ, GetNextTwoBytes()); });
+        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, GetNextTwoBytes()); });
+        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, GetNextTwoBytes()); });
+        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call If Parity Odd", _ => { CallIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, GetNextTwoBytes()); });
 
         AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { ResetProgramCounterFromStack(); });
-        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return", _ => { });
-        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "", _ => { });
-        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "", _ => { });
-        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "", _ => { });
-        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "", _ => { });
-        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "", _ => { });
-        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "", _ => { });
-        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "", _ => { });
+        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return If Carry Set", _ => { ReturnIfFlag(Z80StatusFlags.CarryC); });
+        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "Conditional Return If Carry Not Set", _ => { ReturnIfNotFlag(Z80StatusFlags.CarryC); });
+        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "Conditional Return If Negative", _ => { ReturnIfFlag(Z80StatusFlags.SignS); });
+        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "Conditional Return If Positive", _ => { ReturnIfNotFlag(Z80StatusFlags.SignS); });
+        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "Conditional Return If Zero", _ => { ReturnIfFlag(Z80StatusFlags.ZeroZ); });
+        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "Conditional Return If Not Zero", _ => { ReturnIfNotFlag(Z80StatusFlags.ZeroZ); });
+        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "Conditional Return If Parity Even", _ => { ReturnIfFlag(Z80StatusFlags.ParityOverflowPV); });
+        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "Conditional Return If Parity Odd", _ => { ReturnIfNotFlag(Z80StatusFlags.ParityOverflowPV); });
 
-        AddStandardInstruction(0xC7, 11, "RST 0", "Restart", _ => { ResetProgramCounter(0x00); });
-        AddStandardInstruction(0xCF, 11, "RST 08H", "", _ => { ResetProgramCounter(0x08); });
-        AddStandardInstruction(0xD7, 11, "RST 10H", "", _ => { ResetProgramCounter(0x10); });
-        AddStandardInstruction(0xDF, 11, "RST 18H", "", _ => { ResetProgramCounter(0x18); });
-        AddStandardInstruction(0xE7, 11, "RST 20H", "", _ => { ResetProgramCounter(0x20); });
-        AddStandardInstruction(0xEF, 11, "RST 28H", "", _ => { ResetProgramCounter(0x28); });
-        AddStandardInstruction(0xF7, 11, "RST 30H", "", _ => { ResetProgramCounter(0x30); });
-        AddStandardInstruction(0xFF, 11, "RST 38H", "", _ => { ResetProgramCounter(0x38); });
+        AddStandardInstruction(0xC7, 11, "RST 0", "Restart", _ => { SaveAndUpdateProgramCounter(0x00); });
+        AddStandardInstruction(0xCF, 11, "RST 08H", "", _ => { SaveAndUpdateProgramCounter(0x08); });
+        AddStandardInstruction(0xD7, 11, "RST 10H", "", _ => { SaveAndUpdateProgramCounter(0x10); });
+        AddStandardInstruction(0xDF, 11, "RST 18H", "", _ => { SaveAndUpdateProgramCounter(0x18); });
+        AddStandardInstruction(0xE7, 11, "RST 20H", "", _ => { SaveAndUpdateProgramCounter(0x20); });
+        AddStandardInstruction(0xEF, 11, "RST 28H", "", _ => { SaveAndUpdateProgramCounter(0x28); });
+        AddStandardInstruction(0xF7, 11, "RST 30H", "", _ => { SaveAndUpdateProgramCounter(0x30); });
+        AddStandardInstruction(0xFF, 11, "RST 38H", "", _ => { SaveAndUpdateProgramCounter(0x38); });
         
         AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { ResetProgramCounterFromStack(); _io.ClearMaskableInterrupt(); });
         AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { ResetProgramCounterFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; });

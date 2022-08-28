@@ -139,11 +139,12 @@ public partial class Z80Cpu : IZ80Cpu
             _interruptFlipFlop2 = _interruptFlipFlop1;
             _interruptFlipFlop1 = false;
 
-            // We have to clear this here to avoid this triggering in every cycle but not sure this is accurate
+            // We have to clear this here to avoid this triggering in every cycle
+            // but not sure this is accurate since if another NMI is triggered this could end up in an endless loop instead
             _io.ClearNonMaskableInterrupt();
 
             // Handle NMI by jumping to 0x66
-            ResetProgramCounter(0x66);
+            SaveAndUpdateProgramCounter(0x66);
 
             // If halted then NMI starts it up again
             _halted = false;
@@ -169,8 +170,8 @@ public partial class Z80Cpu : IZ80Cpu
                 // the data bus, which corresponds to the instruction 'RST 38H'.
                 // Basically same as mode 1
 
-                // Mode 1, jump to address 0x0038h similar to NMI
-                ResetProgramCounter(0x0038);
+                // Mode 1, jump to address 0x0038h
+                SaveAndUpdateProgramCounter(0x0038);
                 _currentCycleCount += 11;
 
                 return _currentCycleCount;

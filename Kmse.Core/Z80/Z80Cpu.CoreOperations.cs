@@ -68,7 +68,17 @@ namespace Kmse.Core.Z80
             return currentSetFlags == flags;
         }
 
-        private void ResetProgramCounter(ushort address)
+        /// <summary>
+        /// Set program counter to new value, but don't save the old value to the stack 
+        /// </summary>
+        /// <param name="address">New address to set PC to</param>
+        private void SetProgramCounter(ushort address)
+        {
+            // Update PC to execute from new address
+            _pc.Word = address;
+        }
+
+        private void SaveAndUpdateProgramCounter(ushort address)
         {
             // Storing PC in Stack so can resume later
             PushRegisterToStack(_pc);
@@ -97,6 +107,101 @@ namespace Kmse.Core.Z80
             _memory[--currentPointer] = register.High;
             _memory[--currentPointer] = register.Low;
             _stackPointer.Word = currentPointer;
+        }
+
+        private void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
+        {
+            if (IsFlagSet(flag))
+            {
+                SetProgramCounter(address);
+            }
+        }
+
+        private void Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address)
+        {
+            if (!IsFlagSet(flag))
+            {
+                SetProgramCounter(address);
+            }
+        }
+
+        private void JumpByOffset(byte offset)
+        {
+            var newPcLocation = _pc.Word;
+
+            // Range is -126 to +129 so we need a signed version
+            // However sbyte only goes from -128 to +127 but we need -126 to +129 so have to do this manually
+            if (offset <= 129)
+            {
+                newPcLocation += offset;
+            }
+            else
+            {
+                // 256 minus our offset gives us a positive number for where it would rollover at 129
+                // And we minus this since this would be negative number
+                newPcLocation -= (ushort)(256 - offset);
+            }
+
+            // Note we don't need to add one here since we always increment the Pc after we read from it, so it's already pointing to next command at this point
+            SetProgramCounter(newPcLocation);
+        }
+
+        private void JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status)
+        {
+            if (IsFlagSet(flag) == status)
+            {
+                JumpByOffset(offset);
+                _currentCycleCount += 12;
+            }
+
+            _currentCycleCount += 7;
+        }
+
+        private void JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset)
+        {
+            JumpByOffsetIfFlagHasStatus(flag, offset, true);
+        }
+
+        private void JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset)
+        {
+            JumpByOffsetIfFlagHasStatus(flag, offset, false);
+        }
+
+        private void CallIfFlagCondition(Z80StatusFlags flag, ushort address)
+        {
+            if (IsFlagSet(flag))
+            {
+                SaveAndUpdateProgramCounter(address);
+            }
+        }
+
+        private void CallIfNotFlagCondition(Z80StatusFlags flag, ushort address)
+        {
+            if (!IsFlagSet(flag))
+            {
+                SaveAndUpdateProgramCounter(address);
+            }
+        }
+
+        private void ReturnIfFlagHasStatus(Z80StatusFlags flag, bool status)
+        {
+            if (IsFlagSet(flag) == status)
+            {
+                ResetProgramCounterFromStack();
+                _currentCycleCount += 11;
+            }
+
+            _currentCycleCount += 5;
+        }
+
+        private void ReturnIfFlag(Z80StatusFlags flag)
+        {
+            ReturnIfFlagHasStatus(flag, true);
+        }
+
+        private void ReturnIfNotFlag(Z80StatusFlags flag)
+        {
+            ReturnIfFlagHasStatus(flag, false);
         }
     }
 }
