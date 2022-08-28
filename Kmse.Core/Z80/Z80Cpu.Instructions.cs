@@ -170,7 +170,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0xFF, 11, "RST 38H", "", _ => { ResetProgramCounter(0x38); });
         
         AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { ResetProgramCounterFromStack(); _io.ClearMaskableInterrupt(); });
-        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { ResetProgramCounterFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; _io.ClearNonMaskableInterrupt(); });
+        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { ResetProgramCounterFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; });
     }
 
     private void PopulateArthmeticAndLogicalInstructions()

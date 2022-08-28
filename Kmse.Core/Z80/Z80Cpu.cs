@@ -31,7 +31,6 @@ public partial class Z80Cpu : IZ80Cpu
     private bool _interruptFlipFlop2 = false;
     private byte _interruptMode = 0;
 
-
     // TODO: Can we improve handling of logging of instructions and fetching of memory reads
     private ushort _currentAddress;
     private readonly StringBuilder _currentData = new();
@@ -60,6 +59,37 @@ public partial class Z80Cpu : IZ80Cpu
     {
         _memory = memory;
         _io = io;
+    }
+
+    public CpuStatus GetStatus()
+    {
+        return new CpuStatus
+        {
+            CurrentCycleCount = _currentCycleCount,
+            Halted = _halted,
+
+            Af = _af,
+            Bc = _bc,
+            De = _de,
+            Hl = _hl,
+            AfShadow = _afShadow,
+            BcShadow = _bcShadow,
+            DeShadow = _deShadow,
+            HlShadow = _hlShadow,
+            Ix = _ix,
+            Iy = _iy,
+            Pc = _pc,
+            StackPointer = _stackPointer,
+            IRegister = _iRegister,
+            RRegister = _rRegister,
+            InterruptFlipFlop1 = _interruptFlipFlop1,
+
+            InterruptFlipFlop2 = _interruptFlipFlop2,
+            InterruptMode = _interruptMode,
+
+            NonMaskableInterruptStatus = _io.NonMaskableInterrupt,
+            MaskableInterruptStatus = _io.MaskableInterrupt
+        };
     }
 
     public void Reset()
@@ -109,6 +139,9 @@ public partial class Z80Cpu : IZ80Cpu
             _interruptFlipFlop2 = _interruptFlipFlop1;
             _interruptFlipFlop1 = false;
 
+            // We have to clear this here to avoid this triggering in every cycle but not sure this is accurate
+            _io.ClearNonMaskableInterrupt();
+
             // Handle NMI by jumping to 0x66
             ResetProgramCounter(0x66);
 
@@ -121,6 +154,9 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (_interruptFlipFlop1 && _io.MaskableInterrupt)
         {
+            _interruptFlipFlop1 = false;
+            _interruptFlipFlop2 = false;
+
             if (_interruptMode is 0 or 1)
             {
                 // The SMS hardware generates two types of interrupts: IRQs and NMIs.
@@ -146,6 +182,7 @@ public partial class Z80Cpu : IZ80Cpu
             //https://www.smspower.org/uploads/Development/smstech-20021112.txt
             _cpuLogger.LogDebug("Maskable Interrupt while in mode 2 which is not supported");
             _currentCycleCount += NopCycleCount;
+            _io.ClearMaskableInterrupt();
             return _currentCycleCount;
         }
 
