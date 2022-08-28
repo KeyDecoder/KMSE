@@ -1,5 +1,7 @@
 ﻿using Kmse.Core.Z80.Support;
 using System.Data.Common;
+using Kmse.Core.Utilities;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace Kmse.Core.Z80;
 
@@ -257,6 +259,8 @@ public partial class Z80Cpu
         AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { });
         AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { });
         AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { });
+        AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { });
+        AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { });
 
         AddStandardInstruction(0x3D, 4, "DEC A", "Decrement (8-bit)", _ => { });
         AddStandardInstruction(0x5, 4, "DEC B", "", _ => { });
@@ -443,31 +447,28 @@ public partial class Z80Cpu
 
     private void PopulateInputOutputInstructions()
     {
-        AddStandardInstruction(0xDB, 11, "IN A,(N)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x70, 12, "IN (C)", "Input*", _ => { });
-        AddDoubleByteInstruction(0xED, 0x78, 12, "IN A,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x40, 12, "IN B,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x48, 12, "IN C,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x50, 12, "IN D,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x58, 12, "IN E,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x60, 12, "IN H,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xED, 0x68, 12, "IN L,(C)", "Input", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { });
+        AddStandardInstruction(0xDB, 11, "IN A,(N)", "Read I/O at N into A", _ => { _af.High = ReadFromIo(_af.High, GetNextByte()); });
+        AddDoubleByteInstruction(0xED, 0x70, 12, "IN (C)", "Read I/O at B/C But Only Set Flags", _ => { ReadFromIoAndSetFlags(_bc.High, _bc.Low); });
+        AddDoubleByteInstruction(0xED, 0x78, 12, "IN A,(C)", "Read I/O at B/C into A with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xED, 0x40, 12, "IN B,(C)", "Read I/O at B/C into B with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _bc.High); });
+        AddDoubleByteInstruction(0xED, 0x48, 12, "IN C,(C)", "Read I/O at B/C into C with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _bc.Low); });
+        AddDoubleByteInstruction(0xED, 0x50, 12, "IN D,(C)", "Read I/O at B/C into D with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _de.High); });
+        AddDoubleByteInstruction(0xED, 0x58, 12, "IN E,(C)", "Read I/O at B/C into E with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _de.Low); });
+        AddDoubleByteInstruction(0xED, 0x60, 12, "IN H,(C)", "Read I/O at B/C into H with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.High); });
+        AddDoubleByteInstruction(0xED, 0x68, 12, "IN L,(C)", "Read I/O at B/C into L with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.Low); });
         AddDoubleByteInstruction(0xED, 0xAA, 16, "IND", "Input and Decrement", _ => { });
         AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ => { });
         AddDoubleByteInstruction(0xED, 0xB2, 21 / 16, "INIR", "Input, Increment, Repeat", _ => { });
 
-        AddStandardInstruction(0xD3, 11, "OUT (N),A", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x71, 12, "OUT (C),0", "Output*", _ => { });
-        AddDoubleByteInstruction(0xED, 0x79, 12, "OUT (C),A", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x41, 12, "OUT (C),B", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x49, 12, "OUT (C),C", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x51, 12, "OUT (C),D", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Output", _ => { });
-        AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Output", _ => { });
+        AddStandardInstruction(0xD3, 11, "OUT (N),A", "Write I/O at n from A", _ => { WriteToIo(_af.High, GetNextByte(), _af.High); });
+        AddDoubleByteInstruction(0xED, 0x79, 12, "OUT (C),A", "Write I/O at B/C from A", _ => { WriteToIo(_bc.High, _bc.Low, _af.High); });
+        AddDoubleByteInstruction(0xED, 0x41, 12, "OUT (C),B", "Write I/O at B/C from B", _ => { WriteToIo(_bc.High, _bc.Low, _bc.High); });
+        AddDoubleByteInstruction(0xED, 0x49, 12, "OUT (C),C", "Write I/O at B/C from C", _ => { WriteToIo(_bc.High, _bc.Low, _bc.Low); });
+        AddDoubleByteInstruction(0xED, 0x51, 12, "OUT (C),D", "Write I/O at B/C from D", _ => { WriteToIo(_bc.High, _bc.Low, _de.High); });
+        AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Write I/O at B/C from E", _ => { WriteToIo(_bc.High, _bc.Low, _de.Low); });
+        AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Write I/O at B/C from H", _ => { WriteToIo(_bc.High, _bc.Low, _hl.High); });
+        AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Write I/O at B/C from L", _ => { WriteToIo(_bc.High, _bc.Low, _hl.Low); });
         AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ => { });
         AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ => { });

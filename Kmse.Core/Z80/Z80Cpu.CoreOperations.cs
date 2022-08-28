@@ -1,4 +1,5 @@
-﻿using Kmse.Core.Z80.Support;
+﻿using Kmse.Core.Utilities;
+using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80
 {
@@ -202,6 +203,56 @@ namespace Kmse.Core.Z80
         private void ReturnIfNotFlag(Z80StatusFlags flag)
         {
             ReturnIfFlagHasStatus(flag, false);
+        }
+
+        private byte ReadFromIo(byte high, byte low)
+        {
+            var address = (ushort)(high << 8 + low);
+            return _io.ReadPort(address);
+        }
+
+        private byte ReadFromIoAndSetFlags(byte high, byte low)
+        {
+            var address = (ushort)(high << 8 + low);
+            var data = _io.ReadPort(address);
+
+            // If high bit set, then negative so set sign flag
+            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(data, 7));
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, data == 0);
+
+            ClearFlag(Z80StatusFlags.HalfCarryH);
+            SetParityFromValue(data);
+            ClearFlag(Z80StatusFlags.AddSubtractN);
+
+            return data;
+        }
+
+        private void ReadFromIoIntoRegister(byte high, byte low, ref byte destination)
+        {
+            var data = ReadFromIoAndSetFlags(high, low);
+            destination = data;
+        }
+
+        private void WriteToIo(byte high, byte low, byte value)
+        {
+            var address = (ushort)(high << 8 + low);
+            _io.WritePort(address, value);
+        }
+
+        private void SetParityFromValue(byte value)
+        {
+            // Count the number of 1 bits in the value
+            // If odd, then clear flag and if even, then set flag
+            var bitsSet = 0;
+            for (var i = 0; i < 8; i++)
+            {
+                if (Bitwise.IsSet(value, i))
+                {
+                    bitsSet++;
+                }
+            }
+
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, bitsSet == 0 || bitsSet % 2 == 0);
         }
     }
 }
