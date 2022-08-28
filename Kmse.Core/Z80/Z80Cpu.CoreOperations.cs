@@ -51,6 +51,11 @@ namespace Kmse.Core.Z80
             _af.Low &= (byte)~flags;
         }
 
+        private void InvertFlag(Z80StatusFlags flag)
+        {
+            SetClearFlagConditional(flag, !IsFlagSet(flag));
+        }
+
         private void SetClearFlagConditional(Z80StatusFlags flags, bool condition)
         {
             if (condition)
@@ -96,10 +101,7 @@ namespace Kmse.Core.Z80
 
         private void ResetProgramCounterFromStack()
         {
-            var currentPointer = _stackPointer.Word;
-            _pc.Low = _memory[++currentPointer];
-            _pc.High = _memory[++currentPointer];
-            _stackPointer.Word = currentPointer;
+            PopRegisterFromStack(ref _pc);
         }
 
         private void PushRegisterToStack(Z80Register register)
@@ -107,6 +109,14 @@ namespace Kmse.Core.Z80
             var currentPointer = _stackPointer.Word;
             _memory[--currentPointer] = register.High;
             _memory[--currentPointer] = register.Low;
+            _stackPointer.Word = currentPointer;
+        }
+
+        private void PopRegisterFromStack(ref Z80Register register)
+        {
+            var currentPointer = _stackPointer.Word;
+            register.Low = _memory[currentPointer++];
+            register.High = _memory[currentPointer++];
             _stackPointer.Word = currentPointer;
         }
 
@@ -253,6 +263,22 @@ namespace Kmse.Core.Z80
             }
 
             SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, bitsSet == 0 || bitsSet % 2 == 0);
+        }
+
+        private void SwapRegisters(ref Z80Register register1, ref Z80Register register2)
+        {
+            (register1.Word, register2.Word) = (register2.Word, register1.Word);
+        }
+
+        private void SwapRegisterWithStackPointerLocation(ref Z80Register register)
+        {
+            var currentRegisterDataLow = register.Low;
+            var currentRegisterDataHigh = register.High;
+            register.Low = _memory[_stackPointer.Word];
+            register.High = _memory[(ushort)(_stackPointer.Word + 1)];
+
+            _memory[_stackPointer.Word] = currentRegisterDataLow;
+            _memory[(ushort)(_stackPointer.Word + 1)] = currentRegisterDataHigh;
         }
     }
 }

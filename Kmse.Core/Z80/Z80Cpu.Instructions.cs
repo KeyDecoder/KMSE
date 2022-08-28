@@ -1,7 +1,11 @@
 ﻿using Kmse.Core.Z80.Support;
 using System.Data.Common;
+using System.IO.Abstractions;
+using System.Reflection;
 using Kmse.Core.Utilities;
 using Microsoft.VisualBasic.CompilerServices;
+using System.Reflection.Emit;
+using System.Reflection.Metadata;
 
 namespace Kmse.Core.Z80;
 
@@ -279,26 +283,26 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { });
         AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { });
 
-        AddStandardInstruction(0x3F, 4, "CCF", "Complement Carry Flag", _ => { });
-        AddStandardInstruction(0x27, 4, "DAA", "Decimal Adjust Accumulator", _ => { });
-        AddStandardInstruction(0X2F, 4, "CPL", "Complement", _ => { });
-        AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ => { });
-        AddDoubleByteInstruction(0xED, 0x44, 8, "NEG", "Negate", _ => { });
+        AddStandardInstruction(0x3F, 4, "CCF", "Complement Carry Flag", _ => { ClearFlag(Z80StatusFlags.AddSubtractN); InvertFlag(Z80StatusFlags.CarryC); });
+        AddStandardInstruction(0x27, 4, "DAA", "Decimal Adjust Accumulator", _ => { DecimalAdjustAccumulator();  });
+        AddStandardInstruction(0X2F, 4, "CPL", "Complement", _ => { InvertAccumulatorRegister(); });
+        AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ => { ClearFlag(Z80StatusFlags.HalfCarryH); ClearFlag(Z80StatusFlags.AddSubtractN); SetFlag(Z80StatusFlags.CarryC); });
+        AddDoubleByteInstruction(0xED, 0x44, 8, "NEG", "Negate", _ => { NegateAccumulatorRegister(); });
     }
 
     private void PopulateBitSetResetAndTestGroupInstructions()
     {
-        AddDoubleByteInstructionWithMask(0xCB, 0x80, 0x3F, 8, "RES b,r", "Reset bit", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x40, 8, "BIT b,r", "Test Bit", _ => { });
-        AddDoubleByteInstruction(0xCB, 0x46, 12, "BIT b,(HL)", "Test Bit", _ => { });
-        AddDoubleByteInstructionWithMask(0xCB, 0xC0, 0x3F, 8, "SET b,r", "Set bit", _ => { });
+        AddDoubleByteInstructionWithMask(0xCB, 0x80, 0x3F, 8, "RES b,r", "Reset bit in register", i => { ResetBitByOpCode(i.OpCode); });
+        AddSpecialCbInstructionWithMask(0xDD, 0x86, 7, 23, "RES b,(IX+d)", "Reset bit in (IX+d)", i => { ResetBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstructionWithMask(0xFD, 0x86, 7, 23, "RES b,(IY+d)", "Reset bit in (IY+d)", i => { ResetBitByRegisterLocation(_iy, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
 
-        AddSpecialCbInstructionWithMask(0xDD, 0xC6, 7, 23, "SET b,(IX+d)", "Set Bit", _ => { });
-        AddSpecialCbInstructionWithMask(0xFD, 0xC6, 7, 23, "SET b,(IY+d)", "Set Bit", _ => { });
-        AddSpecialCbInstructionWithMask(0xDD, 0x46, 7, 20, "BIT b,(IX+d)", "Test Bit", _ => { });
-        AddSpecialCbInstructionWithMask(0xFD, 0x46, 7, 20, "BIT b,(IY+d)", "Test Bit", _ => { });
-        AddSpecialCbInstructionWithMask(0xDD, 0x86, 7, 23, "RES b,(IX+d)", "Reset bit", _ => { });
-        AddSpecialCbInstructionWithMask(0xFD, 0x86, 7, 23, "RES b,(IY+d)", "Reset bit", _ => { });
+        AddDoubleByteInstructionWithMask(0xCB, 0x40, 7, 0x3F, "BIT b,r", "Test Bit", i => { TestBitByOpCode(i.OpCode); });
+        AddSpecialCbInstructionWithMask(0xDD, 0x46, 7, 20, "BIT b,(IX+d)", "Test Bit", i => { TestBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstructionWithMask(0xFD, 0x46, 7, 20, "BIT b,(IY+d)", "Test Bit", i => { TestBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+
+        AddDoubleByteInstructionWithMask(0xCB, 0xC0, 0x3F, 8, "SET b,r", "Set bit", i => { SetBitByOpCode(i.OpCode); });
+        AddSpecialCbInstructionWithMask(0xDD, 0xC6, 7, 23, "SET b,(IX+d)", "Set Bit", i => { SetBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstructionWithMask(0xFD, 0xC6, 7, 23, "SET b,(IY+d)", "Set Bit", i => { SetBitByRegisterLocation(_iy, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
     }
 
     private void PopulateRotateAndShiftInstructions()
@@ -419,30 +423,30 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0xB8, DynamicCycleHandling, "LDDR", "Load, Decrement, Repeat", _ => { });
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ => { });
         AddDoubleByteInstruction(0xED, 0xB0, DynamicCycleHandling, "LDIR", "Load, Increment, Repeat", _ => { });
-        
-        AddStandardInstruction(0xF1, 10, "POP AF	Pop", "", _ => { });
-        AddStandardInstruction(0xC1, 10, "POP BC", "", _ => { });
-        AddStandardInstruction(0xD1, 10, "POP DE", "", _ => { });
-        AddStandardInstruction(0xE1, 10, "POP HL", "", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xE1, 14, "POP IX", "Pop", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xE1, 14, "POP IY", "Pop", _ => { });
 
-        AddStandardInstruction(0xF5, 11, "PUSH AF", "Push", _ => { });
-        AddStandardInstruction(0xC5, 11, "PUSH BC", "Push", _ => { });
-        AddStandardInstruction(0xD5, 11, "PUSH DE", "Push", _ => { });
-        AddStandardInstruction(0xE5, 11, "PUSH HL", "Push", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xE5, 15, "PUSH IX", "Push", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xE5, 15, "PUSH IY", "Push", _ => { });
+        AddStandardInstruction(0xF5, 11, "PUSH AF", "Push AF", _ => { PushRegisterToStack(_af); });
+        AddStandardInstruction(0xC5, 11, "PUSH BC", "Push BC", _ => { PushRegisterToStack(_bc); });
+        AddStandardInstruction(0xD5, 11, "PUSH DE", "Push DE", _ => { PushRegisterToStack(_de); });
+        AddStandardInstruction(0xE5, 11, "PUSH HL", "Push HL", _ => { PushRegisterToStack(_hl); });
+        AddDoubleByteInstruction(0xDD, 0xE5, 15, "PUSH IX", "Push IX", _ => { PushRegisterToStack(_ix); });
+        AddDoubleByteInstruction(0xFD, 0xE5, 15, "PUSH IY", "Push IY", _ => { PushRegisterToStack(_iy); });
+
+        AddStandardInstruction(0xF1, 10, "POP AF", "Pop AF from Stack", _ => { PopRegisterFromStack(ref _af); });
+        AddStandardInstruction(0xC1, 10, "POP BC", "Pop BC from Stack", _ => { PopRegisterFromStack(ref _bc); });
+        AddStandardInstruction(0xD1, 10, "POP DE", "Pop DE from Stack", _ => { PopRegisterFromStack(ref _de); });
+        AddStandardInstruction(0xE1, 10, "POP HL", "Pop HL from Stack", _ => { PopRegisterFromStack(ref _hl); });
+        AddDoubleByteInstruction(0xDD, 0xE1, 14, "POP IX", "Pop IX from Stack", _ => { PopRegisterFromStack(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0xE1, 14, "POP IY", "Pop IY from Stack", _ => { PopRegisterFromStack(ref _iy); });
     }
 
     private void PopulateExchangeBlockTransferAndSearchInstructions()
     {
-        AddStandardInstruction(0xE3, 19, "EX (SP),HL", "Exchange", _ => { });
-        AddStandardInstruction(0x8, 4, "EX AF,AF'", "", _ => { });
-        AddStandardInstruction(0xEB, 4, "EX DE,HL", "", _ => { });
-        AddStandardInstruction(0xD9, 4, "EXX", "Exchange", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xE3, 23, "EX (SP),IX", "Exchange", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xE3, 23, "EX (SP),IY", "Exchange", _ => { });
+        AddStandardInstruction(0xE3, 19, "EX (SP),HL", "Exchange HL with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _hl); });
+        AddStandardInstruction(0x8, 4, "EX AF,AF'", "Exchange AF and AF Shadow", _ => { SwapRegisters(ref _af, ref _afShadow); });
+        AddStandardInstruction(0xEB, 4, "EX DE,HL", "Exchange DE and HL", _ => { SwapRegisters(ref _de, ref _hl); });
+        AddStandardInstruction(0xD9, 4, "EXX", "Exchange BC, DE, HL with Shadow Registers", _ => { SwapRegisters(ref _bc, ref _bcShadow); SwapRegisters(ref _de, ref _deShadow); SwapRegisters(ref _hl, ref _hlShadow); });
+        AddDoubleByteInstruction(0xDD, 0xE3, 23, "EX (SP),IX", "Exchange IX with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0xE3, 23, "EX (SP),IY", "Exchange IY with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _iy); });
     }
 
     private void PopulateInputOutputInstructions()
