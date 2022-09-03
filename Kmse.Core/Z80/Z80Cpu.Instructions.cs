@@ -196,41 +196,48 @@ public partial class Z80Cpu
 
     private void PopulateArthmeticAndLogicalInstructions()
     {
+        AddStandardInstruction(0x87, 4, "ADD A,A", "Add A to A", _ => { AddValueTo8BitRegister(_af.High, ref _af.High, true); });
+        AddStandardInstruction(0x80, 4, "ADD B,A", "Add B to A", _ => { AddValueTo8BitRegister(_bc.High, ref _af.High, true); });
+        AddStandardInstruction(0x81, 4, "ADD C,A", "Add C to A", _ => { AddValueTo8BitRegister(_bc.Low, ref _af.High, true); });
+        AddStandardInstruction(0x82, 4, "ADD D,A", "Add D to A", _ => { AddValueTo8BitRegister(_de.High, ref _af.High, true); });
+        AddStandardInstruction(0x83, 4, "ADD E,A", "Add E to A", _ => { AddValueTo8BitRegister(_de.Low, ref _af.High, true); });
+        AddStandardInstruction(0x84, 4, "ADD H,A", "Add H to A", _ => { AddValueTo8BitRegister(_hl.High, ref _af.High, true); });
+        AddStandardInstruction(0x85, 4, "ADD L,A", "Add L to A", _ => { AddValueTo8BitRegister(_hl.Low, ref _af.High, true); });
+        AddStandardInstruction(0xC6, 7, "ADD A, N", "Add", _ => { AddValueTo8BitRegister(GetNextByte(), ref _af.High, true);});
+
+        AddStandardInstruction(0x09, 11, "ADD HL,BC", "Add BC to HL", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _hl, true); });
+        AddStandardInstruction(0x19, 11, "ADD HL,DE", "Add DE to HL", _ => { Add16BitRegisterTo16BitRegister(_de, ref _hl, true); });
+        AddStandardInstruction(0x29, 11, "ADD HL,HL", "Add HL to HL", _ => { Add16BitRegisterTo16BitRegister(_hl, ref _hl, true); });
+        AddStandardInstruction(0x39, 11, "ADD HL,SP", "Add SP to HL", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _hl, true); });
+        AddDoubleByteInstruction(0xDD, 0x19, 15, "ADD IX,DE", "Add DE to IX", _ => { Add16BitRegisterTo16BitRegister(_de, ref _ix, true); });
+        AddDoubleByteInstruction(0xDD, 0x29, 15, "ADD IX,IX", "Add IX to IX", _ => { Add16BitRegisterTo16BitRegister(_ix, ref _ix, true); });
+        AddDoubleByteInstruction(0xDD, 0x39, 15, "ADD IX,SP", "Add SP to IX", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _ix, true); });
+        AddDoubleByteInstruction(0xDD, 0x09, 15, "ADD IX,BC", "Add BC to IX", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _ix, true); });
+
+        AddDoubleByteInstruction(0xFD, 0x09, 15, "ADD IY,BC", "Add BC to IY", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _iy, true); });
+        AddDoubleByteInstruction(0xFD, 0x19, 15, "ADD IY,DE", "Add DE to IY", _ => { Add16BitRegisterTo16BitRegister(_de, ref _iy, true); });
+        AddDoubleByteInstruction(0xFD, 0x29, 15, "ADD IY,IY", "Add IY to IY", _ => { Add16BitRegisterTo16BitRegister(_iy, ref _iy, true); });
+        AddDoubleByteInstruction(0xFD, 0x39, 15, "ADD IY,SP", "Add SP to IY", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _iy, true); });
+
+        AddStandardInstruction(0x86, 4, "ADD A,(HL)", "Add Data at memory location from HL to A", _ => { AddValueAtRegisterMemoryLocationTo8BitRegister(_hl, 0, ref _af.High, true); });
+        AddDoubleByteInstruction(0xDD, 0x86, 19, "ADD A,(IX+d)", "Add Data at memory location from IX + d to A", _ => { AddValueAtRegisterMemoryLocationTo8BitRegister(_ix, GetNextByte(), ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x86, 19, "ADD A,(IY+d)", "Add Data at memory location from IY + d to A", _ => { AddValueAtRegisterMemoryLocationTo8BitRegister(_iy, GetNextByte(), ref _af.High, true); });
+
         AddStandardInstruction(0xCE, 7, "ADC A, N", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xDD, 0x8E, 19, "ADC A,(IX+d)", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xFD, 0x8E, 19, "ADC A,(IY+d)", "Add with Carry", _ => { });
-
         AddStandardInstructionWithMask(0x88, 7, 4, "ADC A, r", "Add with Carry", _ => { });
-        AddStandardInstructionWithMask(0x80, 7, 4, "ADD A,r", "Add (8-bit)", _ => { });
-        AddStandardInstruction(0x09, 11, "ADD HL,BC", "Add (16-bit)", _ => { });
-        AddStandardInstruction(0x19, 11, "ADD HL,DE", "", _ => { });
-        AddStandardInstruction(0x29, 11, "ADD HL,HL", "", _ => { });
-        AddStandardInstruction(0x39, 11, "ADD HL,SP", "", _ => { });
-        AddStandardInstructionWithMask(0xA0, 7, 4, "AND r", "Logical AND", _ => { });
-        AddStandardInstruction(0xC6,7, "ADD A, N", "Add", _ => { });
         AddDoubleByteInstruction(0xED, 0x4A, 15, "ADC HL,BC", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x5A, 15, "ADC HL,DE", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x6A, 15, "ADC HL,HL", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x7A, 15, "ADC HL,SP", "Add with Carry", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x09, 15, "ADD IX,BC", "Add (IX register)", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x19, 15, "ADD IX,DE", "Add", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x29, 15, "ADD IX,IX", "Add", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x39, 15, "ADD IX,SP", "Add", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x09, 15, "ADD IY,BC", "Add (IY register)", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x19, 15, "ADD IY,DE", "Add", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x29, 15, "ADD IY,IY", "Add", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x39, 15, "ADD IY,SP", "Add", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x86, 19, "ADD A,(IX+d)", "Add", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x86, 19, "ADD A,(IY+d)", "Add", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "And", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xA6, 19, "AND (IY+d)", "And", _ => { });
 
-        AddStandardInstructionWithMask(0x98, 7, 4, "SBC r", "Subtract with Carry", _ => { });
         AddStandardInstructionWithMask(0x90, 7, 4, "SUB r", "Subtract", _ => { });
         AddStandardInstruction(0xD6, 7, "SUB N", "Subtract", _ => { });
         AddDoubleByteInstruction(0xDD, 0x96, 19, "SUB (IX+d)", "Subtract", _ => { });
         AddDoubleByteInstruction(0xFD, 0x96, 19, "SUB (IY+d)", "Subtract", _ => { });
 
+        AddStandardInstructionWithMask(0x98, 7, 4, "SBC r", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x62, 15, "SBC HL,HL", "Subtract with Carry", _ => { });
@@ -249,6 +256,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0xB1, DynamicCycleHandling, "CPIR", "Compare, Increment, Repeat", _ => { });
 
         AddStandardInstruction(0xE6, 7, "AND N", "And", _ => { });
+        AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "And", _ => { });
+        AddDoubleByteInstruction(0xFD, 0xA6, 19, "AND (IY+d)", "And", _ => { });
+        //AddStandardInstructionWithMask(0xA0, 7, 4, "AND r", "Logical AND", _ => { });
 
         AddStandardInstructionWithMask(0xB0, 7, 4, "OR r", "Logical inclusive OR", _ => { });
         AddStandardInstruction(0xF6, 7, "OR N", "Or", _ => { });

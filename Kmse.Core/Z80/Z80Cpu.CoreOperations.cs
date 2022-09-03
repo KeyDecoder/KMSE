@@ -445,7 +445,7 @@ namespace Kmse.Core.Z80
         {
             SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
             SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, (oldValue & 0x0F) == 0x0F);
+            SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x0F);
             SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x7F);
             ClearFlag(Z80StatusFlags.AddSubtractN);
         }
@@ -482,7 +482,7 @@ namespace Kmse.Core.Z80
         {
             SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
             SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, (oldValue & 0xF0) == 0xF0);
+            SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0xF0) == 0xF0);
             SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x80);
             SetFlag(Z80StatusFlags.AddSubtractN);
         }

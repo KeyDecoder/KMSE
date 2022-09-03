@@ -211,4 +211,48 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.HalfCarryH);
         ClearFlag(Z80StatusFlags.AddSubtractN);
     }
+
+    private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination, bool checkFlags = false)
+    {
+        var value = _memory[(ushort)(register.Word + offset)];
+        AddValueTo8BitRegister(value, ref destination, checkFlags);
+    }
+
+    private void AddValueTo8BitRegister(byte value, ref byte destination, bool checkFlags = false)
+    {
+        int newValue = destination + value;
+
+        if (!checkFlags)
+        {
+            destination = (byte)newValue;
+            return;
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (destination & 0x0F) + (newValue & 0x0F) > 0x0F);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ destination ^ 0x80) & (destination ^ newValue) & 0x80) != 0);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, newValue > 0xFF);
+
+        destination = (byte)newValue;
+    }
+
+    private void Add16BitRegisterTo16BitRegister(Z80Register source, ref Z80Register destination,
+        bool checkFlags = false)
+    {
+        int newValue = destination.Word + source.Word;
+
+        if (!checkFlags)
+        {
+            destination.Word = (ushort)newValue;
+            return;
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (destination.Word & 0xFFF) + (newValue & 0xFFF) > 0xFFF);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, newValue > 0xFFFF);
+
+        destination.Word = (ushort)newValue;
+    }
 }
