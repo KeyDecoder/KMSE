@@ -147,8 +147,19 @@ public partial class Z80Cpu
         AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, GetNextByte()); });
         AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, GetNextByte()); });
 
-        // TODO: Implement once decrement method has been implemented
-        AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ => { });
+        AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ =>
+        {
+            Decrement8Bit(ref _bc.High);
+            var offset = GetNextByte();
+            if (_bc.High != 0)
+            {
+                JumpByOffset(offset);
+                _currentCycleCount += 13;
+            }
+
+            // Not jumping, continue to next instruction
+            _currentCycleCount += 8;
+        });
 
         AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { SaveAndUpdateProgramCounter(GetNextTwoBytes()); });
         AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { CallIfFlagCondition(Z80StatusFlags.CarryC, GetNextTwoBytes()); });
@@ -249,39 +260,42 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0xAE, 19, "XOR (IX+d)", "Xor", _ => { });
         AddDoubleByteInstruction(0xFD, 0xAE, 19, "XOR (IY+d)", "Xor", _ => { });
 
-        AddStandardInstruction(0x3C, 4, "INC A", "Increment (8-bit)", _ => { });
-        AddStandardInstruction(0x4, 4, "INC B", "", _ => { });
-        AddStandardInstruction(0x0C, 4, "INC C", "", _ => { });
-        AddStandardInstruction(0x14, 4, "INC D", "", _ => { });
-        AddStandardInstruction(0x1C, 4, "INC E", "", _ => { });
-        AddStandardInstruction(0x24, 4, "INC H", "", _ => { });
-        AddStandardInstruction(0x2C, 4, "INC L", "", _ => { });
-        AddStandardInstruction(0x3, 6, "INC BC", "Increment (16-bit)", _ => { });
-        AddStandardInstruction(0x13, 6, "INC DE", "", _ => { });
-        AddStandardInstruction(0x23, 6, "INC HL", "", _ => { });
-        AddStandardInstruction(0x33, 6, "INC SP", "", _ => { });
-        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { });
+        AddStandardInstruction(0x3C, 4, "INC A", "Increment A", _ => { Increment8Bit(ref _af.High, true); });
+        AddStandardInstruction(0x04, 4, "INC B", "Increment B", _ => { Increment8Bit(ref _bc.High, true); });
+        AddStandardInstruction(0x0C, 4, "INC C", "Increment C", _ => { Increment8Bit(ref _bc.Low, true); });
+        AddStandardInstruction(0x14, 4, "INC D", "Increment D", _ => { Increment8Bit(ref _de.High, true); });
+        AddStandardInstruction(0x1C, 4, "INC E", "Increment E", _ => { Increment8Bit(ref _de.Low, true); });
+        AddStandardInstruction(0x24, 4, "INC H", "Increment H", _ => { Increment8Bit(ref _hl.High, true); });
+        AddStandardInstruction(0x2C, 4, "INC L", "Increment L", _ => { Increment8Bit(ref _hl.Low, true); });
+        AddStandardInstruction(0x3, 6, "INC BC", "Increment BC", _ => { Increment16Bit(ref _bc); });
+        AddStandardInstruction(0x13, 6, "INC DE", "Increment DE", _ => { Increment16Bit(ref _de); });
+        AddStandardInstruction(0x23, 6, "INC HL", "Increment HL", _ => { Increment16Bit(ref _hl); });
+        AddStandardInstruction(0x33, 6, "INC SP", "Increment SP", _ => { Increment16Bit(ref _stackPointer); });
+        AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { Increment16Bit(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { Increment16Bit(ref _iy); });
 
-        AddStandardInstruction(0x3D, 4, "DEC A", "Decrement (8-bit)", _ => { });
-        AddStandardInstruction(0x5, 4, "DEC B", "", _ => { });
-        AddStandardInstruction(0x0D, 4, "DEC C", "", _ => { });
-        AddStandardInstruction(0x15, 4, "DEC D", "", _ => { });
-        AddStandardInstruction(0x1D, 4, "DEC E", "", _ => { });
-        AddStandardInstruction(0x25, 4, "DEC H", "", _ => { });
-        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { });
-        AddStandardInstruction(0x0B, 6, "DEC BC	Decrement (16-bit)", "", _ => { });
-        AddStandardInstruction(0x1B, 6, "DEC DE", "", _ => { });
-        AddStandardInstruction(0x2B, 6, "DEC HL", "", _ => { });
-        AddStandardInstruction(0x3B, 6, "DEC SP", "", _ => { });
-        AddStandardInstruction(0x2D, 4, "DEC L", "Decrement", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x2B, 10, "DEC IX", "Decrement", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x2B, 10, "DEC IY", "Decrement", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { });
+        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { IncrementAtRegisterMemoryLocation(_hl, 0, true); });
+        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_ix, GetNextByte(), true); });
+        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_iy, GetNextByte(), true); });
+
+        AddStandardInstruction(0x3D, 4, "DEC A", "Decrement A", _ => { Decrement8Bit(ref _af.High, true); });
+        AddStandardInstruction(0x05, 4, "DEC B", "Decrement B", _ => { Decrement8Bit(ref _bc.High, true); });
+        AddStandardInstruction(0x0D, 4, "DEC C", "Decrement C", _ => { Decrement8Bit(ref _bc.Low, true); });
+        AddStandardInstruction(0x15, 4, "DEC D", "Decrement D", _ => { Decrement8Bit(ref _de.High, true); });
+        AddStandardInstruction(0x1D, 4, "DEC E", "Decrement E", _ => { Decrement8Bit(ref _de.Low, true); });
+        AddStandardInstruction(0x25, 4, "DEC H", "Decrement H", _ => { Decrement8Bit(ref _hl.High, true); });
+        AddStandardInstruction(0x2D, 4, "DEC L", "Decrement L", _ => { Decrement8Bit(ref _hl.Low, true); });
+
+        AddStandardInstruction(0x0B, 6, "DEC BC", "Decrement BC", _ => { Decrement16Bit(ref _bc); });
+        AddStandardInstruction(0x1B, 6, "DEC DE", "Decrement DE", _ => { Decrement16Bit(ref _de); });
+        AddStandardInstruction(0x2B, 6, "DEC HL", "Decrement HL", _ => { Decrement16Bit(ref _hl); });
+        AddStandardInstruction(0x3B, 6, "DEC SP", "Decrement SP", _ => { Decrement16Bit(ref _stackPointer); });
+        AddDoubleByteInstruction(0xDD, 0x2B, 10, "DEC IX", "Decrement IX", _ => { Decrement16Bit(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0x2B, 10, "DEC IY", "Decrement IY", _ => { Decrement16Bit(ref _iy); });
+
+        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { DecrementAtRegisterMemoryLocation(_hl, 0, true); });
+        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_ix, GetNextByte(), true); });
+        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_iy, GetNextByte(), true); });
 
         AddStandardInstruction(0x3F, 4, "CCF", "Complement Carry Flag", _ => { ClearFlag(Z80StatusFlags.AddSubtractN); InvertFlag(Z80StatusFlags.CarryC); });
         AddStandardInstruction(0x27, 4, "DAA", "Decimal Adjust Accumulator", _ => { DecimalAdjustAccumulator();  });
@@ -449,7 +463,7 @@ public partial class Z80Cpu
             Decrement16Bit(ref _bc);
             ClearFlag(Z80StatusFlags.HalfCarryH);
             ClearFlag(Z80StatusFlags.AddSubtractN);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word - 1 != 0);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
         });
         AddDoubleByteInstruction(0xED, 0xB0, DynamicCycleHandling, "LDIR", "Load, Increment, Repeat", _ =>
         {
@@ -468,7 +482,7 @@ public partial class Z80Cpu
             Decrement16Bit(ref _bc);
             ClearFlag(Z80StatusFlags.HalfCarryH);
             ClearFlag(Z80StatusFlags.AddSubtractN);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word - 1 != 0);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
 
             if (_bc.Word != 0)
             {
@@ -491,7 +505,7 @@ public partial class Z80Cpu
             Decrement16Bit(ref _bc);
             ClearFlag(Z80StatusFlags.HalfCarryH);
             ClearFlag(Z80StatusFlags.AddSubtractN);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word - 1 != 0);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
         });
         AddDoubleByteInstruction(0xED, 0xB8, DynamicCycleHandling, "LDDR", "Load, Decrement, Repeat", _ =>
         {
@@ -563,10 +577,93 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x58, 12, "IN E,(C)", "Read I/O at B/C into E with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _de.Low); });
         AddDoubleByteInstruction(0xED, 0x60, 12, "IN H,(C)", "Read I/O at B/C into H with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.High); });
         AddDoubleByteInstruction(0xED, 0x68, 12, "IN L,(C)", "Read I/O at B/C into L with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.Low); });
-        AddDoubleByteInstruction(0xED, 0xAA, 16, "IND", "Input and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ => { });
-        AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB2, 21 / 16, "INIR", "Input, Increment, Repeat", _ => { });
+        
+        AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ =>
+        {
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            var data = _io.ReadPort(portAddress);
+            Save8BitRegisterValueToMemory(data, _hl.Word);
+            Decrement8Bit(ref _bc.High);
+            Increment16Bit(ref _hl);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+        });
+        AddDoubleByteInstruction(0xED, 0xB2, DynamicCycleHandling, "INIR", "Input, Increment, Repeat", _ =>
+        {
+            if (_bc.High == 0)
+            {
+                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
+                //_bc.Word = 256;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            var data = _io.ReadPort(portAddress);
+            Save8BitRegisterValueToMemory(data, _hl.Word);
+            Decrement8Bit(ref _bc.High);
+            Increment16Bit(ref _hl);
+            SetFlag(Z80StatusFlags.ZeroZ);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+
+            if (_bc.High != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
+
+        AddDoubleByteInstruction(0xED, 0xAA, 16, "IND", "Input and Decrement", _ =>
+        {
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            var data = _io.ReadPort(portAddress);
+            Save8BitRegisterValueToMemory(data, _hl.Word);
+            Decrement8Bit(ref _bc.High);
+            Decrement16Bit(ref _hl);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+        });
+        AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ =>
+        {
+            if (_bc.High == 0)
+            {
+                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
+                //_bc.Word = 256;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            var data = _io.ReadPort(portAddress);
+            Save8BitRegisterValueToMemory(data, _hl.Word);
+            Decrement8Bit(ref _bc.High);
+            Decrement16Bit(ref _hl);
+            SetFlag(Z80StatusFlags.ZeroZ);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+
+            if (_bc.High != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
+
 
         AddStandardInstruction(0xD3, 11, "OUT (N),A", "Write I/O at n from A", _ => { WriteToIo(_af.High, GetNextByte(), _af.High); });
         AddDoubleByteInstruction(0xED, 0x79, 12, "OUT (C),A", "Write I/O at B/C from A", _ => { WriteToIo(_bc.High, _bc.Low, _af.High); });
@@ -576,10 +673,96 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Write I/O at B/C from E", _ => { WriteToIo(_bc.High, _bc.Low, _de.Low); });
         AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Write I/O at B/C from H", _ => { WriteToIo(_bc.High, _bc.Low, _hl.High); });
         AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Write I/O at B/C from L", _ => { WriteToIo(_bc.High, _bc.Low, _hl.Low); });
-        AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ => { });
-        AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB3, DynamicCycleHandling, "OTIR", "Output, Increment, Repeat", _ => { });
+
+        AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ =>
+        {
+            var data = GetValueFromMemoryByRegisterLocation(_hl);
+            Decrement8Bit(ref _bc.High);
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            _io.WritePort(portAddress, data);
+
+            Increment16Bit(ref _hl);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+        });
+        AddDoubleByteInstruction(0xED, 0xB3, DynamicCycleHandling, "OTIR", "Output, Increment, Repeat", _ =>
+        {
+            if (_bc.High == 0)
+            {
+                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
+                //_bc.Word = 256;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            var data = GetValueFromMemoryByRegisterLocation(_hl);
+            Decrement8Bit(ref _bc.High);
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            _io.WritePort(portAddress, data);
+
+            Increment16Bit(ref _hl);
+            SetFlag(Z80StatusFlags.ZeroZ);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+
+            if (_bc.High != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
+
+        AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ =>
+        {
+            var data = GetValueFromMemoryByRegisterLocation(_hl);
+            Decrement8Bit(ref _bc.High);
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            _io.WritePort(portAddress, data);
+
+            Decrement16Bit(ref _hl);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+        });
+        AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ =>
+        {
+            if (_bc.High == 0)
+            {
+                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
+                //_bc.Word = 256;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            var data = GetValueFromMemoryByRegisterLocation(_hl);
+            Decrement8Bit(ref _bc.High);
+            var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
+            _io.WritePort(portAddress, data);
+
+            Decrement16Bit(ref _hl);
+            SetFlag(Z80StatusFlags.ZeroZ);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+
+            if (_bc.High != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
     }
 
     private enum CbInstructionModes : byte

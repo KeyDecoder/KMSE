@@ -1,5 +1,6 @@
 ﻿using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
+using Microsoft.Win32;
 
 namespace Kmse.Core.Z80
 {
@@ -298,11 +299,13 @@ namespace Kmse.Core.Z80
             {
                 LoadFrom16BitRegisterMemoryLocationInto8BitRegister(_hl, destinationRegisterId);
                 _currentCycleCount += 3;
+                return;
             }
             else if (destinationRegisterId == 0x06)
             {
                 SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_hl, sourceRegisterId);
                 _currentCycleCount += 3;
+                return;
             }
 
             ref byte sourceRegister = ref Get8BitRegisterByRIdentifier(sourceRegisterId);
@@ -367,6 +370,11 @@ namespace Kmse.Core.Z80
             _memory[memoryLocation] = value;
         }
 
+        private byte GetValueFromMemoryByRegisterLocation(Z80Register register, byte offset = 0)
+        {
+            return _memory[(ushort)(register.Word + offset)];
+        }
+
         private void Save16BitRegisterToMemory(Z80Register register, ushort memoryLocation)
         {
             _memory[memoryLocation] = register.Low;
@@ -393,7 +401,7 @@ namespace Kmse.Core.Z80
             _af.High = sourceData;
 
             // Check flags since copying from special register into accumulator
-            SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 8));
+            SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 7));
             SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
             ClearFlag(Z80StatusFlags.HalfCarryH);
             SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _interruptFlipFlop2);
@@ -405,16 +413,80 @@ namespace Kmse.Core.Z80
             _memory[destination.Word] = _memory[source.Word];
         }
 
-        private void Increment8Bit(ref byte register)
+        private void Increment8Bit(ref byte register, bool setFlags = false)
         {
+            var oldValue = register;
             register++;
+
+            if (!setFlags)
+            {
+                return;
+            }
+
+            CheckIncrementFlags(register, oldValue);
         }
 
-        private void Decrement8Bit(ref byte register)
+        private void IncrementAtRegisterMemoryLocation(Z80Register register, byte offset = 0, bool setFlags = false)
         {
-            register--;
+            var oldValue = _memory[register.Word];
+            var newValue = (byte)(oldValue + 1);
+
+            _memory[register.Word] = newValue;
+
+            if (!setFlags)
+            {
+                return;
+            }
+
+            CheckIncrementFlags(newValue, oldValue);
         }
 
+        private void CheckIncrementFlags(byte newValue, byte oldValue)
+        {
+            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, (oldValue & 0x0F) == 0x0F);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x7F);
+            ClearFlag(Z80StatusFlags.AddSubtractN);
+        }
+
+        private void Decrement8Bit(ref byte register, bool setFlags = false)
+        {
+            var oldValue = register;
+            register--;
+
+            if (!setFlags)
+            {
+                return;
+            }
+
+            CheckDecrementFlags(register, oldValue);
+        }
+
+        private void DecrementAtRegisterMemoryLocation(Z80Register register, byte offset = 0, bool setFlags = false)
+        {
+            var oldValue = _memory[register.Word];
+            var newValue = (byte)(oldValue - 1);
+
+            _memory[register.Word] = newValue;
+
+            if (!setFlags)
+            {
+                return;
+            }
+
+            CheckDecrementFlags(newValue, oldValue);
+        }
+
+        private void CheckDecrementFlags(byte newValue, byte oldValue)
+        {
+            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, (oldValue & 0xF0) == 0xF0);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x80);
+            SetFlag(Z80StatusFlags.AddSubtractN);
+        }
+        
         private void Increment16Bit(ref Z80Register register)
         {
             register.Word++;
