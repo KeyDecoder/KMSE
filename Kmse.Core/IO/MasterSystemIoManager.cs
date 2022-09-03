@@ -125,7 +125,10 @@ public class MasterSystemIoManager : IMasterSystemIoManager
         // Ignore the upper 8 bits since that is not used
         var address = (ushort)(port & 0xFF);
 
-        if (address < 0x40) return;
+        if (address < 0x40)
+        {
+            return;
+        }
 
         if (address < 0x80)
         {

@@ -280,5 +280,149 @@ namespace Kmse.Core.Z80
             _memory[_stackPointer.Word] = currentRegisterDataLow;
             _memory[(ushort)(_stackPointer.Word + 1)] = currentRegisterDataHigh;
         }
+
+        private void LoadRR(byte opCode)
+        {
+            // LD r,r' is 0 1 r r r r' r' r'
+            var sourceRegisterId = (byte)(opCode & 0x07);
+            var destinationRegisterId = (byte)((opCode & 0x38) >> 3);
+
+            if (sourceRegisterId == 0x06 && destinationRegisterId == 0x06)
+            {
+                // 16 bit register load not supported in this method
+                throw new InvalidOperationException($"Invalid op code, 16-bit load to same register LoadRR - OP code {opCode:X2}");
+            }
+
+            // Special cases where we are loading from or into memory location referenced by HL register rather than actual register
+            if (sourceRegisterId == 0x06)
+            {
+                LoadFrom16BitRegisterMemoryLocationInto8BitRegister(_hl, destinationRegisterId);
+                _currentCycleCount += 3;
+            }
+            else if (destinationRegisterId == 0x06)
+            {
+                SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_hl, sourceRegisterId);
+                _currentCycleCount += 3;
+            }
+
+            ref byte sourceRegister = ref Get8BitRegisterByRIdentifier(sourceRegisterId);
+            ref byte destinationRegister = ref Get8BitRegisterByRIdentifier(destinationRegisterId);
+
+            destinationRegister = sourceRegister;
+        }
+
+        private void LoadFrom16BitRegisterMemoryLocationInto8BitRegister(Z80Register sourceRegister, byte destinationRegisterId)
+        {
+            ref var destinationRegister = ref Get8BitRegisterByRIdentifier(destinationRegisterId);
+            LoadInto8BitRegisterFromMemory(ref destinationRegister, sourceRegister.Word);
+        }
+
+        private void SaveTo16BitRegisterMemoryLocationFrom8BitRegister(Z80Register destinationRegister, byte sourceRegisterId, byte offset = 0)
+        {
+            ref var sourceRegister = ref Get8BitRegisterByRIdentifier(sourceRegisterId);
+            Save8BitRegisterValueToMemory(sourceRegister, (ushort)(destinationRegister.Word + offset));
+        }
+
+        private ref byte Get8BitRegisterByRIdentifier(byte identifier)
+        {
+            // ReSharper disable once ConvertSwitchStatementToSwitchExpression
+            // Return ref is not supported for switch expressions - https://github.com/dotnet/csharplang/issues/3326
+            switch (identifier)
+            {
+                case 0: return ref _bc.High;
+                case 1: return ref _bc.Low;
+                case 2: return ref _de.High;
+                case 3: return ref _de.Low;
+                case 4: return ref _hl.High;
+                case 5: return ref _hl.Low;
+                // 6 is HL
+                case 7: return ref _af.High;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void LoadInto8BitRegisterFromMemory(ref byte register, ushort memoryLocation, byte offset = 0)
+        {
+            register = _memory[(ushort)(memoryLocation + offset)];
+        }
+
+        private void LoadInto16BitRegisterFromMemory(ref Z80Register register, ushort memoryLocation, byte offset = 0)
+        {
+            register.Word = _memory[(ushort)(memoryLocation + offset)];
+        }
+
+        private void LoadValueInto8BitRegister(ref byte register, byte value)
+        {
+            register = value;
+        }
+
+        private void LoadValueInto16BitRegister(ref Z80Register register, ushort value)
+        {
+            register.Word = value;
+        }
+
+        private void Save8BitRegisterValueToMemory(byte value, ushort memoryLocation)
+        {
+            _memory[memoryLocation] = value;
+        }
+
+        private void Save16BitRegisterToMemory(Z80Register register, ushort memoryLocation)
+        {
+            _memory[memoryLocation] = register.Low;
+            _memory[(ushort)(memoryLocation + 1)] = register.High;
+        }
+
+        private void LoadValueIntoRegisterMemoryLocation(byte value, Z80Register register, byte offset = 0)
+        {
+            _memory[(ushort)(register.Word + offset)] = value;
+        }
+
+        private void Load16BitRegisterFrom16BitRegister(ref Z80Register source, Z80Register destination)
+        {
+            destination.Word = source.Word;
+        }
+
+        private void Load8BitRegisterFrom8BitRegister(byte sourceData, ref byte destination)
+        {
+            destination = sourceData;
+        }
+
+        private void LoadSpecial8BitRegisterToAccumulator(byte sourceData)
+        {
+            _af.High = sourceData;
+
+            // Check flags since copying from special register into accumulator
+            SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 8));
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
+            ClearFlag(Z80StatusFlags.HalfCarryH);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _interruptFlipFlop2);
+            ClearFlag(Z80StatusFlags.AddSubtractN);
+        }
+
+        private void CopyMemoryByRegisterLocations(Z80Register source, Z80Register destination)
+        {
+            _memory[destination.Word] = _memory[source.Word];
+        }
+
+        private void Increment8Bit(ref byte register)
+        {
+            register++;
+        }
+
+        private void Decrement8Bit(ref byte register)
+        {
+            register--;
+        }
+
+        private void Increment16Bit(ref Z80Register register)
+        {
+            register.Word++;
+        }
+
+        private void Decrement16Bit(ref Z80Register register)
+        {
+            register.Word--;
+        }
     }
 }
