@@ -255,4 +255,30 @@ public partial class Z80Cpu
 
         destination.Word = (ushort)newValue;
     }
+
+    private void SubtractValueAtRegisterMemoryLocationFrom8BitRegister(Z80Register register, int offset, ref byte destination, bool checkFlags = false)
+    {
+        var value = _memory[(ushort)(register.Word + offset)];
+        SubtractValueFrom8BitRegister(value, ref destination, checkFlags);
+    }
+
+    private void SubtractValueFrom8BitRegister(byte value, ref byte destination, bool checkFlags = false)
+    {
+        int newValue = destination - value;
+
+        if (!checkFlags)
+        {
+            destination = (byte)newValue;
+            return;
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((destination ^ newValue ^ value) & 0x10) != 0);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, (((value ^ destination) & (destination ^ newValue) & 0x80) != 0));
+        SetFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, newValue < 0);
+
+        destination = (byte)newValue;
+    }
 }

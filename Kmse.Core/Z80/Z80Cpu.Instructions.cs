@@ -232,10 +232,19 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x6A, 15, "ADC HL,HL", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x7A, 15, "ADC HL,SP", "Add with Carry", _ => { });
 
-        AddStandardInstructionWithMask(0x90, 7, 4, "SUB r", "Subtract", _ => { });
-        AddStandardInstruction(0xD6, 7, "SUB N", "Subtract", _ => { });
-        AddDoubleByteInstruction(0xDD, 0x96, 19, "SUB (IX+d)", "Subtract", _ => { });
-        AddDoubleByteInstruction(0xFD, 0x96, 19, "SUB (IY+d)", "Subtract", _ => { });
+        //AddStandardInstructionWithMask(0x90, 7, 4, "SUB r", "Subtract", _ => { });
+        //AddStandardInstruction(0xD6, 7, "SUB N", "Subtract", _ => { });
+        AddStandardInstruction(0x97, 4, "SUB A,A", "Subtract A from A", _ => { SubtractValueFrom8BitRegister(_af.High, ref _af.High, true); });
+        AddStandardInstruction(0x90, 4, "SUB B,A", "Subtract B from A", _ => { SubtractValueFrom8BitRegister(_bc.High, ref _af.High, true); });
+        AddStandardInstruction(0x91, 4, "SUB C,A", "Subtract C from A", _ => { SubtractValueFrom8BitRegister(_bc.Low, ref _af.High, true); });
+        AddStandardInstruction(0x92, 4, "SUB D,A", "Subtract D from A", _ => { SubtractValueFrom8BitRegister(_de.High, ref _af.High, true); });
+        AddStandardInstruction(0x93, 4, "SUB E,A", "Subtract E from A", _ => { SubtractValueFrom8BitRegister(_de.Low, ref _af.High, true); });
+        AddStandardInstruction(0x94, 4, "SUB H,A", "Subtract H from A", _ => { SubtractValueFrom8BitRegister(_hl.High, ref _af.High, true); });
+        AddStandardInstruction(0x95, 4, "SUB L,A", "Subtract L from A", _ => { SubtractValueFrom8BitRegister(_hl.Low, ref _af.High, true); });
+        AddStandardInstruction(0xD6, 7, "SUB A, N", "Subtract N from A", _ => { SubtractValueFrom8BitRegister(GetNextByte(), ref _af.High, true); });
+
+        AddDoubleByteInstruction(0xDD, 0x96, 19, "SUB (IX+d)", "Subtract Data at memory location from IX + d from A", _ => { SubtractValueAtRegisterMemoryLocationFrom8BitRegister(_ix, GetNextByte(), ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x96, 19, "SUB (IY+d)", "Subtract Data at memory location from IY + d from A", _ => { SubtractValueAtRegisterMemoryLocationFrom8BitRegister(_iy, GetNextByte(), ref _af.High, true); });
 
         AddStandardInstructionWithMask(0x98, 7, 4, "SBC r", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { });
