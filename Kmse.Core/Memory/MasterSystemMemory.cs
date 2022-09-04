@@ -148,7 +148,7 @@ public class MasterSystemMemory : IMasterSystemMemory
         {
             case < MemorySlot3:
                 // Cannot write to first two memory slots at all since ROM space only
-                _memoryLogger.Information("Attempted to write to Memory Slot 1 or 2 which is not allowed");
+                _memoryLogger.Error("Attempted to write to Memory Slot 1 or 2 which is not allowed");
                 return;
 
             // Allow writing to 3rd slot if RAM bank is mapped to slot 3

@@ -218,13 +218,13 @@ namespace Kmse.Core.Z80
 
         private byte ReadFromIo(byte high, byte low)
         {
-            var address = (ushort)(high << 8 + low);
+            var address = (ushort)((high << 8) + low);
             return _io.ReadPort(address);
         }
 
         private byte ReadFromIoAndSetFlags(byte high, byte low)
         {
-            var address = (ushort)(high << 8 + low);
+            var address = (ushort)((high << 8) + low);
             var data = _io.ReadPort(address);
 
             // If high bit set, then negative so set sign flag
@@ -246,7 +246,7 @@ namespace Kmse.Core.Z80
 
         private void WriteToIo(byte high, byte low, byte value)
         {
-            var address = (ushort)(high << 8 + low);
+            var address = (ushort)((high << 8) + low);
             _io.WritePort(address, value);
         }
 
@@ -301,7 +301,8 @@ namespace Kmse.Core.Z80
                 _currentCycleCount += 3;
                 return;
             }
-            else if (destinationRegisterId == 0x06)
+
+            if (destinationRegisterId == 0x06)
             {
                 SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_hl, sourceRegisterId);
                 _currentCycleCount += 3;
@@ -352,7 +353,10 @@ namespace Kmse.Core.Z80
 
         private void LoadInto16BitRegisterFromMemory(ref Z80Register register, ushort memoryLocation, byte offset = 0)
         {
-            register.Word = _memory[(ushort)(memoryLocation + offset)];
+            var location = (ushort)(memoryLocation + offset);
+            register.Low = _memory[location];
+            location++;
+            register.High = _memory[location];
         }
 
         private void LoadValueInto8BitRegister(ref byte register, byte value)

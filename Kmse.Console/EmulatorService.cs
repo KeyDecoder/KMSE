@@ -1,4 +1,5 @@
-﻿using Kmse.Core;
+﻿using Kmse.Console.Logging;
+using Kmse.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -7,16 +8,18 @@ namespace Kmse.Console;
 internal class EmulatorService : BackgroundService
 {
     private readonly IHostApplicationLifetime _applicationLifetime;
+    private readonly DebugFileLogger _instructionFileLogger;
     private readonly ILogger _log;
     private readonly IMasterSystemConsole _masterSystemConsole;
     private readonly string _romFilename;
 
     public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole,
-        IHostApplicationLifetime applicationLifetime)
+        IHostApplicationLifetime applicationLifetime, DebugFileLogger instructionFileLogger)
     {
         _log = log;
         _masterSystemConsole = masterSystemConsole;
         _applicationLifetime = applicationLifetime;
+        _instructionFileLogger = instructionFileLogger;
         _romFilename = options.Filename;
     }
 
@@ -38,11 +41,12 @@ internal class EmulatorService : BackgroundService
             System.Console.WriteLine("Press Enter key to stop");
             System.Console.ReadLine();
             _masterSystemConsole.PowerOff();
-        });
+        }, stoppingToken);
 
         await Task.WhenAll(task, controlTask);
 
         _log.Information("Stopping");
+        _instructionFileLogger.CloseAndFlush();
         System.Console.WriteLine("Press any key to exit");
         System.Console.ReadKey();
         _applicationLifetime.StopApplication();

@@ -29,12 +29,16 @@ public class SerilogIoLogger : IIoPortLogger
 
     public void ReadPort(ushort address, byte data)
     {
+#if CONSOLE_LOG
         _logger.Debug("Read I/O Port at address {Address:X4}, got {Data}", address, data);
+#endif
     }
 
     public void WritePort(ushort address, byte newData)
     {
+#if CONSOLE_LOG
         _logger.Debug("Wrote to I/O port at address {Address:X4} to {NewData:X2}", address, newData);
+#endif
     }
 
     public void SetMaskableInterruptStatus(bool status)

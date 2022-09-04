@@ -1,4 +1,6 @@
-﻿using Autofac;
+﻿#define CONSOLE_LOG
+
+using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AutofacSerilogIntegration;
 using CommandLine;
@@ -77,8 +79,9 @@ public class Program
                 containerBuilder.RegisterType<SerilogIoLogger>().As<IIoPortLogger>();
                 containerBuilder.RegisterType<SerilogDebugConsoleOutput>().As<IDebugConsoleOutput>();
                 containerBuilder.RegisterType<SerilogCpuLogger>().As<ICpuLogger>();
+                containerBuilder.RegisterType<DebugFileLogger>().AsSelf().SingleInstance();
             })
-            .ConfigureServices((context, services) =>
+            .ConfigureServices((_, services) =>
             {
                 services.AddHostedService<EmulatorService>();
             })

@@ -206,7 +206,7 @@ public partial class Z80Cpu : IZ80Cpu
         if (instruction == null)
         {
             // Unhandled instruction, just do a NOP
-            _cpuLogger.LogInstruction(_currentAddress, "Unhandled", "");
+            _cpuLogger.LogInstruction(_currentAddress, opCode, "Unhandled", "");
             _currentCycleCount += NopCycleCount;
             return _currentCycleCount;
         }
@@ -219,7 +219,7 @@ public partial class Z80Cpu : IZ80Cpu
         }
 
         // TODO: Need to improve the logging of instructions especially for two byte instructions
-        _cpuLogger.LogInstruction(_currentAddress, instruction.Name, "");
+        _cpuLogger.LogInstruction(_currentAddress, instruction.OpCode, instruction.Name, "");
 
         return _currentCycleCount;
     }

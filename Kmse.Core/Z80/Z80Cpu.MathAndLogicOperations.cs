@@ -52,7 +52,7 @@ public partial class Z80Cpu
         var currentValue = _af.High;
         if (_af.High > 0x99 || IsFlagSet(Z80StatusFlags.CarryC))
         {
-            factor |= 0x06 << 4;
+            factor |= (0x06 << 4);
             SetFlag(Z80StatusFlags.CarryC);
         }
         else
@@ -240,22 +240,20 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.AddSubtractN);
     }
 
-    private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination,
-        bool checkFlags = false)
+    private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination, bool withCarry = false)
     {
         var value = _memory[(ushort)(register.Word + offset)];
-        AddValueTo8BitRegister(value, ref destination, checkFlags);
+        AddValueTo8BitRegister(value, ref destination, withCarry);
     }
 
-    private void AddValueTo8BitRegister(byte value, ref byte destination, bool checkFlags = false)
+    private void AddValueTo8BitRegister(byte value, ref byte destination, bool withCarry = false)
     {
-        int newValue = destination + value;
-
-        if (!checkFlags)
+        var valueWithCarry = value;
+        if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
-            destination = (byte)newValue;
-            return;
+            valueWithCarry += 0x01;
         }
+        int newValue = destination + valueWithCarry;
 
         SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
         SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
@@ -274,16 +272,14 @@ public partial class Z80Cpu
         destination = (byte)newValue;
     }
 
-    private void Add16BitRegisterTo16BitRegister(Z80Register source, ref Z80Register destination,
-        bool checkFlags = false)
+    private void Add16BitRegisterTo16BitRegister(Z80Register source, ref Z80Register destination, bool withCarry = false)
     {
-        int newValue = destination.Word + source.Word;
-
-        if (!checkFlags)
+        var valueWithCarry = source.Word;
+        if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
-            destination.Word = (ushort)newValue;
-            return;
+            valueWithCarry += 0x01;
         }
+        int newValue = destination.Word + valueWithCarry;
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
         SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
@@ -297,24 +293,46 @@ public partial class Z80Cpu
     }
 
     private void SubtractValueAtRegisterMemoryLocationFrom8BitRegister(Z80Register register, int offset,
-        ref byte destination, bool checkFlags = false)
+        ref byte destination, bool withCarry = false)
     {
         var value = _memory[(ushort)(register.Word + offset)];
-        SubtractValueFrom8BitRegister(value, ref destination, checkFlags);
+        SubtractValueFrom8BitRegister(value, ref destination, withCarry);
     }
 
-    private void SubtractValueFrom8BitRegister(byte value, ref byte destination, bool checkFlags = false)
+    private void SubtractValueFrom8BitRegister(byte value, ref byte destination, bool withCarry = false)
     {
-        int newValue = destination - value;
-
-        if (!checkFlags)
+        var valueWithCarry = value;
+        if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
-            destination = (byte)newValue;
-            return;
+            valueWithCarry += 0x01;
         }
-
+        int newValue = destination - valueWithCarry;
         CheckSubtractionFlags(destination, value, newValue);
         destination = (byte)newValue;
+    }
+
+    private void Sub16BitRegisterFrom16BitRegister(Z80Register source, ref Z80Register destination, bool withCarry = false)
+    {
+        var valueWithCarry = source.Word;
+        if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
+        {
+            valueWithCarry += 0x01;
+        }
+        int newValue = destination.Word - valueWithCarry;
+
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, (newValue & 0x8000) == 0x8000);
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFFFF) == 0);
+
+        // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
+            ((destination.Word & 0xFFF) + (newValue & 0xFFF) & 0x1000) == 0x1000);
+        SetFlag(Z80StatusFlags.AddSubtractN);
+        // Carry occurs if the result of adding the higher nibbles means it will set the next higher bit (17th bit and basically overflows)
+        SetClearFlagConditional(Z80StatusFlags.CarryC,
+            ((destination.Word & 0xFFFF) + (newValue & 0xFFFF) & 0x10000) == 0x10000);
+
+        destination.Word = (ushort)newValue;
     }
 
     private void CheckSubtractionFlags(byte originalValue, byte valueToAdd, int newValue)
@@ -715,5 +733,51 @@ public partial class Z80Cpu
         var value = _memory[location];
         ShiftRightLogical(ref value);
         _memory[location] = value;
+    }
+
+    private void RotateLeftDigit()
+    {
+        var value = _memory[_hl.Word];
+        var hll = value & 0x0F;
+        var hlh = (byte)((value & 0xF0) >> 4);
+        var al = _af.High & 0x0F;
+        var ah = (byte)((_af.High & 0xF0) >> 4);
+
+        // HL is lower bits of HL copied to high bits + lower 4 bits of A 
+        var newHlValue = (byte)((hll << 4) + al);
+        // A is higher bits of A left same + higher bits of hl 
+        var newAValue = (byte)((ah << 4) + hlh);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newAValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+
+        _memory[_hl.Word] = newHlValue;
+        _af.High = newAValue;
+    }
+
+    private void RotateRightDigit()
+    {
+        var value = _memory[_hl.Word];
+        var hll = value & 0x0F;
+        var hlh = (byte)((value & 0xF0) >> 4);
+        var al = _af.High & 0x0F;
+        var ah = (byte)((_af.High & 0xF0) >> 4);
+
+        // HL is lower bits of HL copied to high bits + lower 4 bits of A 
+        var newHlValue = (byte)((al << 4) + hlh);
+        // A is higher bits of A left same + higher bits of hl 
+        var newAValue = (byte)((ah << 4) + hll);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newAValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+
+        _memory[_hl.Word] = newHlValue;
+        _af.High = newAValue;
     }
 }
