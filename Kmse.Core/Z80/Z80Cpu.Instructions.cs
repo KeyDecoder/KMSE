@@ -252,6 +252,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0x9C, 4, "SBC H", "Subtract with Carry", _ => { });
         AddStandardInstruction(0x9D, 4, "SBC L", "Subtract with Carry", _ => { });
         AddStandardInstruction(0x9E, 4, "SBC (HL)", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0xDE, 7, "SBC A,N", "", _ => { });
 
         AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { });
@@ -347,44 +348,45 @@ public partial class Z80Cpu
             }
         });
 
-        AddStandardInstruction(0xA7, 4, "AND A", "AND", _ => { });
-        AddStandardInstruction(0xA0, 4, "AND B", "AND", _ => { });
-        AddStandardInstruction(0xA1, 4, "AND C", "AND", _ => { });
-        AddStandardInstruction(0xA2, 4, "AND D", "AND", _ => { });
-        AddStandardInstruction(0xA3, 4, "AND E", "AND", _ => { });
-        AddStandardInstruction(0xA4, 4, "AND H", "AND", _ => { });
-        AddStandardInstruction(0xA5, 4, "AND L", "AND", _ => { });
-        AddStandardInstruction(0xA6, 7, "AND (HL)", "AND", _ => { });
+        AddStandardInstruction(0xA7, 4, "AND A", "AND A with A and Store in A", _ => { And8Bit(_af.High, _af.High, ref _af.High); });
+        AddStandardInstruction(0xA0, 4, "AND B", "AND A with B and Store in A", _ => { And8Bit(_af.High, _bc.High, ref _af.High); });
+        AddStandardInstruction(0xA1, 4, "AND C", "AND A with C and Store in A", _ => { And8Bit(_af.High, _bc.Low, ref _af.High); });
+        AddStandardInstruction(0xA2, 4, "AND D", "AND A with D and Store in A", _ => { And8Bit(_af.High, _de.High, ref _af.High); });
+        AddStandardInstruction(0xA3, 4, "AND E", "AND A with E and Store in A", _ => { And8Bit(_af.High, _de.Low, ref _af.High); });
+        AddStandardInstruction(0xA4, 4, "AND H", "AND A with H and Store in A", _ => { And8Bit(_af.High, _hl.High, ref _af.High); });
+        AddStandardInstruction(0xA5, 4, "AND L", "AND A with L and Store in A", _ => { And8Bit(_af.High, _hl.Low, ref _af.High); });
 
-        AddStandardInstruction(0xE6, 7, "AND N", "AND", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "And", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xA6, 19, "AND (IY+d)", "And", _ => { });
+        AddStandardInstruction(0xE6, 7, "AND N", "AND A with N and Store in A", _ => { And8Bit(_af.High, GetNextByte(), ref _af.High); });
 
-        AddStandardInstruction(0xB7, 4, "OR A", "OR", _ => { });
-        AddStandardInstruction(0xB0, 4, "OR B", "OR", _ => { });
-        AddStandardInstruction(0xB1, 4, "OR C", "OR", _ => { });
-        AddStandardInstruction(0xB2, 4, "OR D", "OR", _ => { });
-        AddStandardInstruction(0xB3, 4, "OR E", "OR", _ => { });
-        AddStandardInstruction(0xB4, 4, "OR H", "OR", _ => { });
-        AddStandardInstruction(0xB5, 4, "OR L", "OR", _ => { });
-        AddStandardInstruction(0xB6, 7, "OR (HL)", "OR", _ => { });
+        AddStandardInstruction(0xA6, 7, "AND (HL)", "AND A with data in memory location in (HL) and Store in A", _ => { And8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "AND A with data in memory location in (IX+d) and Store in A", _ => { And8BitToMemoryLocationFrom16BitRegister(_ix, GetNextByte(), _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xA6, 19, "AND (IY+d)", "AND A with data in memory location in (IX+y) and Store in A", _ => { And8BitToMemoryLocationFrom16BitRegister(_iy, GetNextByte(), _af.High, ref _af.High); });
 
-        AddStandardInstruction(0xF6, 7, "OR N", "Or", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xB6, 19, "OR (IX+d)", "Or", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xB6, 19, "OR (IY+d)", "Or", _ => { });
+        AddStandardInstruction(0xB7, 4, "OR A", "OR A with A and Store in A", _ => { Or8Bit(_af.High, _af.High, ref _af.High); });
+        AddStandardInstruction(0xB0, 4, "OR B", "OR A with B and Store in A", _ => { Or8Bit(_af.High, _bc.High, ref _af.High); });
+        AddStandardInstruction(0xB1, 4, "OR C", "OR A with C and Store in A", _ => { Or8Bit(_af.High, _bc.Low, ref _af.High); });
+        AddStandardInstruction(0xB2, 4, "OR D", "OR A with D and Store in A", _ => { Or8Bit(_af.High, _de.High, ref _af.High); });
+        AddStandardInstruction(0xB3, 4, "OR E", "OR A with E and Store in A", _ => { Or8Bit(_af.High, _de.Low, ref _af.High); });
+        AddStandardInstruction(0xB4, 4, "OR H", "OR A with H and Store in A", _ => { Or8Bit(_af.High, _hl.High, ref _af.High); });
+        AddStandardInstruction(0xB5, 4, "OR L", "OR A with L and Store in A", _ => { Or8Bit(_af.High, _hl.Low, ref _af.High); });
+        AddStandardInstruction(0xF6, 7, "OR N", "Or A with N and Store in A", _ => { Or8Bit(_af.High, GetNextByte(), ref _af.High); });
 
-        AddStandardInstruction(0xAF, 4, "XOR A", "XOR", _ => { });
-        AddStandardInstruction(0xA8, 4, "XOR B", "XOR", _ => { });
-        AddStandardInstruction(0xA9, 4, "XOR C", "XOR", _ => { });
-        AddStandardInstruction(0xAA, 4, "XOR D", "XOR", _ => { });
-        AddStandardInstruction(0xAB, 4, "XOR E", "XOR", _ => { });
-        AddStandardInstruction(0xAC, 4, "XOR H", "XOR", _ => { });
-        AddStandardInstruction(0xAD, 4, "XOR L", "XOR", _ => { });
-        AddStandardInstruction(0xAE, 7, "XOR (HL)", "XOR", _ => { });
+        AddStandardInstruction(0xB6, 7, "OR (HL)", "OR A with data in memory location in (HL) and Store in A", _ => { Or8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xB6, 19, "OR (IX+d)", "OR A with data in memory location in (IX+d) and Store in A", _ => { Or8BitToMemoryLocationFrom16BitRegister(_ix, GetNextByte(), _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xB6, 19, "OR (IY+d)", "OR A with data in memory location in (IY+d) and Store in A", _ => { Or8BitToMemoryLocationFrom16BitRegister(_iy, GetNextByte(), _af.High, ref _af.High); });
 
-        AddStandardInstruction(0xEE, 7, "XOR N", "Xor", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xAE, 19, "XOR (IX+d)", "Xor", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xAE, 19, "XOR (IY+d)", "Xor", _ => { });
+        AddStandardInstruction(0xAF, 4, "XOR A", "XOR A with A and Store in A", _ => { Xor8Bit(_af.High, _af.High, ref _af.High); });
+        AddStandardInstruction(0xA8, 4, "XOR B", "XOR A with B and Store in A", _ => { Xor8Bit(_af.High, _bc.High, ref _af.High); });
+        AddStandardInstruction(0xA9, 4, "XOR C", "XOR A with C and Store in A", _ => { Xor8Bit(_af.High, _bc.Low, ref _af.High); });
+        AddStandardInstruction(0xAA, 4, "XOR D", "XOR A with D and Store in A", _ => { Xor8Bit(_af.High, _de.High, ref _af.High); });
+        AddStandardInstruction(0xAB, 4, "XOR E", "XOR A with E and Store in A", _ => { Xor8Bit(_af.High, _de.Low, ref _af.High); });
+        AddStandardInstruction(0xAC, 4, "XOR H", "XOR A with H and Store in A", _ => { Xor8Bit(_af.High, _hl.High, ref _af.High); });
+        AddStandardInstruction(0xAD, 4, "XOR L", "XOR A with L and Store in A", _ => { Xor8Bit(_af.High, _hl.Low, ref _af.High); });
+        AddStandardInstruction(0xEE, 7, "XOR N", "XOr A with N and Store in A", _ => { Xor8Bit(_af.High, GetNextByte(), ref _af.High); });
+
+        AddStandardInstruction(0xAE, 7, "XOR (HL)", "XOR A with data in memory location in (HL) and Store in A", _ => { Xor8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xAE, 19, "XOR (IX+d)", "XOR A with data in memory location in (IX+d) and Store in A", _ => { Xor8BitToMemoryLocationFrom16BitRegister(_ix, GetNextByte(), _af.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xAE, 19, "XOR (IY+d)", "XOR A with data in memory location in (IY+d) and Store in A", _ => { Xor8BitToMemoryLocationFrom16BitRegister(_iy, GetNextByte(), _af.High, ref _af.High); });
 
         AddStandardInstruction(0x3C, 4, "INC A", "Increment A", _ => { Increment8Bit(ref _af.High, true); });
         AddStandardInstruction(0x04, 4, "INC B", "Increment B", _ => { Increment8Bit(ref _bc.High, true); });
@@ -447,47 +449,102 @@ public partial class Z80Cpu
 
     private void PopulateRotateAndShiftInstructions()
     {
-        AddStandardInstruction(0x17, 4, "RLA", "Rotate Left Accumulator", _ => { });
-        AddStandardInstruction(0x07, 4, "RLCA", "Rotate Left Circular Accumulator", _ => { });
-        AddStandardInstruction(0x1F, 4, "RRA", "Rotate Right Accumulator", _ => { });
-        AddStandardInstruction(0x0F, 4, "RRCA", "Rotate Right Circular Accumulator", _ => { });
+        AddStandardInstruction(0x17, 4, "RLA", "Rotate Left Accumulator", _ => { RotateLeftAccumulator();});
+        AddStandardInstruction(0x07, 4, "RLCA", "Rotate Left Circular Accumulator", _ => { RotateLeftCircularAccumulator(); });
+        AddStandardInstruction(0x1F, 4, "RRA", "Rotate Right Accumulator", _ => { RotateRightAccumulator(); });
+        AddStandardInstruction(0x0F, 4, "RRCA", "Rotate Right Circular Accumulator", _ => { RotateRightCircularAccumulator(); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x20, 7, 8, "SLA r", "Shift Left Arithmetic", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x26, 23, "SLA (IX+d)", "Shift Left Arithmetic", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x26, 23, "SLA (IY+d)", "Shift Left Arithmetic", _ => { });
+        AddDoubleByteInstruction(0xCB, 0x17, 8, "RL A", "Rotate Left A 1 bit", _ => { RotateLeft(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x10, 8, "RL B", "Rotate Left B 1 bit", _ => { RotateLeft(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x11, 8, "RL C", "Rotate Left C 1 bit", _ => { RotateLeft(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x12, 8, "RL D", "Rotate Left D 1 bit", _ => { RotateLeft(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x13, 8, "RL E", "Rotate Left E 1 bit", _ => { RotateLeft(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x14, 8, "RL H", "Rotate Left H 1 bit", _ => { RotateLeft(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x15, 8, "RL L", "Rotate Left L 1 bit", _ => { RotateLeft(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x16, 8, "RL (HL)", "Rotate Left (HL) 1 bit", _ => { RotateLeft16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x16, 23, "RL (IX+d)", "Rotate Left (IX+d) 1 bit", i => { RotateLeft16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x16, 23, "RL (IY+d)", "Rotate Left (IY+d) 1 bit", i => { RotateLeft16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x28, 7, 8, "SRA r", "Shift Right Arithmetic", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x2E, 23, "SRA (IX+d)", "Shift Right Arithmetic", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x2E, 23, "SRA (IY+d)", "Shift Right Arithmetic", _ => { });
+        AddDoubleByteInstruction(0xCB, 0x07, 8, "RLC A", "Rotate Left Circular A 1 bit", _ => { RotateLeftCircular(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x00, 8, "RLC B", "Rotate Left Circular B 1 bit", _ => { RotateLeftCircular(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x01, 8, "RLC C", "Rotate Left Circular C 1 bit", _ => { RotateLeftCircular(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x02, 8, "RLC D", "Rotate Left Circular D 1 bit", _ => { RotateLeftCircular(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x03, 8, "RLC E", "Rotate Left Circular E 1 bit", _ => { RotateLeftCircular(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x04, 8, "RLC H", "Rotate Left Circular H 1 bit", _ => { RotateLeftCircular(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x05, 8, "RLC L", "Rotate Left Circular L 1 bit", _ => { RotateLeftCircular(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x06, 8, "RLC (HL)", "Rotate Left Circular (HL) 1 bit", _ => { RotateLeftCircular16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x06, 23, "RLC (IX+d)", "Rotate Left Circular (IX+d) 1 bit", i => { RotateLeftCircular16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x06, 23, "RLC (IY+d)", "Rotate Left Circular (IY+d) 1 bit", i => { RotateLeftCircular16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x30, 7, 8, "SLL r", "Shift Left Logical*", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x36, 23, "SLL (IX+d)", "Shift Left Logical", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x36, 23, "SLL (IY+d)", "Shift Left Logical", _ => { });
+        AddDoubleByteInstruction(0xCB, 0x1F, 8, "RR A", "Rotate Right A 1 bit", _ => { RotateRight(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x18, 8, "RR B", "Rotate Right B 1 bit", _ => { RotateRight(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x19, 8, "RR C", "Rotate Right C 1 bit", _ => { RotateRight(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x1A, 8, "RR D", "Rotate Right D 1 bit", _ => { RotateRight(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x1B, 8, "RR E", "Rotate Right E 1 bit", _ => { RotateRight(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x1C, 8, "RR H", "Rotate Right H 1 bit", _ => { RotateRight(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x1D, 8, "RR L", "Rotate Right L 1 bit", _ => { RotateRight(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x1E, 8, "RR (HL)", "Rotate Right (HL) 1 bit", _ => { RotateRight16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x1E, 23, "RR (IX+d)", "Rotate Right (IX+d) 1 bit", i => { RotateRight16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x1E, 23, "RR (IY+d)", "Rotate Right (IY+d) 1 bit", i => { RotateRight16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x38, 7, 8, "SRL r", "Shift Right Logical", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x3E, 23, "SRL (IX+d)", "Shift Right Logical", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x3E, 23, "SRL (IY+d)", "Shift Right Logical", _ => { });
+        AddDoubleByteInstruction(0xCB, 0x0F, 8, "RRC A", "Rotate Right Circular A 1 bit", _ => { RotateRightCircular(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x08, 8, "RRC B", "Rotate Right Circular B 1 bit", _ => { RotateRightCircular(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x09, 8, "RRC C", "Rotate Right Circular C 1 bit", _ => { RotateRightCircular(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x0A, 8, "RRC D", "Rotate Right Circular D 1 bit", _ => { RotateRightCircular(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x0B, 8, "RRC E", "Rotate Right Circular E 1 bit", _ => { RotateRightCircular(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x0C, 8, "RRC H", "Rotate Right Circular H 1 bit", _ => { RotateRightCircular(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x0D, 8, "RRC L", "Rotate Right Circular L 1 bit", _ => { RotateRightCircular(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x0E, 8, "RRC (HL)", "Rotate Right Circular (HL) 1 bit", _ => { RotateRightCircular16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x0E, 23, "RRC (IX+d)", "Rotate Right Circular (IX+d) 1 bit", i => { RotateRightCircular16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x0E, 23, "RRC (IY+d)", "Rotate Right Circular (IY+d) 1 bit", i => { RotateRightCircular16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x10, 7, 8, "RL r", "Rotate Left", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x16, 23, "RL (IX+d)", "Rotate Left", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x16, 23, "RL (IY+d)", "Rotate Left", _ => { });
+        AddDoubleByteInstruction(0xCB, 0x27, 8, "SLA A", "Shift Left Arithmetic A 1 bit", _ => { ShiftLeftArithmetic(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x20, 8, "SLA B", "Shift Left Arithmetic B 1 bit", _ => { ShiftLeftArithmetic(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x21, 8, "SLA C", "Shift Left Arithmetic C 1 bit", _ => { ShiftLeftArithmetic(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x22, 8, "SLA D", "Shift Left Arithmetic D 1 bit", _ => { ShiftLeftArithmetic(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x23, 8, "SLA E", "Shift Left Arithmetic E 1 bit", _ => { ShiftLeftArithmetic(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x24, 8, "SLA H", "Shift Left Arithmetic H 1 bit", _ => { ShiftLeftArithmetic(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x25, 8, "SLA L", "Shift Left Arithmetic L 1 bit", _ => { ShiftLeftArithmetic(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x26, 8, "SLA (HL)", "Shift Left Arithmetic (HL) 1 bit", _ => { ShiftLeftArithmetic16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x26, 23, "SLA (IX+d)", "Shift Left Arithmetic (IX+d) 1 bit", i => { ShiftLeftArithmetic16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x26, 23, "SLA (IY+d)", "Shift Left Arithmetic (IY+d) 1 bit", i => { ShiftLeftArithmetic16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0x00, 7, 8, "RLC r", "Rotate Left Circular", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x06, 23, "RLC (IX+d)", "Rotate Left Circular", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x06, 23, "RLC (IY+d)", "Rotate Left Circular", _ => { });
-        
+        AddDoubleByteInstruction(0xCB, 0x2F, 8, "SRA A", "Shift Right Arithmetic A 1 bit", _ => { ShiftRightArithmetic(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x28, 8, "SRA B", "Shift Right Arithmetic B 1 bit", _ => { ShiftRightArithmetic(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x29, 8, "SRA C", "Shift Right Arithmetic C 1 bit", _ => { ShiftRightArithmetic(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x2A, 8, "SRA D", "Shift Right Arithmetic D 1 bit", _ => { ShiftRightArithmetic(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x2B, 8, "SRA E", "Shift Right Arithmetic E 1 bit", _ => { ShiftRightArithmetic(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x2C, 8, "SRA H", "Shift Right Arithmetic H 1 bit", _ => { ShiftRightArithmetic(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x2D, 8, "SRA L", "Shift Right Arithmetic L 1 bit", _ => { ShiftRightArithmetic(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x2E, 8, "SRA (HL)", "Shift Right Arithmetic (HL) 1 bit", _ => { ShiftRightArithmetic16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x2E, 23, "SRA (IX+d)", "Shift Right Arithmetic (IX+d) 1 bit", i => { ShiftRightArithmetic16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x2E, 23, "SRA (IY+d)", "Shift Right Arithmetic (IY+d) 1 bit", i => { ShiftRightArithmetic16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
+
+        // NOTE: SLL is an undocumented instruction
+        AddDoubleByteInstruction(0xCB, 0x37, 8, "SLL A", "Shift Left LogicalA 1 bit", _ => { ShiftLeftLogical(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x30, 8, "SLL B", "Shift Left LogicalB 1 bit", _ => { ShiftLeftLogical(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x31, 8, "SLL C", "Shift Left LogicalC 1 bit", _ => { ShiftLeftLogical(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x32, 8, "SLL D", "Shift Left LogicalD 1 bit", _ => { ShiftLeftLogical(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x33, 8, "SLL E", "Shift Left LogicalE 1 bit", _ => { ShiftLeftLogical(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x34, 8, "SLL H", "Shift Left LogicalH 1 bit", _ => { ShiftLeftLogical(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x35, 8, "SLL L", "Shift Left LogicalL 1 bit", _ => { ShiftLeftLogical(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x36, 8, "SLL (HL)", "Shift Left Logical (HL) 1 bit", _ => { ShiftLeftLogical16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x36, 23, "SLL (IX+d)", "Shift Left Logical (IX+d) 1 bit", i => { ShiftLeftLogical16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x36, 23, "SLL (IY+d)", "Shift Left Logical (IY+d) 1 bit", i => { ShiftLeftLogical16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
+
+        AddDoubleByteInstruction(0xCB, 0x3F, 8, "SRL A", "Shift Right Logical A 1 bit", _ => { ShiftRightLogical(ref _af.High); });
+        AddDoubleByteInstruction(0xCB, 0x38, 8, "SRL B", "Shift Right Logical B 1 bit", _ => { ShiftRightLogical(ref _bc.High); });
+        AddDoubleByteInstruction(0xCB, 0x39, 8, "SRL C", "Shift Right Logical C 1 bit", _ => { ShiftRightLogical(ref _bc.Low); });
+        AddDoubleByteInstruction(0xCB, 0x3A, 8, "SRL D", "Shift Right Logical D 1 bit", _ => { ShiftRightLogical(ref _de.High); });
+        AddDoubleByteInstruction(0xCB, 0x3B, 8, "SRL E", "Shift Right Logical E 1 bit", _ => { ShiftRightLogical(ref _de.Low); });
+        AddDoubleByteInstruction(0xCB, 0x3C, 8, "SRL H", "Shift Right Logical H 1 bit", _ => { ShiftRightLogical(ref _hl.High); });
+        AddDoubleByteInstruction(0xCB, 0x3D, 8, "SRL L", "Shift Right Logical L 1 bit", _ => { ShiftRightLogical(ref _hl.Low); });
+        AddDoubleByteInstruction(0xCB, 0x3E, 8, "SRL (HL)", "Shift Right Logical (HL) 1 bit", _ => { ShiftRightLogical16BitRegisterMemoryLocation(_hl, 0); });
+        AddSpecialCbInstruction(0xDD, 0x3E, 23, "SRL (IX+d)", "Shift Right Logical (IX+d) 1 bit", i => { ShiftRightLogical16BitRegisterMemoryLocation(_ix, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x3E, 23, "SRL (IY+d)", "Shift Right Logical (IY+d) 1 bit", i => { ShiftRightLogical16BitRegisterMemoryLocation(_iy, ((SpecialCbInstruction)i).DataByte); });
+
         AddDoubleByteInstruction(0xED, 0x6F, 18, "RLD", "Rotate Left 4 bits", _ => { });
-
-        AddDoubleByteInstructionWithMask(0xCB, 0x18, 7, 8, "RR r", "Rotate Right", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x1E, 23, "RR (IX+d)", "Rotate Right", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x1E, 23, "RR (IY+d)", "Rotate Right", _ => { });
-
-        AddDoubleByteInstructionWithMask(0xCB, 0x08, 7, 8, "RRC r", "Rotate Right Circular", _ => { });
-        AddSpecialCbInstruction(0xDD, 0x0E, 23, "RRC (IX+d)", "Rotate Right Circular", _ => { });
-        AddSpecialCbInstruction(0xFD, 0x0E, 23, "RRC (IY+d)", "Rotate Right Circular", _ => { });
-
         AddDoubleByteInstruction(0xED, 0x67, 18, "RRD", "Rotate Right 4 bits", _ => { });
-        AddStandardInstruction(0xDE, 7, "SBC A,N", "Rotate Right 4 bits", _ => { });
     }
 
     private void PopulateLoadAndExchangeInstructions()

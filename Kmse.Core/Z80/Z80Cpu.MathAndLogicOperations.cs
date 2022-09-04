@@ -124,13 +124,27 @@ public partial class Z80Cpu
 
         switch (register)
         {
-            case 0: Bitwise.Clear(ref _bc.High, bit); break;
-            case 1: Bitwise.Clear(ref _bc.Low, bit); break;
-            case 2: Bitwise.Clear(ref _de.High, bit); break;
-            case 3: Bitwise.Clear(ref _de.Low, bit); break;
-            case 4: Bitwise.Clear(ref _hl.High, bit); break;
-            case 5: Bitwise.Clear(ref _hl.Low, bit); break;
-            case 7: Bitwise.Clear(ref _af.High, bit); break;
+            case 0:
+                Bitwise.Clear(ref _bc.High, bit);
+                break;
+            case 1:
+                Bitwise.Clear(ref _bc.Low, bit);
+                break;
+            case 2:
+                Bitwise.Clear(ref _de.High, bit);
+                break;
+            case 3:
+                Bitwise.Clear(ref _de.Low, bit);
+                break;
+            case 4:
+                Bitwise.Clear(ref _hl.High, bit);
+                break;
+            case 5:
+                Bitwise.Clear(ref _hl.Low, bit);
+                break;
+            case 7:
+                Bitwise.Clear(ref _af.High, bit);
+                break;
         }
     }
 
@@ -157,13 +171,27 @@ public partial class Z80Cpu
 
         switch (register)
         {
-            case 0: Bitwise.Set(ref _bc.High, bit); break;
-            case 1: Bitwise.Set(ref _bc.Low, bit); break;
-            case 2: Bitwise.Set(ref _de.High, bit); break;
-            case 3: Bitwise.Set(ref _de.Low, bit); break;
-            case 4: Bitwise.Set(ref _hl.High, bit); break;
-            case 5: Bitwise.Set(ref _hl.Low, bit); break;
-            case 7: Bitwise.Set(ref _af.High, bit); break;
+            case 0:
+                Bitwise.Set(ref _bc.High, bit);
+                break;
+            case 1:
+                Bitwise.Set(ref _bc.Low, bit);
+                break;
+            case 2:
+                Bitwise.Set(ref _de.High, bit);
+                break;
+            case 3:
+                Bitwise.Set(ref _de.Low, bit);
+                break;
+            case 4:
+                Bitwise.Set(ref _hl.High, bit);
+                break;
+            case 5:
+                Bitwise.Set(ref _hl.Low, bit);
+                break;
+            case 7:
+                Bitwise.Set(ref _af.High, bit);
+                break;
         }
     }
 
@@ -212,7 +240,8 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.AddSubtractN);
     }
 
-    private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination, bool checkFlags = false)
+    private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination,
+        bool checkFlags = false)
     {
         var value = _memory[(ushort)(register.Word + offset)];
         AddValueTo8BitRegister(value, ref destination, checkFlags);
@@ -235,7 +264,8 @@ public partial class Z80Cpu
         // This is then combined with the DAA instruction which adjusts the result to get the valid value
         //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
         SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((destination & 0x0F) + (value & 0x0F) & 0x10) == 0x10);
-        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ destination ^ 0x80) & (destination ^ newValue) & 0x80) != 0);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
+            ((value ^ destination ^ 0x80) & (destination ^ newValue) & 0x80) != 0);
         ClearFlag(Z80StatusFlags.AddSubtractN);
         // A carry is same as half carry just on the overall value
         // Since we stored the sum as a 32 bit integer, we can see if went past the max value and bit 7 must have carried over into bit 8
@@ -256,15 +286,18 @@ public partial class Z80Cpu
         }
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((destination.Word & 0xFFF) + (newValue & 0xFFF) & 0x1000) == 0x1000);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
+            ((destination.Word & 0xFFF) + (newValue & 0xFFF) & 0x1000) == 0x1000);
         ClearFlag(Z80StatusFlags.AddSubtractN);
         // Carry occurs if the result of adding the higher nibbles means it will set the next higher bit (17th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.CarryC, ((destination.Word & 0xFFFF) + (newValue & 0xFFFF) & 0x10000) == 0x10000);
+        SetClearFlagConditional(Z80StatusFlags.CarryC,
+            ((destination.Word & 0xFFFF) + (newValue & 0xFFFF) & 0x10000) == 0x10000);
 
         destination.Word = (ushort)newValue;
     }
 
-    private void SubtractValueAtRegisterMemoryLocationFrom8BitRegister(Z80Register register, int offset, ref byte destination, bool checkFlags = false)
+    private void SubtractValueAtRegisterMemoryLocationFrom8BitRegister(Z80Register register, int offset,
+        ref byte destination, bool checkFlags = false)
     {
         var value = _memory[(ushort)(register.Word + offset)];
         SubtractValueFrom8BitRegister(value, ref destination, checkFlags);
@@ -319,5 +352,368 @@ public partial class Z80Cpu
 
         // The flag checking is essentially the same as a subtraction, just without actually changing anything
         CheckSubtractionFlags(valueToCompareTo, value, difference);
+    }
+
+    private void And8Bit(byte value, byte valueToAndAgainst, ref byte register)
+    {
+        var newValue = (byte)(value & valueToAndAgainst);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        SetFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        ClearFlag(Z80StatusFlags.CarryC);
+
+        register = newValue;
+    }
+
+    private void And8BitToMemoryLocationFrom16BitRegister(Z80Register register, int offset, byte valueToAndAgainst,
+        ref byte registerToStoreValueIn)
+    {
+        var value = _memory[(ushort)(register.Word + offset)];
+        And8Bit(value, valueToAndAgainst, ref registerToStoreValueIn);
+    }
+
+    private void Or8Bit(byte value, byte valueToAndAgainst, ref byte register)
+    {
+        var newValue = (byte)(value | valueToAndAgainst);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        ClearFlag(Z80StatusFlags.CarryC);
+
+        register = newValue;
+    }
+
+    private void Or8BitToMemoryLocationFrom16BitRegister(Z80Register register, int offset, byte valueToOrAgainst,
+        ref byte registerToStoreValueIn)
+    {
+        var value = _memory[(ushort)(register.Word + offset)];
+        Or8Bit(value, valueToOrAgainst, ref registerToStoreValueIn);
+    }
+
+    private void Xor8Bit(byte value, byte valueToXorAgainst, ref byte register)
+    {
+        var newValue = (byte)(value ^ valueToXorAgainst);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        ClearFlag(Z80StatusFlags.CarryC);
+
+        register = newValue;
+    }
+
+    private void Xor8BitToMemoryLocationFrom16BitRegister(Z80Register register, int offset, byte valueToXorAgainst,
+        ref byte registerToStoreValueIn)
+    {
+        var value = _memory[(ushort)(register.Word + offset)];
+        Xor8Bit(value, valueToXorAgainst, ref registerToStoreValueIn);
+    }
+
+    private void RotateLeftCircularAccumulator()
+    {
+        // Rotate A left by 1 bit, bit 7 is copied to carry flag and bit 0
+        // This is special method since RLCA flags are set differently to RLC r instruction
+        var newValue = (byte)(_af.High << 1);
+        var bit7Set = Bitwise.IsSet(_af.High, 7);
+        if (bit7Set)
+        {
+            // Copy bit 7 to bit 0
+            Bitwise.Set(ref newValue, 0);
+        }
+
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit7Set);
+
+        _af.High = newValue;
+    }
+
+    private void RotateLeftAccumulator()
+    {
+        // Rotate A left by 1 bit, bit 7 is copied to carry flag and carry flag copied to bit 0
+        // This is special method since RLA flags are set differently to RL r instruction
+        var newValue = (byte)(_af.High << 1);
+        var bit7Set = Bitwise.IsSet(_af.High, 7);
+        if (IsFlagSet(Z80StatusFlags.CarryC))
+        {
+            // Copy carry flag to bit 0
+            Bitwise.Set(ref newValue, 0);
+        }
+
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit7Set);
+
+        _af.High = newValue;
+    }
+
+    private void RotateRightCircularAccumulator()
+    {
+        // Rotate A right by 1 bit, bit 0 is copied to carry flag and bit 7
+        // This is special method since RRCA flags are set differently to RRC r instruction
+        var newValue = (byte)(_af.High >> 1);
+        var bit0Set = Bitwise.IsSet(_af.High, 0);
+        if (bit0Set)
+        {
+            // Copy bit 0 to bit 7
+            Bitwise.Set(ref newValue, 7);
+        }
+
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit0Set);
+
+        _af.High = newValue;
+    }
+
+    private void RotateRightAccumulator()
+    {
+        // Rotate A right by 1 bit, bit 0 is copied to carry flag and carry flag copied to bit 7
+        // This is special method since RRA flags are set differently to RR r instruction
+        var newValue = (byte)(_af.High >> 1);
+        var bit0Set = Bitwise.IsSet(_af.High, 0);
+        if (IsFlagSet(Z80StatusFlags.CarryC))
+        {
+            // Copy carry flag to bit 7
+            Bitwise.Set(ref newValue, 7);
+        }
+
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit0Set);
+
+        _af.High = newValue;
+    }
+
+    private void RotateLeftCircular(ref byte register)
+    {
+        // Rotate register left by 1 bit, bit 7 is copied to carry flag and bit 0
+        var newValue = (byte)(register << 1);
+        var bit7Set = Bitwise.IsSet(register, 7);
+        if (bit7Set)
+        {
+            // Copy bit 7 to bit 0
+            Bitwise.Set(ref newValue, 0);
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit7Set);
+
+        register = newValue;
+    }
+
+    private void RotateLeft(ref byte register)
+    {
+        // Rotate register left by 1 bit, bit 7 is copied to carry flag and carry flag copied to bit 0
+        var newValue = (byte)(register << 1);
+        var bit7Set = Bitwise.IsSet(register, 7);
+        if (IsFlagSet(Z80StatusFlags.CarryC))
+        {
+            // Copy carry flag to bit 0
+            Bitwise.Set(ref newValue, 0);
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit7Set);
+
+        register = newValue;
+    }
+
+    private void RotateRightCircular(ref byte register)
+    {
+        // Rotate register right by 1 bit, bit 0 is copied to carry flag and bit 7
+        var newValue = (byte)(register >> 1);
+        var bit0Set = Bitwise.IsSet(register, 0);
+        if (bit0Set)
+        {
+            // Copy bit 0 to bit 7
+            Bitwise.Set(ref newValue, 7);
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit0Set);
+
+        register = newValue;
+    }
+
+    private void RotateRight(ref byte register)
+    {
+        // Rotate register right by 1 bit, bit 0 is copied to carry flag and carry flag copied to bit 7
+        // This is special method since RRA flags are set differently to RR r instruction
+        var newValue = (byte)(register >> 1);
+        var bit0Set = Bitwise.IsSet(register, 0);
+        if (IsFlagSet(Z80StatusFlags.CarryC))
+        {
+            // Copy carry flag to bit 7
+            Bitwise.Set(ref newValue, 7);
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, bit0Set);
+
+        _af.High = newValue;
+    }
+
+    private void RotateLeftCircular16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        RotateLeftCircular(ref value);
+        _memory[location] = value;
+    }
+
+    private void RotateLeft16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        RotateLeft(ref value);
+        _memory[location] = value;
+    }
+
+    private void RotateRightCircular16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        RotateRightCircular(ref value);
+        _memory[location] = value;
+    }
+
+    private void RotateRight16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        RotateRight(ref value);
+        _memory[location] = value;
+    }
+
+    private void ShiftLeftArithmetic(ref byte register)
+    {
+        // Shift register left by 1 bit, bit 7 is copied to carry flag
+        var newValue = (byte)(register << 1);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 7));
+
+        register = newValue;
+    }
+
+    private void ShiftRightArithmetic(ref byte register)
+    {
+        // Rotate register right by 1 bit, bit 0 is copied to carry flag
+        // This is special method since RRA flags are set differently to RR r instruction
+        var newValue = (byte)(register >> 1);
+        var bit7Set = Bitwise.IsSet(register, 7);
+
+        if (bit7Set)
+        {
+            // If bit 7 is set in original then leave as set even as we shift right
+            Bitwise.Set(ref newValue, 7);
+        }
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 0));
+
+        _af.High = newValue;
+    }
+
+    private void ShiftLeftArithmetic16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        ShiftLeftArithmetic(ref value);
+        _memory[location] = value;
+    }
+
+    private void ShiftRightArithmetic16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        ShiftRightArithmetic(ref value);
+        _memory[location] = value;
+    }
+
+    private void ShiftLeftLogical(ref byte register)
+    {
+        // Shift register left by 1 bit, bit 7 is copied to carry flag
+        var newValue = (byte)(register << 1);
+
+        // The difference between shift left logical and shift left arithmetic is this sets bit 0
+        Bitwise.Set(ref newValue, 0);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 7));
+
+        register = newValue;
+    }
+
+    private void ShiftRightLogical(ref byte register)
+    {
+        // Rotate register right by 1 bit, bit 0 is copied to carry flag
+        // This is special method since RRA flags are set differently to RR r instruction
+        var newValue = (byte)(register >> 1);
+
+        // The difference between shift right logical and shift right arithmetic is this does maintain bit 7 when shifting and just clears it
+        Bitwise.Clear(ref newValue, 7);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        ClearFlag(Z80StatusFlags.HalfCarryH);
+        SetParityFromValue(newValue);
+        ClearFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 0));
+
+        _af.High = newValue;
+    }
+
+    private void ShiftLeftLogical16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        ShiftLeftLogical(ref value);
+        _memory[location] = value;
+    }
+
+    private void ShiftRightLogical16BitRegisterMemoryLocation(Z80Register register, int offset)
+    {
+        var location = (ushort)(register.Word + offset);
+        var value = _memory[location];
+        ShiftRightLogical(ref value);
+        _memory[location] = value;
     }
 }
