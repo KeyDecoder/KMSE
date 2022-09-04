@@ -232,8 +232,6 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x6A, 15, "ADC HL,HL", "Add with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x7A, 15, "ADC HL,SP", "Add with Carry", _ => { });
 
-        //AddStandardInstructionWithMask(0x90, 7, 4, "SUB r", "Subtract", _ => { });
-        //AddStandardInstruction(0xD6, 7, "SUB N", "Subtract", _ => { });
         AddStandardInstruction(0x97, 4, "SUB A,A", "Subtract A from A", _ => { SubtractValueFrom8BitRegister(_af.High, ref _af.High, true); });
         AddStandardInstruction(0x90, 4, "SUB B,A", "Subtract B from A", _ => { SubtractValueFrom8BitRegister(_bc.High, ref _af.High, true); });
         AddStandardInstruction(0x91, 4, "SUB C,A", "Subtract C from A", _ => { SubtractValueFrom8BitRegister(_bc.Low, ref _af.High, true); });
@@ -246,7 +244,15 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x96, 19, "SUB (IX+d)", "Subtract Data at memory location from IX + d from A", _ => { SubtractValueAtRegisterMemoryLocationFrom8BitRegister(_ix, GetNextByte(), ref _af.High, true); });
         AddDoubleByteInstruction(0xFD, 0x96, 19, "SUB (IY+d)", "Subtract Data at memory location from IY + d from A", _ => { SubtractValueAtRegisterMemoryLocationFrom8BitRegister(_iy, GetNextByte(), ref _af.High, true); });
 
-        AddStandardInstructionWithMask(0x98, 7, 4, "SBC r", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9F, 4, "SBC A", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x98, 4, "SBC B", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x99, 4, "SBC C", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9A, 4, "SBC D", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9B, 4, "SBC E", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9C, 4, "SBC H", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9D, 4, "SBC L", "Subtract with Carry", _ => { });
+        AddStandardInstruction(0x9E, 4, "SBC (HL)", "Subtract with Carry", _ => { });
+
         AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xED, 0x62, 15, "SBC HL,HL", "Subtract with Carry", _ => { });
@@ -254,27 +260,128 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x9E, 19, "SBC A,(IX+d)", "Subtract with Carry", _ => { });
         AddDoubleByteInstruction(0xFD, 0x9E, 19, "SBC A,(IY+d)", "Subtract with Carry", _ => { });
 
-        AddStandardInstructionWithMask(0xB8, 7, 4, "CP r", "Compare", _ => { });
-        AddStandardInstruction(0xFE, 7, "CP N", "Compare", _ => { });
-        AddDoubleByteInstruction(0xDD, 0xBE, 19, "CP (IX+d)", "Compare", _ => { });
-        AddDoubleByteInstruction(0xFD, 0xBE, 19, "CP (IY+d)", "Compare", _ => { });
+        AddStandardInstruction(0xBF, 4, "CP A", "Compare A to A", _ => { Compare8Bit(_af.High, _af.High); });
+        AddStandardInstruction(0xB8, 4, "CP B", "Compare B to A", _ => { Compare8Bit(_bc.High, _af.High); });
+        AddStandardInstruction(0xB9, 4, "CP C", "Compare C to A", _ => { Compare8Bit(_bc.Low, _af.High); });
+        AddStandardInstruction(0xBA, 4, "CP D", "Compare D to A", _ => { Compare8Bit(_de.High, _af.High); });
+        AddStandardInstruction(0xBB, 4, "CP E", "Compare E to A", _ => { Compare8Bit(_de.Low, _af.High); });
+        AddStandardInstruction(0xBC, 4, "CP H", "Compare H to A", _ => { Compare8Bit(_hl.High, _af.High); });
+        AddStandardInstruction(0xBD, 4, "CP L", "Compare L to A", _ => { Compare8Bit(_hl.Low, _af.High); });
+        AddStandardInstruction(0xBE, 7, "CP (HL)", "Compare Data at memory location in (HL) to A", _ => { Compare8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High); });
 
-        AddDoubleByteInstruction(0xED, 0xA9, 16, "CPD", "Compare and Decrement", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB9, 21 / 16, "CPDR", "Compare, Decrement, Repeat", _ => { });
-        AddDoubleByteInstruction(0xED, 0xA1, 16, "CPI", "Compare and Increment", _ => { });
-        AddDoubleByteInstruction(0xED, 0xB1, DynamicCycleHandling, "CPIR", "Compare, Increment, Repeat", _ => { });
+        AddStandardInstruction(0xFE, 7, "CP N", "Compare value N to A", _ => { Compare8Bit(GetNextByte(), _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xBE, 19, "CP (IX+d)", "Compare Data at memory location in (IX + d) to A", _ => { Compare8BitToMemoryLocationFrom16BitRegister(_ix, GetNextByte(), _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xBE, 19, "CP (IY+d)", "Compare Data at memory location in (IY + d) to A", _ => { Compare8BitToMemoryLocationFrom16BitRegister(_iy, GetNextByte(), _af.High); });
 
-        AddStandardInstruction(0xE6, 7, "AND N", "And", _ => { });
+        AddDoubleByteInstruction(0xED, 0xA1, 16, "CPI", "Compare and Increment", _ =>
+        {
+            Compare8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High);
+            Increment16Bit(ref _hl);
+            Decrement16Bit(ref _bc);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+        });
+        AddDoubleByteInstruction(0xED, 0xB1, DynamicCycleHandling, "CPIR", "Compare, Increment, Repeat", _ =>
+        {
+            if (_bc.Word == 0)
+            {
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
+                //_bc.Word = 64 * 1024;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            Compare8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High);
+            Increment16Bit(ref _hl);
+            Decrement16Bit(ref _bc);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+
+            if (_bc.Word != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
+
+        AddDoubleByteInstruction(0xED, 0xA9, 16, "CPD", "Compare and Decrement", _ =>
+        {
+            Compare8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High);
+            Decrement16Bit(ref _hl);
+            Decrement16Bit(ref _bc);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+        });
+        AddDoubleByteInstruction(0xED, 0xB9, 21 / 16, "CPDR", "Compare, Decrement, Repeat", _ =>
+        {
+            if (_bc.Word == 0)
+            {
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
+                //_bc.Word = 64 * 1024;
+
+                _currentCycleCount += 16;
+                return;
+            }
+
+            Compare8BitToMemoryLocationFrom16BitRegister(_hl, 0, _af.High);
+            Decrement16Bit(ref _hl);
+            Decrement16Bit(ref _bc);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+
+            if (_bc.Word != 0)
+            {
+                // If not zero, set PC back by 2 so instruction is repeated
+                // Note that this is not a loop here since we still need to process interrupts
+                // hence running instruction again rather than doing a loop here
+                SetProgramCounter((ushort)(_pc.Word - 2));
+                _currentCycleCount += 21;
+            }
+            else
+            {
+                _currentCycleCount += 16;
+            }
+        });
+
+        AddStandardInstruction(0xA7, 4, "AND A", "AND", _ => { });
+        AddStandardInstruction(0xA0, 4, "AND B", "AND", _ => { });
+        AddStandardInstruction(0xA1, 4, "AND C", "AND", _ => { });
+        AddStandardInstruction(0xA2, 4, "AND D", "AND", _ => { });
+        AddStandardInstruction(0xA3, 4, "AND E", "AND", _ => { });
+        AddStandardInstruction(0xA4, 4, "AND H", "AND", _ => { });
+        AddStandardInstruction(0xA5, 4, "AND L", "AND", _ => { });
+        AddStandardInstruction(0xA6, 7, "AND (HL)", "AND", _ => { });
+
+        AddStandardInstruction(0xE6, 7, "AND N", "AND", _ => { });
         AddDoubleByteInstruction(0xDD, 0xA6, 19, "AND (IX+d)", "And", _ => { });
         AddDoubleByteInstruction(0xFD, 0xA6, 19, "AND (IY+d)", "And", _ => { });
-        //AddStandardInstructionWithMask(0xA0, 7, 4, "AND r", "Logical AND", _ => { });
 
-        AddStandardInstructionWithMask(0xB0, 7, 4, "OR r", "Logical inclusive OR", _ => { });
+        AddStandardInstruction(0xB7, 4, "OR A", "OR", _ => { });
+        AddStandardInstruction(0xB0, 4, "OR B", "OR", _ => { });
+        AddStandardInstruction(0xB1, 4, "OR C", "OR", _ => { });
+        AddStandardInstruction(0xB2, 4, "OR D", "OR", _ => { });
+        AddStandardInstruction(0xB3, 4, "OR E", "OR", _ => { });
+        AddStandardInstruction(0xB4, 4, "OR H", "OR", _ => { });
+        AddStandardInstruction(0xB5, 4, "OR L", "OR", _ => { });
+        AddStandardInstruction(0xB6, 7, "OR (HL)", "OR", _ => { });
+
         AddStandardInstruction(0xF6, 7, "OR N", "Or", _ => { });
         AddDoubleByteInstruction(0xDD, 0xB6, 19, "OR (IX+d)", "Or", _ => { });
         AddDoubleByteInstruction(0xFD, 0xB6, 19, "OR (IY+d)", "Or", _ => { });
 
-        AddStandardInstructionWithMask(0xA8, 7, 4, "XOR r", "Logical Exclusive OR", _ => { });
+        AddStandardInstruction(0xAF, 4, "XOR A", "XOR", _ => { });
+        AddStandardInstruction(0xA8, 4, "XOR B", "XOR", _ => { });
+        AddStandardInstruction(0xA9, 4, "XOR C", "XOR", _ => { });
+        AddStandardInstruction(0xAA, 4, "XOR D", "XOR", _ => { });
+        AddStandardInstruction(0xAB, 4, "XOR E", "XOR", _ => { });
+        AddStandardInstruction(0xAC, 4, "XOR H", "XOR", _ => { });
+        AddStandardInstruction(0xAD, 4, "XOR L", "XOR", _ => { });
+        AddStandardInstruction(0xAE, 7, "XOR (HL)", "XOR", _ => { });
+
         AddStandardInstruction(0xEE, 7, "XOR N", "Xor", _ => { });
         AddDoubleByteInstruction(0xDD, 0xAE, 19, "XOR (IX+d)", "Xor", _ => { });
         AddDoubleByteInstruction(0xFD, 0xAE, 19, "XOR (IY+d)", "Xor", _ => { });
