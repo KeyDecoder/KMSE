@@ -107,18 +107,22 @@ namespace Kmse.Core.Z80
 
         private void PushRegisterToStack(Z80Register register)
         {
+            var oldPointer = _stackPointer.Word;
             var currentPointer = _stackPointer.Word;
             _memory[--currentPointer] = register.High;
             _memory[--currentPointer] = register.Low;
             _stackPointer.Word = currentPointer;
+            _cpuLogger.LogDebug($"Push to stack - Old - {oldPointer}, New = {_stackPointer.Word}");
         }
 
         private void PopRegisterFromStack(ref Z80Register register)
         {
+            var oldPointer = _stackPointer.Word;
             var currentPointer = _stackPointer.Word;
             register.Low = _memory[currentPointer++];
             register.High = _memory[currentPointer++];
             _stackPointer.Word = currentPointer;
+            _cpuLogger.LogDebug($"Pop from stack - Old - {oldPointer}, New = {_stackPointer.Word}");
         }
 
         private void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
