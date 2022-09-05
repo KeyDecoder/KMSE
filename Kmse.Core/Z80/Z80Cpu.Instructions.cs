@@ -567,7 +567,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0x0A, 7, "LD A,(BC)", "Load A into memory location at BC", _ => { LoadInto8BitRegisterFromMemory(ref _af.High, _bc.Word); });
         AddStandardInstruction(0x1A, 7, "LD A,(DE)", "Load A into memory location at DE", _ => { LoadInto8BitRegisterFromMemory(ref _af.High, _de.Word); });
         AddStandardInstruction(0x2, 7, "LD (BC),A", "Load memory location at BC into A", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_bc, _af.High); });
-        AddStandardInstruction(0x12, 7, "LD (DE),A", "Load memory location at BC into A", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_de, _af.High); });
+        AddStandardInstruction(0x12, 7, "LD (DE),A", "Load memory location at DE into A", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_de, _af.High); });
 
         AddDoubleByteInstruction(0xDD, 0x77, 19, "LD (IX+d),A", "Load A into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _af.High, GetNextByte()); });
         AddDoubleByteInstruction(0xDD, 0x70, 19, "LD (IX+d),B", "Load B into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _bc.High, GetNextByte()); });

@@ -297,14 +297,14 @@ namespace Kmse.Core.Z80
             // Special cases where we are loading from or into memory location referenced by HL register rather than actual register
             if (sourceRegisterId == 0x06)
             {
-                LoadFrom16BitRegisterMemoryLocationInto8BitRegister(_hl, destinationRegisterId);
+                LoadFrom16BitRegisterMemoryLocationInto8BitRegisterById(_hl, destinationRegisterId);
                 _currentCycleCount += 3;
                 return;
             }
 
             if (destinationRegisterId == 0x06)
             {
-                SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_hl, sourceRegisterId);
+                SaveTo16BitRegisterMemoryLocationFrom8BitRegisterById(_hl, sourceRegisterId);
                 _currentCycleCount += 3;
                 return;
             }
@@ -315,15 +315,20 @@ namespace Kmse.Core.Z80
             destinationRegister = sourceRegister;
         }
 
-        private void LoadFrom16BitRegisterMemoryLocationInto8BitRegister(Z80Register sourceRegister, byte destinationRegisterId)
+        private void LoadFrom16BitRegisterMemoryLocationInto8BitRegisterById(Z80Register sourceRegister, byte destinationRegisterId)
         {
             ref var destinationRegister = ref Get8BitRegisterByRIdentifier(destinationRegisterId);
             LoadInto8BitRegisterFromMemory(ref destinationRegister, sourceRegister.Word);
         }
 
-        private void SaveTo16BitRegisterMemoryLocationFrom8BitRegister(Z80Register destinationRegister, byte sourceRegisterId, byte offset = 0)
+        private void SaveTo16BitRegisterMemoryLocationFrom8BitRegisterById(Z80Register destinationRegister, byte sourceRegisterId, byte offset = 0)
         {
             ref var sourceRegister = ref Get8BitRegisterByRIdentifier(sourceRegisterId);
+            Save8BitRegisterValueToMemory(sourceRegister, (ushort)(destinationRegister.Word + offset));
+        }
+
+        private void SaveTo16BitRegisterMemoryLocationFrom8BitRegister(Z80Register destinationRegister, byte sourceRegister, byte offset = 0)
+        {
             Save8BitRegisterValueToMemory(sourceRegister, (ushort)(destinationRegister.Word + offset));
         }
 
