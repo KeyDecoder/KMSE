@@ -593,7 +593,7 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.AddSubtractN);
         SetClearFlagConditional(Z80StatusFlags.CarryC, bit0Set);
 
-        _af.High = newValue;
+        register = newValue;
     }
 
     private void RotateLeftCircular16BitRegisterMemoryLocation(Z80Register register, int offset)
@@ -663,7 +663,7 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.AddSubtractN);
         SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 0));
 
-        _af.High = newValue;
+        register = newValue;
     }
 
     private void ShiftLeftArithmetic16BitRegisterMemoryLocation(Z80Register register, int offset)
@@ -716,7 +716,7 @@ public partial class Z80Cpu
         ClearFlag(Z80StatusFlags.AddSubtractN);
         SetClearFlagConditional(Z80StatusFlags.CarryC, Bitwise.IsSet(register, 0));
 
-        _af.High = newValue;
+        register = newValue;
     }
 
     private void ShiftLeftLogical16BitRegisterMemoryLocation(Z80Register register, int offset)

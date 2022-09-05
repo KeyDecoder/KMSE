@@ -429,26 +429,83 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_ix, GetNextByte(), true); });
         AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_iy, GetNextByte(), true); });
 
-        AddStandardInstruction(0x3F, 4, "CCF", "Complement Carry Flag", _ => { ClearFlag(Z80StatusFlags.AddSubtractN); InvertFlag(Z80StatusFlags.CarryC); });
+        AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ =>
+        {
+            ClearFlag(Z80StatusFlags.HalfCarryH); 
+            ClearFlag(Z80StatusFlags.AddSubtractN); 
+            SetFlag(Z80StatusFlags.CarryC);
+        });
+        AddStandardInstruction(0x3F, 4, "CCF", "Complement Carry Flag", _ =>
+        {
+            ClearFlag(Z80StatusFlags.AddSubtractN);
+            SetClearFlagConditional(Z80StatusFlags.HalfCarryH, IsFlagSet(Z80StatusFlags.CarryC));
+            InvertFlag(Z80StatusFlags.CarryC);
+        });
         AddStandardInstruction(0x27, 4, "DAA", "Decimal Adjust Accumulator", _ => { DecimalAdjustAccumulator();  });
         AddStandardInstruction(0X2F, 4, "CPL", "Complement", _ => { InvertAccumulatorRegister(); });
-        AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ => { ClearFlag(Z80StatusFlags.HalfCarryH); ClearFlag(Z80StatusFlags.AddSubtractN); SetFlag(Z80StatusFlags.CarryC); });
         AddDoubleByteInstruction(0xED, 0x44, 8, "NEG", "Negate", _ => { NegateAccumulatorRegister(); });
     }
 
     private void PopulateBitSetResetAndTestGroupInstructions()
     {
         AddDoubleByteInstructionWithMask(0xCB, 0x80, 0x3F, 8, "RES b,r", "Reset bit in register", i => { ResetBitByOpCode(i.OpCode); });
-        AddSpecialCbInstructionWithMask(0xDD, 0x86, 7, 23, "RES b,(IX+d)", "Reset bit in (IX+d)", i => { ResetBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
-        AddSpecialCbInstructionWithMask(0xFD, 0x86, 7, 23, "RES b,(IY+d)", "Reset bit in (IY+d)", i => { ResetBitByRegisterLocation(_iy, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x86, 23, "RES 0,(IX+d)", "Reset bit 0 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x8E, 23, "RES 1,(IX+d)", "Reset bit 1 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x96, 23, "RES 2,(IX+d)", "Reset bit 2 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x9E, 23, "RES 3,(IX+d)", "Reset bit 3 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xA6, 23, "RES 4,(IX+d)", "Reset bit 4 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xAE, 23, "RES 5,(IX+d)", "Reset bit 5 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xB6, 23, "RES 6,(IX+d)", "Reset bit 6 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xBE, 23, "RES 7,(IX+d)", "Reset bit 7 in (IX+d)", i => { ResetBitByRegisterLocation(_ix, 7, ((SpecialCbInstruction)i).DataByte); });
+
+        AddSpecialCbInstruction(0xFD, 0x86, 23, "RES 0,(IY+d)", "Reset bit 0 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x8E, 23, "RES 1,(IY+d)", "Reset bit 1 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x96, 23, "RES 2,(IY+d)", "Reset bit 2 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x9E, 23, "RES 3,(IY+d)", "Reset bit 3 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xA6, 23, "RES 4,(IY+d)", "Reset bit 4 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xAE, 23, "RES 5,(IY+d)", "Reset bit 5 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xB6, 23, "RES 6,(IY+d)", "Reset bit 6 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xBE, 23, "RES 7,(IY+d)", "Reset bit 7 in (IY+d)", i => { ResetBitByRegisterLocation(_iy, 7, ((SpecialCbInstruction)i).DataByte); });
 
         AddDoubleByteInstructionWithMask(0xCB, 0x40, 7, 0x3F, "BIT b,r", "Test Bit", i => { TestBitByOpCode(i.OpCode); });
-        AddSpecialCbInstructionWithMask(0xDD, 0x46, 7, 20, "BIT b,(IX+d)", "Test Bit", i => { TestBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
-        AddSpecialCbInstructionWithMask(0xFD, 0x46, 7, 20, "BIT b,(IY+d)", "Test Bit", i => { TestBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
 
-        AddDoubleByteInstructionWithMask(0xCB, 0xC0, 0x3F, 8, "SET b,r", "Set bit", i => { SetBitByOpCode(i.OpCode); });
-        AddSpecialCbInstructionWithMask(0xDD, 0xC6, 7, 23, "SET b,(IX+d)", "Set Bit", i => { SetBitByRegisterLocation(_ix, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
-        AddSpecialCbInstructionWithMask(0xFD, 0xC6, 7, 23, "SET b,(IY+d)", "Set Bit", i => { SetBitByRegisterLocation(_iy, i.OpCode & 0x38, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x46, 23, "BIT 0,(IX+d)", "Test bit 0 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x4E, 23, "BIT 1,(IX+d)", "Test bit 1 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x56, 23, "BIT 2,(IX+d)", "Test bit 2 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x5E, 23, "BIT 3,(IX+d)", "Test bit 3 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x66, 23, "BIT 4,(IX+d)", "Test bit 4 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x6E, 23, "BIT 5,(IX+d)", "Test bit 5 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x76, 23, "BIT 6,(IX+d)", "Test bit 6 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0x7E, 23, "BIT 7,(IX+d)", "Test bit 7 in (IX+d)", i => { TestBitByRegisterLocation(_ix, 7, ((SpecialCbInstruction)i).DataByte); });
+                                                                                               
+        AddSpecialCbInstruction(0xFD, 0x46, 23, "BIT 0,(IY+d)", "Test bit 0 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x4E, 23, "BIT 1,(IY+d)", "Test bit 1 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x56, 23, "BIT 2,(IY+d)", "Test bit 2 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x5E, 23, "BIT 3,(IY+d)", "Test bit 3 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x66, 23, "BIT 4,(IY+d)", "Test bit 4 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x6E, 23, "BIT 5,(IY+d)", "Test bit 5 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x76, 23, "BIT 6,(IY+d)", "Test bit 6 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0x7E, 23, "BIT 7,(IY+d)", "Test bit 7 in (IY+d)", i => { TestBitByRegisterLocation(_iy, 7, ((SpecialCbInstruction)i).DataByte); });
+
+        AddDoubleByteInstructionWithMask(0xCB, 0xC0, 0x3F, 8, "SET b,r", "Set bit b in Register r", i => { SetBitByOpCode(i.OpCode); });
+
+        AddSpecialCbInstruction(0xDD, 0xC6, 23, "SET 0,(IX+d)", "Set bit 0 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xCE, 23, "SET 1,(IX+d)", "Set bit 1 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xD6, 23, "SET 2,(IX+d)", "Set bit 2 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xDE, 23, "SET 3,(IX+d)", "Set bit 3 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xE6, 23, "SET 4,(IX+d)", "Set bit 4 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xEE, 23, "SET 5,(IX+d)", "Set bit 5 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xF6, 23, "SET 6,(IX+d)", "Set bit 6 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xDD, 0xFE, 23, "SET 7,(IX+d)", "Set bit 7 in (IX+d)", i => { SetBitByRegisterLocation(_ix, 7, ((SpecialCbInstruction)i).DataByte); });
+
+        AddSpecialCbInstruction(0xFD, 0xC6, 23, "SET 0,(IY+d)", "Set bit 0 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 0, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xCE, 23, "SET 1,(IY+d)", "Set bit 1 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 1, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xD6, 23, "SET 2,(IY+d)", "Set bit 2 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 2, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xDE, 23, "SET 3,(IY+d)", "Set bit 3 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 3, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xE6, 23, "SET 4,(IY+d)", "Set bit 4 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 4, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xEE, 23, "SET 5,(IY+d)", "Set bit 5 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 5, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xF6, 23, "SET 6,(IY+d)", "Set bit 6 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 6, ((SpecialCbInstruction)i).DataByte); });
+        AddSpecialCbInstruction(0xFD, 0xFE, 23, "SET 7,(IY+d)", "Set bit 7 in (IY+d)", i => { SetBitByRegisterLocation(_iy, 7, ((SpecialCbInstruction)i).DataByte); });
     }
 
     private void PopulateRotateAndShiftInstructions()
@@ -600,6 +657,12 @@ public partial class Z80Cpu
         AddStandardInstruction(0x1E, 7, "LD E,N", "Load n into E", _ => { LoadValueInto8BitRegister(ref _de.Low, GetNextByte()); });
         AddStandardInstruction(0x26, 7, "LD H,N", "Load n into H", _ => { LoadValueInto8BitRegister(ref _hl.High, GetNextByte()); });
         AddStandardInstruction(0x2E, 7, "LD L,N", "Load n into L", _ => { LoadValueInto8BitRegister(ref _hl.Low, GetNextByte()); });
+
+        // These are undocumented but zxdoc still runs them
+        AddDoubleByteInstruction(0xDD, 0x26, 7, "LD IXH,N", "Load n into IX high", _ => { LoadValueInto8BitRegister(ref _ix.High, GetNextByte()); });
+        AddDoubleByteInstruction(0xDD, 0x2E, 7, "LD IXL,N", "Load n into IX low", _ => { LoadValueInto8BitRegister(ref _ix.Low, GetNextByte()); });
+        AddDoubleByteInstruction(0xFD, 0x26, 7, "LD IYH,N", "Load n into IX high", _ => { LoadValueInto8BitRegister(ref _iy.High, GetNextByte()); });
+        AddDoubleByteInstruction(0xFD, 0x2E, 7, "LD IYL,N", "Load n into IX low", _ => { LoadValueInto8BitRegister(ref _iy.Low, GetNextByte()); });
 
         AddDoubleByteInstruction(0xDD, 0x7E, 19, "LD A,(IX+d)", "Load memory at IX + d into A", _ => { LoadInto8BitRegisterFromMemory(ref _af.High, _ix.Word, GetNextByte()); });
         AddDoubleByteInstruction(0xDD, 0x46, 19, "LD B,(IX+d)", "Load memory at IX + d into B", _ => { LoadInto8BitRegisterFromMemory(ref _bc.High, _ix.Word, GetNextByte()); });
