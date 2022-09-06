@@ -288,13 +288,13 @@ public partial class Z80Cpu
         // This is since the adding is done in two 4 bit operations not 1 8 bit operation internally
         // This is then combined with the DAA instruction which adjusts the result to get the valid value
         //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((destination & 0x0F) + (value & 0x0F) & 0x10) == 0x10);
-        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
-            ((value ^ destination ^ 0x80) & (destination ^ newValue) & 0x80) != 0);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (((destination ^ newValue ^ value) & 0x10) != 0));
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ destination ^ 0x80) & (destination ^ newValue) & 0x80) != 0);
+
         ClearFlag(Z80StatusFlags.AddSubtractN);
         // A carry is same as half carry just on the overall value
         // Since we stored the sum as a 32 bit integer, we can see if went past the max value and bit 7 must have carried over into bit 8
-        SetClearFlagConditional(Z80StatusFlags.CarryC, ((destination & 0xFF) + (value & 0xFF) & 0x100) == 0x100);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, newValue > 0xFF);
 
         destination = (byte)newValue;
     }
@@ -310,11 +310,20 @@ public partial class Z80Cpu
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
         SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
-            ((destination.Word & 0xFFF) + (newValue & 0xFFF) & 0x1000) == 0x1000);
+            (destination.Word & 0x0FFF) + (valueWithCarry & 0x0FFF) > 0x0FFF);
+
         ClearFlag(Z80StatusFlags.AddSubtractN);
         // Carry occurs if the result of adding the higher nibbles means it will set the next higher bit (17th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.CarryC,
-            ((destination.Word & 0xFFFF) + (newValue & 0xFFFF) & 0x10000) == 0x10000);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, (((destination.Word & 0xFFFF) + (valueWithCarry & 0xFFFF)) > 0xFFFF));
+
+        if (withCarry)
+        {
+            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+            SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
+                ((destination.Word ^ valueWithCarry) & 0x8000) == 0 &&
+                ((destination.Word ^ (newValue & 0xFFFF)) & 0x8000) != 0);
+        }
 
         destination.Word = (ushort)newValue;
     }
@@ -334,7 +343,20 @@ public partial class Z80Cpu
             valueWithCarry += 0x01;
         }
         int newValue = destination - valueWithCarry;
-        CheckSubtractionFlags(destination, value, newValue);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        // Half carry occurs if the result of subtracting the higher nibbles means it will set the next lower bit (basically underflows)
+        // We check if the subtraction means that adding higher nibbles sets bit 3
+        // This is then combined with the DAA instruction which adjusts the result to get the valid value
+        //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((destination ^ newValue ^ value) & 0x10) != 0);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ destination) & (destination ^ newValue) & 0x80) != 0);
+        SetFlag(Z80StatusFlags.AddSubtractN);
+
+        // Subtraction went negative, so carried over into next bit
+        SetClearFlagConditional(Z80StatusFlags.CarryC, destination < valueWithCarry);
+
         destination = (byte)newValue;
     }
 
@@ -352,32 +374,14 @@ public partial class Z80Cpu
         SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFFFF) == 0);
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
-            ((destination.Word & 0xFFF) + (newValue & 0xFFF) & 0x1000) == 0x1000);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((((destination.Word ^ newValue ^ valueWithCarry) >> 8) & 0x10) != 0));
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((source.Word ^ destination.Word) & (destination.Word ^ newValue) & 0x8000) != 0);
+
         SetFlag(Z80StatusFlags.AddSubtractN);
         // Carry occurs if the result of adding the higher nibbles means it will set the next higher bit (17th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.CarryC,
-            ((destination.Word & 0xFFFF) + (newValue & 0xFFFF) & 0x10000) == 0x10000);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, ((newValue& 0x10000) != 0));
 
         destination.Word = (ushort)newValue;
-    }
-
-    private void CheckSubtractionFlags(byte originalValue, byte valueToAdd, int newValue)
-    {
-        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)newValue, 7));
-        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
-
-        // Half carry occurs if the result of subtracting the higher nibbles means it will set the next lower bit (basically underflows)
-        // We check if the subtraction means that adding higher nibbles sets bit 3
-        // This is then combined with the DAA instruction which adjusts the result to get the valid value
-        //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH,
-            (((originalValue & 0xF0) - (valueToAdd & 0xF0)) & 0x10) == 0x00);
-        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
-            ((valueToAdd ^ originalValue) & (originalValue ^ newValue) & 0x80) != 0);
-        SetFlag(Z80StatusFlags.AddSubtractN);
-        // Subtraction went negative, so carried over into next bit
-        SetClearFlagConditional(Z80StatusFlags.CarryC, newValue < 0);
     }
 
     private void Compare8Bit(byte value, byte valueToCompareTo)
@@ -385,18 +389,52 @@ public partial class Z80Cpu
         // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
         var difference = valueToCompareTo - value;
 
-        // The flag checking is essentially the same as a subtraction, just without actually changing anything
-        CheckSubtractionFlags(valueToCompareTo, value, difference);
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)difference, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (difference & 0xFF) == 0);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((valueToCompareTo ^ difference ^ value) & 0x10) != 0);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ valueToCompareTo) & (valueToCompareTo ^ difference) & 0x80) != 0);
+        SetFlag(Z80StatusFlags.AddSubtractN);
+        // Subtraction went negative, so carried over into next bit
+        //SetClearFlagConditional(Z80StatusFlags.CarryC, difference < 0);
+        SetClearFlagConditional(Z80StatusFlags.CarryC, valueToCompareTo < value);
+    }
+
+    private void CompareIncrement()
+    {
+        var value = _memory[_hl.Word];
+        // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
+        var difference = _af.High - (sbyte)value;
+
+        Increment16Bit(ref _hl);
+        Decrement16Bit(ref _bc);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)difference, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, (difference & 0xFF) == 0);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((_af.High ^ difference ^ value) & 0x10) != 0);
+        SetFlag(Z80StatusFlags.AddSubtractN);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+    }
+
+    private void CompareDecrement()
+    {
+        var value = _memory[_hl.Word];
+        // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
+        var difference = _af.High - (sbyte)value;
+
+        Decrement16Bit(ref _hl);
+        Decrement16Bit(ref _bc);
+
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)difference, 7));
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, _af.High == value);
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((_af.High ^ difference ^ value) & 0x10) != 0);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+        SetFlag(Z80StatusFlags.AddSubtractN);
     }
 
     private void Compare8BitToMemoryLocationFrom16BitRegister(Z80Register register, int offset, byte valueToCompareTo)
     {
         var value = _memory[(ushort)(register.Word + offset)];
-        // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
-        var difference = valueToCompareTo - value;
-
-        // The flag checking is essentially the same as a subtraction, just without actually changing anything
-        CheckSubtractionFlags(valueToCompareTo, value, difference);
+        Compare8Bit(value, valueToCompareTo);
     }
 
     private void And8Bit(byte value, byte valueToAndAgainst, ref byte register)
