@@ -111,7 +111,11 @@ public partial class Z80Cpu
 
     private void ResetBitByOpCode(byte opCode)
     {
-        var bit = opCode & 0x38;
+        var bit = (opCode & 0x38) >> 3;
+        if (bit is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException($"Bit {bit} is not a valid bit to reset");
+        }
         var register = opCode & 0x07;
 
         if (register == 0x06)
@@ -145,6 +149,8 @@ public partial class Z80Cpu
             case 7:
                 Bitwise.Clear(ref _af.High, bit);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException($"Register id {register} is not a valid register to reset");
         }
     }
 
@@ -158,7 +164,11 @@ public partial class Z80Cpu
 
     private void SetBitByOpCode(byte opCode)
     {
-        var bit = opCode & 0x38;
+        var bit = (opCode & 0x38) >> 3;
+        if (bit is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException($"Bit {bit} is not a valid bit to set");
+        }
         var register = opCode & 0x07;
 
         if (register == 0x06)
@@ -192,6 +202,8 @@ public partial class Z80Cpu
             case 7:
                 Bitwise.Set(ref _af.High, bit);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException($"Register id {register} is not a valid register to set");
         }
     }
 
@@ -205,7 +217,11 @@ public partial class Z80Cpu
 
     private void TestBitByOpCode(byte opCode)
     {
-        var bit = opCode & 0x38;
+        var bit = (opCode & 0x38) >> 3;
+        if (bit is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException($"Bit {bit} is not a valid bit to test");
+        }
         var register = opCode & 0x07;
 
         if (register == 0x06)
@@ -225,19 +241,30 @@ public partial class Z80Cpu
             4 => _hl.High,
             5 => _hl.Low,
             7 => _af.High,
-            _ => 0
-        };
-        SetClearFlagConditional(Z80StatusFlags.ZeroZ, !Bitwise.IsSet(valueToCheck, bit));
-        ClearFlag(Z80StatusFlags.HalfCarryH);
+            _ => throw new ArgumentOutOfRangeException($"Register id {register} is not a valid register to test bit on")
+    };
+        var bitSet = Bitwise.IsSet(valueToCheck, bit);
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, !bitSet);
+        SetFlag(Z80StatusFlags.HalfCarryH);
         ClearFlag(Z80StatusFlags.AddSubtractN);
+
+        // This behaviour is not documented
+        SetClearFlagConditional(Z80StatusFlags.SignS, (bit == 7 && bitSet));
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, !bitSet);
     }
 
     private void TestBitByRegisterLocation(Z80Register register, int bit, int offset)
     {
         var value = _memory[(ushort)(register.Word + offset)];
-        SetClearFlagConditional(Z80StatusFlags.ZeroZ, !Bitwise.IsSet(value, bit));
-        ClearFlag(Z80StatusFlags.HalfCarryH);
+        var bitSet = Bitwise.IsSet(value, bit);
+
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, !bitSet);
+        SetFlag(Z80StatusFlags.HalfCarryH);
         ClearFlag(Z80StatusFlags.AddSubtractN);
+
+        // This behaviour is not documented
+        SetClearFlagConditional(Z80StatusFlags.SignS, bit == 7 && bitSet);
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, !bitSet);
     }
 
     private void AddValueAtRegisterMemoryLocationTo8BitRegister(Z80Register register, int offset, ref byte destination, bool withCarry = false)

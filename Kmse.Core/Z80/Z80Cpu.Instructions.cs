@@ -392,13 +392,13 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0xAE, 19, "XOR (IX+d)", "XOR A with data in memory location in (IX+d) and Store in A", _ => { Xor8BitToMemoryLocationFrom16BitRegister(_ix, GetNextByte(), _af.High, ref _af.High); });
         AddDoubleByteInstruction(0xFD, 0xAE, 19, "XOR (IY+d)", "XOR A with data in memory location in (IY+d) and Store in A", _ => { Xor8BitToMemoryLocationFrom16BitRegister(_iy, GetNextByte(), _af.High, ref _af.High); });
 
-        AddStandardInstruction(0x3C, 4, "INC A", "Increment A", _ => { Increment8Bit(ref _af.High, true); });
-        AddStandardInstruction(0x04, 4, "INC B", "Increment B", _ => { Increment8Bit(ref _bc.High, true); });
-        AddStandardInstruction(0x0C, 4, "INC C", "Increment C", _ => { Increment8Bit(ref _bc.Low, true); });
-        AddStandardInstruction(0x14, 4, "INC D", "Increment D", _ => { Increment8Bit(ref _de.High, true); });
-        AddStandardInstruction(0x1C, 4, "INC E", "Increment E", _ => { Increment8Bit(ref _de.Low, true); });
-        AddStandardInstruction(0x24, 4, "INC H", "Increment H", _ => { Increment8Bit(ref _hl.High, true); });
-        AddStandardInstruction(0x2C, 4, "INC L", "Increment L", _ => { Increment8Bit(ref _hl.Low, true); });
+        AddStandardInstruction(0x3C, 4, "INC A", "Increment A", _ => { Increment8Bit(ref _af.High); });
+        AddStandardInstruction(0x04, 4, "INC B", "Increment B", _ => { Increment8Bit(ref _bc.High); });
+        AddStandardInstruction(0x0C, 4, "INC C", "Increment C", _ => { Increment8Bit(ref _bc.Low); });
+        AddStandardInstruction(0x14, 4, "INC D", "Increment D", _ => { Increment8Bit(ref _de.High); });
+        AddStandardInstruction(0x1C, 4, "INC E", "Increment E", _ => { Increment8Bit(ref _de.Low); });
+        AddStandardInstruction(0x24, 4, "INC H", "Increment H", _ => { Increment8Bit(ref _hl.High); });
+        AddStandardInstruction(0x2C, 4, "INC L", "Increment L", _ => { Increment8Bit(ref _hl.Low); });
         AddStandardInstruction(0x3, 6, "INC BC", "Increment BC", _ => { Increment16Bit(ref _bc); });
         AddStandardInstruction(0x13, 6, "INC DE", "Increment DE", _ => { Increment16Bit(ref _de); });
         AddStandardInstruction(0x23, 6, "INC HL", "Increment HL", _ => { Increment16Bit(ref _hl); });
@@ -406,17 +406,17 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { Increment16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { Increment16Bit(ref _iy); });
 
-        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { IncrementAtRegisterMemoryLocation(_hl, 0, true); });
-        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_ix, GetNextByte(), true); });
-        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_iy, GetNextByte(), true); });
+        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { IncrementAtRegisterMemoryLocation(_hl, 0); });
+        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_ix, GetNextByte()); });
+        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_iy, GetNextByte()); });
 
-        AddStandardInstruction(0x3D, 4, "DEC A", "Decrement A", _ => { Decrement8Bit(ref _af.High, true); });
-        AddStandardInstruction(0x05, 4, "DEC B", "Decrement B", _ => { Decrement8Bit(ref _bc.High, true); });
-        AddStandardInstruction(0x0D, 4, "DEC C", "Decrement C", _ => { Decrement8Bit(ref _bc.Low, true); });
-        AddStandardInstruction(0x15, 4, "DEC D", "Decrement D", _ => { Decrement8Bit(ref _de.High, true); });
-        AddStandardInstruction(0x1D, 4, "DEC E", "Decrement E", _ => { Decrement8Bit(ref _de.Low, true); });
-        AddStandardInstruction(0x25, 4, "DEC H", "Decrement H", _ => { Decrement8Bit(ref _hl.High, true); });
-        AddStandardInstruction(0x2D, 4, "DEC L", "Decrement L", _ => { Decrement8Bit(ref _hl.Low, true); });
+        AddStandardInstruction(0x3D, 4, "DEC A", "Decrement A", _ => { Decrement8Bit(ref _af.High); });
+        AddStandardInstruction(0x05, 4, "DEC B", "Decrement B", _ => { Decrement8Bit(ref _bc.High); });
+        AddStandardInstruction(0x0D, 4, "DEC C", "Decrement C", _ => { Decrement8Bit(ref _bc.Low); });
+        AddStandardInstruction(0x15, 4, "DEC D", "Decrement D", _ => { Decrement8Bit(ref _de.High); });
+        AddStandardInstruction(0x1D, 4, "DEC E", "Decrement E", _ => { Decrement8Bit(ref _de.Low); });
+        AddStandardInstruction(0x25, 4, "DEC H", "Decrement H", _ => { Decrement8Bit(ref _hl.High); });
+        AddStandardInstruction(0x2D, 4, "DEC L", "Decrement L", _ => { Decrement8Bit(ref _hl.Low); });
 
         AddStandardInstruction(0x0B, 6, "DEC BC", "Decrement BC", _ => { Decrement16Bit(ref _bc); });
         AddStandardInstruction(0x1B, 6, "DEC DE", "Decrement DE", _ => { Decrement16Bit(ref _de); });
@@ -425,9 +425,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x2B, 10, "DEC IX", "Decrement IX", _ => { Decrement16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x2B, 10, "DEC IY", "Decrement IY", _ => { Decrement16Bit(ref _iy); });
 
-        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { DecrementAtRegisterMemoryLocation(_hl, 0, true); });
-        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_ix, GetNextByte(), true); });
-        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_iy, GetNextByte(), true); });
+        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { DecrementAtRegisterMemoryLocation(_hl, 0); });
+        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_ix, GetNextByte()); });
+        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_iy, GetNextByte()); });
 
         AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ =>
         {
