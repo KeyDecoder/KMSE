@@ -32,6 +32,9 @@ public class MasterSystemIoManager : IMasterSystemIoManager
     private ISoundPort _soundPort;
     private IVdpPort _vdpPort;
 
+    private byte _memoryControlRegister;
+    private byte _ioControlRegister;
+
     public MasterSystemIoManager(IIoPortLogger logger)
     {
         _logger = logger;
@@ -48,6 +51,9 @@ public class MasterSystemIoManager : IMasterSystemIoManager
 
     public void Reset()
     {
+        _memoryControlRegister = 0x00;
+        _ioControlRegister = 0x00;
+    
         ClearMaskableInterrupt();
         ClearNonMaskableInterrupt();
     }
@@ -79,6 +85,22 @@ public class MasterSystemIoManager : IMasterSystemIoManager
         _logger.SetNonMaskableInterruptStatus(NonMaskableInterrupt);
     }
 
+    /* SMS MkII Port Mapping
+    $00-$3F : Writes to even addresses go to memory control register.
+        Writes to odd addresses go to I/O control register.
+        Reads return $FF.
+    $40-$7F : Writes to any address go to the SN76489 PSG.
+        Reads from even addresses return the V counter.
+        Reads from odd address return the H counter.
+    $80-$BF : Writes to even addresses go to the VDP data port.
+        Writes to odd addresses go to the VDP control port.
+        Reads from even addresses return the VDP data port contents.
+        Reads from odd address return the VDP status flags.
+    $C0-$FF : Writes have no effect.
+        Reads from even addresses return the I/O port A/B register.
+        Reads from odd address return the I/O port B/misc.register.
+    */
+
     public byte ReadPort(ushort port)
     {
         // Ignore the upper 8 bits since that is not used
@@ -86,73 +108,91 @@ public class MasterSystemIoManager : IMasterSystemIoManager
 
         if (address < 0x40)
         {
+            /*
+            $00 -$3F : Writes to even addresses go to memory control register.
+                Writes to odd addresses go to I / O control register.
+                Reads return $FF.
+            */
             _logger.PortRead(port, 0xFF);
             return 0xFF;
         }
 
         if (address <= 0xBF)
         {
+            /*
+            $40 -$7F : Writes to any address go to the SN76489 PSG.
+                Reads from even addresses return the V counter.
+                Reads from odd address return the H counter.
+            $80 -$BF: Writes to even addresses go to the VDP data port.
+                Writes to odd addresses go to the VDP control port.
+                Reads from even addresses return the VDP data port contents.
+                Reads from odd address return the VDP status flags.
+            */
+
             var data = _vdpPort.ReadPort(address);
             _logger.PortRead(port, data);
             return data;
         }
 
-        switch (address)
+        if (address <= 0xFF)
         {
-            // Controller port 1
-            case 0xDC:
-            // mirror of 0xDC
-            case 0xC0:
-            // Controller port 2
-            case 0xDD:
-            // mirror of 0xDD
-            case 0xC1:
-            {
-                var data = _controllerPort.ReadPort(address);
-                _logger.PortRead(port, data);
-                return data;
-            }
-            default:
-            {
-                _logger.PortRead(port, 0);
-                return 0;
-            }
+            /*
+            $C0 -$FF: Writes have no effect.
+                Reads from even addresses return the I / O port A/ B register.
+                Reads from odd address return the I / O port B/ misc.register.
+            */
+            var data = _controllerPort.ReadPort(address);
+            _logger.PortRead(port, data);
+            return data;
         }
+
+        throw new InvalidOperationException($"Unsupported port read of address {address:X4}");
     }
 
     public void WritePort(ushort port, byte value)
     {
         // Ignore the upper 8 bits since that is not used
         var address = (ushort)(port & 0xFF);
+        _logger.PortWrite(port, value);
 
         if (address < 0x40)
         {
+            //$00 -$3F : Writes to even addresses go to memory control register.
+            //    Writes to odd addresses go to I / O control register.
+            //    Reads return $FF.
+            if (address % 2 == 0)
+            {
+                _memoryControlRegister = value;
+            }
+            else
+            {
+                _ioControlRegister = value;
+                _controllerPort.SetIoPortControl(value);
+            }
+
             return;
         }
 
         if (address < 0x80)
         {
-            // Writing to sound chip
+            // $40 -$7F : Writes to any address go to the SN76489 PSG.
             _soundPort.WritePort(address, value);
-            _logger.PortWrite(port, value);
             return;
         }
 
         if (address <= 0xBF)
         {
             _vdpPort.WritePort(address, value);
-            _logger.PortWrite(port, value);
             return;
         }
 
         if (address is 0xFC or 0xFD)
         {
             _debugConsolePort.WritePort(address, value);
-            _logger.PortWrite(port, value);
             return;
         }
 
-        // Unknown port mapping, just log it
-        _logger.PortWrite(port, value);
+        // Unknown port mapping, just log it and move on
+        _logger.Error($"{port:X4}", "Unhandled write to I/O");
     }
 }

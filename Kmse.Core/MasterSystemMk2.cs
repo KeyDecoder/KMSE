@@ -160,6 +160,14 @@ public class MasterSystemMk2 : IMasterSystemConsole
         return _cpu.GetStatus();
     }
 
+    public void TriggerPauseButton()
+    {
+        // The Z80's NMI pin is connected to the PAUSE button. When this button is
+        // pressed an NMI is generated, causing the PC to change to $0066.Releasing
+        // the button does nothing.
+        _io.SetNonMaskableInterrupt();
+    }
+
     private double GetDisplayFrameRate()
     {
         return _displayType == DisplayType.Ntsc ? FrameRateNtsc : FrameRatePal;

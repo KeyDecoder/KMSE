@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Kmse.Console.Logging;
 using Kmse.Core;
+using Kmse.Core.IO.Controllers;
 using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
 using Microsoft.Extensions.Hosting;
@@ -15,15 +16,17 @@ internal class EmulatorService : BackgroundService
     private readonly SerilogIoLogger _ioLogger;
     private readonly ILogger _log;
     private readonly IMasterSystemConsole _masterSystemConsole;
+    private readonly IControllerPort _controllers;
     private readonly SerilogMemoryLogger _memoryLogger;
     private readonly string _romFilename;
 
-    public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole,
+    public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole, IControllerPort controllers,
         IHostApplicationLifetime applicationLifetime,
         SerilogCpuLogger cpuLogger, SerilogMemoryLogger memoryLogger, SerilogIoLogger ioLogger)
     {
         _log = log;
         _masterSystemConsole = masterSystemConsole;
+        _controllers = controllers;
         _applicationLifetime = applicationLifetime;
         _cpuLogger = cpuLogger;
         _memoryLogger = memoryLogger;
@@ -67,19 +70,52 @@ internal class EmulatorService : BackgroundService
         }
     }
 
+    private void UpdateControllerEmulationForKey(ConsoleKey key, bool inputA, ControllerInputStatus button)
+    {
+        // TODO: Not particularly efficient since we are setting this to be pressed or not pressed each time
+        var pressed = Keyboard.IsKeyDown(key);
+        if (inputA)
+        {
+            _controllers.ChangeInputAControlState(button, pressed);
+        }
+        else
+        {
+            _controllers.ChangeInputBControlState(button, pressed);
+        }
+    }
+
     private void HandleInputs(CancellationToken cancellationToken)
     {
         System.Console.WriteLine("Esc to exit console app");
         System.Console.WriteLine("TAB to stop/start emulation");
         System.Console.WriteLine("F to turn on/off file logging (default is off)");
         System.Console.WriteLine("P to pause/unpause emulation (directly)");
+        System.Console.WriteLine("O to trigger pause button input");
+        System.Console.WriteLine("R to trigger reset button input");
         System.Console.WriteLine("L to enable/disable CPU verbose logging");
         System.Console.WriteLine("M to enable/disable Memory verbose logging");
         System.Console.WriteLine("I to enable/disable I/O ports verbose logging");
         System.Console.WriteLine("S to get CPU current status");
 
+        System.Console.WriteLine("Up to trigger controller A up");
+        System.Console.WriteLine("Down to trigger controller A down");
+        System.Console.WriteLine("Left to trigger controller A left");
+        System.Console.WriteLine("Right to trigger controller A right");
+        System.Console.WriteLine("Z to trigger controller A left button");
+        System.Console.WriteLine("X to trigger controller A right button");
+
         while (!cancellationToken.IsCancellationRequested)
         {
+            // Check the state of the input keys first and then handle regular commands like normal
+            // This is so the controller emulation can get key up and down separately
+            UpdateControllerEmulationForKey(ConsoleKey.Z, true, ControllerInputStatus.LeftButton);
+            UpdateControllerEmulationForKey(ConsoleKey.X, true, ControllerInputStatus.RightButton);
+            UpdateControllerEmulationForKey(ConsoleKey.UpArrow, true, ControllerInputStatus.Up);
+            UpdateControllerEmulationForKey(ConsoleKey.DownArrow, true, ControllerInputStatus.Down);
+            UpdateControllerEmulationForKey(ConsoleKey.LeftArrow, true, ControllerInputStatus.Left);
+            UpdateControllerEmulationForKey(ConsoleKey.RightArrow, true, ControllerInputStatus.Right);
+            _controllers.ChangeResetButtonState(Keyboard.IsKeyDown(ConsoleKey.R));
+
             if (!System.Console.KeyAvailable)
             {
                 Thread.Sleep(1);
@@ -87,7 +123,6 @@ internal class EmulatorService : BackgroundService
             }
 
             var key = System.Console.ReadKey(true);
-
             switch (key.Key)
             {
                 case ConsoleKey.Escape:
@@ -148,11 +183,19 @@ internal class EmulatorService : BackgroundService
                     _ioLogger.EnableDisableVerboseLogging();
                 }
                     break;
+                case ConsoleKey.O:
+                {
+                    _log.Information("Hitting Console Pause Button");
+                    _masterSystemConsole.TriggerPauseButton();
+                }
+                    break;
             }
         }
 
         _masterSystemConsole.PowerOff();
     }
+
+
 
     private string GetStatusFlagsAsString(CpuStatus status)
     {

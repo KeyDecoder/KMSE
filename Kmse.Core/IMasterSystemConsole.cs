@@ -13,4 +13,6 @@ public interface IMasterSystemConsole
     bool IsPaused();
     void Run();
     CpuStatus GetCpuStatus();
+
+    void TriggerPauseButton();
 }

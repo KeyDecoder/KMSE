@@ -7,6 +7,98 @@ namespace Kmse.Core.UnitTests.BitWiseTests;
 [TestFixture]
 public class BitWiseTestFixture
 {
+    [Test]
+    public void WhenCheckingBitWithInvalidBit()
+    {
+        var action = () => Bitwise.IsSet((byte)0xFF, 8);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenCheckingBitWithNegativeBit()
+    {
+        var action = () => Bitwise.IsSet((byte)0xFF, -1);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenCheckingIntegerBitWithInvalidBit()
+    {
+        var action = () => Bitwise.IsSet(0xFF, 16);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenCheckingIntegerBitWithNegativeBit()
+    {
+        var action = () => Bitwise.IsSet(0xFF, -1);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSettingBitWithInvalidBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.Set(ref test, 8);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSettingBitWithNegativeBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.Set(ref test, -1);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSetIfBitWithInvalidBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.SetIf(ref test, 8, () => false);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSetIfBitWithNegativeBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.SetIf(ref test, -1, () => false);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenClearingBitWithInvalidBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.Clear(ref test, 8);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenClearingBitWithNegativeBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.Clear(ref test, -1);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSetOrClearIfBitWithInvalidBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.SetOrClearIf(ref test, 8, () => false);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Test]
+    public void WhenSetOrClearIfBitWithNegativeBit()
+    {
+        byte test = 0;
+        var action = () => Bitwise.SetOrClearIf(ref test, -1, () => false);
+        action.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     private static object[] _isSetTestCases =
     {
         new object[] { (byte)(1 << 0), 0, true },
@@ -161,5 +253,73 @@ public class BitWiseTestFixture
     {
         Bitwise.Clear(ref source, bit);
         source.Should().Be(expectedValue);
+    }
+
+    private static object[] _setIfBitTestCases =
+    {
+        new object[] { (byte)0x00, 0, (byte)0x01, () => true },
+        new object[] { (byte)0x00, 1, (byte)0x02, () => true },
+        new object[] { (byte)0x00, 2, (byte)0x04, () => true },
+        new object[] { (byte)0x00, 3, (byte)0x08, () => true },
+        new object[] { (byte)0x00, 4, (byte)0x10, () => true },
+        new object[] { (byte)0x00, 5, (byte)0x20, () => true },
+        new object[] { (byte)0x00, 6, (byte)0x40, () => true },
+        new object[] { (byte)0x00, 7, (byte)0x80, () => true },
+
+        new object[] { unchecked((byte)~0x01), 0, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x02), 1, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x04), 2, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x08), 3, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x10), 4, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x20), 5, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x40), 6, (byte)0xFF, () => true },
+        new object[] { unchecked((byte)~0x80), 7, (byte)0xFF, () => true },
+
+        new object[] { (byte)0x00, 0, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 1, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 2, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 3, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 4, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 5, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 6, (byte)0x00, () => false },
+        new object[] { (byte)0x00, 7, (byte)0x00, () => false },
+
+        new object[] { unchecked((byte)~0x01), 0, unchecked((byte)~0x01), () => false },
+        new object[] { unchecked((byte)~0x02), 1, unchecked((byte)~0x02), () => false },
+        new object[] { unchecked((byte)~0x04), 2, unchecked((byte)~0x04), () => false },
+        new object[] { unchecked((byte)~0x08), 3, unchecked((byte)~0x08), () => false },
+        new object[] { unchecked((byte)~0x10), 4, unchecked((byte)~0x10), () => false },
+        new object[] { unchecked((byte)~0x20), 5, unchecked((byte)~0x20), () => false },
+        new object[] { unchecked((byte)~0x40), 6, unchecked((byte)~0x40), () => false },
+        new object[] { unchecked((byte)~0x80), 7, unchecked((byte)~0x80), () => false }
+    };
+
+    [Test]
+    [TestCaseSource(nameof(_setIfBitTestCases))]
+    public void WhenSettingBitIf(byte source, int bit, byte expectedValue, Func<bool> func)
+    {
+        Bitwise.SetIf(ref source, bit, func);
+        source.Should().Be(expectedValue);
+    }
+
+    private static object[] _setClearIfBitTestCases =
+    {
+        new object[] { (byte)0x00, 0, (byte)0x01, () => true },
+        new object[] { (byte)0x01, 0, (byte)0x00, () => false },
+
+        new object[] { (byte)0x00, 7, (byte)0x80, () => true },
+        new object[] { (byte)0x80, 7, (byte)0x00, () => false },
+
+        new object[] { (byte)0x7F, 7, (byte)0xFF, () => true },
+        new object[] { (byte)0xFF, 7, (byte)0x7F, () => false }
+    };
+
+    [Test]
+    [TestCaseSource(nameof(_setClearIfBitTestCases))]
+    public void WhenSettingOrClearingBitIf(byte source, int bit, byte expectedValue, Func<bool> func)
+    {
+        var output = source;
+        Bitwise.SetOrClearIf(ref output, bit, func);
+        output.Should().Be(expectedValue);
     }
 }
