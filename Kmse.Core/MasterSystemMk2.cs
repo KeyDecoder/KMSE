@@ -7,6 +7,7 @@ using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core;
 
@@ -26,6 +27,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
 
     private readonly IMasterSystemCartridge _cartridge;
     private readonly IMasterSystemMemory _memory;
+    private readonly ICpuLogger _cpuLogger;
     private readonly IControllerPort _controllers;
     private readonly IZ80Cpu _cpu;
     private readonly IDebugConsolePort _debugConsole;
@@ -39,7 +41,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
     private bool _running;
 
     public MasterSystemMk2(IZ80Cpu cpu, IMasterSystemIoManager io, IVdpPort vdp, IControllerPort controllers,
-        ISoundPort sound, IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge, IMasterSystemMemory memory)
+        ISoundPort sound, IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge, IMasterSystemMemory memory, ICpuLogger cpuLogger)
     {
         _cpu = cpu;
         _io = io;
@@ -49,12 +51,15 @@ public class MasterSystemMk2 : IMasterSystemConsole
         _debugConsole = debugConsole;
         _cartridge = cartridge;
         _memory = memory;
+        _cpuLogger = cpuLogger;
         _cpu.Initialize(_memory, _io);
         _io.Initialize(_vdp, _controllers, _sound, _debugConsole);
     }
 
     public async Task<bool> LoadCartridge(string filename, CancellationToken cancellationToken)
     {
+        // Loading a new cart automatically powers this off
+        PowerOff();
         var result = await _cartridge.LoadRomFromFile(filename, cancellationToken);
         if (!result)
         {
@@ -67,23 +72,38 @@ public class MasterSystemMk2 : IMasterSystemConsole
 
     public void PowerOn()
     {
+        _cpuLogger.Debug("CPU Powering On");
         Reset();
+        _paused = false;
         _running = true;
     }
 
     public void PowerOff()
     {
+        _cpuLogger.Debug("CPU Powering Off");
         _running = false;
     }
 
     public void Pause()
     {
+        _cpuLogger.Debug("CPU Emulation Pause");
         _paused = true;
     }
 
     public void Unpause()
     {
+        _cpuLogger.Debug("CPU Emulation Unpause");
         _paused = false;
+    }
+
+    public bool IsRunning()
+    {
+        return _running;
+    }
+
+    public bool IsPaused()
+    {
+        return _paused;
     }
 
     public void Run()
@@ -120,6 +140,11 @@ public class MasterSystemMk2 : IMasterSystemConsole
                 // TODO: Process any inputs from controllers and update controller port
 
                 totalCycles += cpuCycles;
+
+                if (_paused || !_running)
+                {
+                    break;
+                }
             }
 
             while (stopWatch.ElapsedMilliseconds - startTime < timePerFrame) Thread.Sleep(1);
@@ -128,6 +153,11 @@ public class MasterSystemMk2 : IMasterSystemConsole
         }
 
         stopWatch.Stop();
+    }
+
+    public CpuStatus GetCpuStatus()
+    {
+        return _cpu.GetStatus();
     }
 
     private double GetDisplayFrameRate()

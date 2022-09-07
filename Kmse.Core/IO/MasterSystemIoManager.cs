@@ -86,14 +86,14 @@ public class MasterSystemIoManager : IMasterSystemIoManager
 
         if (address < 0x40)
         {
-            _logger.ReadPort(port, 0xFF);
+            _logger.PortRead(port, 0xFF);
             return 0xFF;
         }
 
         if (address <= 0xBF)
         {
             var data = _vdpPort.ReadPort(address);
-            _logger.ReadPort(port, data);
+            _logger.PortRead(port, data);
             return data;
         }
 
@@ -109,12 +109,12 @@ public class MasterSystemIoManager : IMasterSystemIoManager
             case 0xC1:
             {
                 var data = _controllerPort.ReadPort(address);
-                _logger.ReadPort(port, data);
+                _logger.PortRead(port, data);
                 return data;
             }
             default:
             {
-                _logger.ReadPort(port, 0);
+                _logger.PortRead(port, 0);
                 return 0;
             }
         }
@@ -134,25 +134,25 @@ public class MasterSystemIoManager : IMasterSystemIoManager
         {
             // Writing to sound chip
             _soundPort.WritePort(address, value);
-            _logger.WritePort(port, value);
+            _logger.PortWrite(port, value);
             return;
         }
 
         if (address <= 0xBF)
         {
             _vdpPort.WritePort(address, value);
-            _logger.WritePort(port, value);
+            _logger.PortWrite(port, value);
             return;
         }
 
         if (address is 0xFC or 0xFD)
         {
             _debugConsolePort.WritePort(address, value);
-            _logger.WritePort(port, value);
+            _logger.PortWrite(port, value);
             return;
         }
 
         // Unknown port mapping, just log it
-        _logger.WritePort(port, value);
+        _logger.PortWrite(port, value);
     }
 }

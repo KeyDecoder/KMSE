@@ -1,6 +1,4 @@
-﻿#define CONSOLE_LOG
-
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AutofacSerilogIntegration;
 using CommandLine;
@@ -75,11 +73,10 @@ public class Program
                 containerBuilder.RegisterLogger();
                 containerBuilder.RegisterInstance(options);
                 containerBuilder.RegisterModule<EmulatorModule>();
-                containerBuilder.RegisterType<SerilogMemoryLogger>().As<IMemoryLogger>();
-                containerBuilder.RegisterType<SerilogIoLogger>().As<IIoPortLogger>();
-                containerBuilder.RegisterType<SerilogDebugConsoleOutput>().As<IDebugConsoleOutput>();
-                containerBuilder.RegisterType<SerilogCpuLogger>().As<ICpuLogger>();
-                containerBuilder.RegisterType<DebugFileLogger>().AsSelf().SingleInstance();
+                containerBuilder.RegisterType<SerilogMemoryLogger>().As<IMemoryLogger>().AsSelf().SingleInstance();
+                containerBuilder.RegisterType<SerilogIoLogger>().As<IIoPortLogger>().AsSelf().SingleInstance();
+                containerBuilder.RegisterType<SerilogDebugConsoleOutput>().As<IDebugConsoleOutput>().AsSelf().SingleInstance();
+                containerBuilder.RegisterType<SerilogCpuLogger>().As<ICpuLogger>().AsSelf().SingleInstance();
             })
             .ConfigureServices((_, services) =>
             {

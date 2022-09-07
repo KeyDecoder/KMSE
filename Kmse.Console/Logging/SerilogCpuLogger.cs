@@ -6,34 +6,60 @@ namespace Kmse.Console.Logging;
 public class SerilogCpuLogger : ICpuLogger
 {
     private readonly ILogger _log;
-    private readonly DebugFileLogger _fileLogger;
+    private bool _verboseLoggingEnabled;
 
-
-    public SerilogCpuLogger(ILogger log, DebugFileLogger fileLogger)
+    public SerilogCpuLogger(ILogger log)
     {
         _log = log;
-        _fileLogger = fileLogger;
     }
 
-    public void LogDebug(string message)
+    public void Debug(string message)
     {
-        _log.Debug("CPU Debug: {Message}",message);
-        _fileLogger.LogDebug($"CPU: {message}");
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
+        _log.Debug("CPU Debug: {Message}", message);
     }
 
-    public void LogMemoryRead(ushort address, byte data)
+    public void Error(string message)
     {
-#if CONSOLE_LOG
-        _log.Debug($"0x{address:X4} 0x{data:X2}");
-#endif
-        _fileLogger.LogInformation($"Mem Read: 0x{address:X4} 0x{data:X2}");
+        _log.Error("CPU Debug: {Message}", message);
     }
 
-    public void LogInstruction(ushort baseAddress, byte opCode, string operation, string data)
+    public void LogInstruction(ushort baseAddress, string opCode, string operationName, string operationDescription,
+        string data)
     {
-#if CONSOLE_LOG
-        _log.Debug($"0x{baseAddress:X4} 0x{opCode:X2} {operation} {data}");
-#endif
-        _fileLogger.LogInstruction(baseAddress, opCode, operation, data);
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
+        _log.Debug(!string.IsNullOrWhiteSpace(data)
+            ? $"0x{baseAddress:X4}: {opCode} - {data} ({operationName} - {operationDescription})"
+            : $"0x{baseAddress:X4}: {opCode} ({operationName} - {operationDescription})");
+    }
+
+    public void EnableVerboseLogging()
+    {
+        _verboseLoggingEnabled = true;
+    }
+
+    public void DisableVerboseLogging()
+    {
+        _verboseLoggingEnabled = false;
+    }
+
+    public void EnableDisableVerboseLogging()
+    {
+        if (_verboseLoggingEnabled)
+        {
+            DisableVerboseLogging();
+        }
+        else
+        {
+            EnableVerboseLogging();
+        }
     }
 }

@@ -9,36 +9,18 @@ namespace Kmse.Core.Z80
     /// </summary>
     public partial class Z80Cpu
     {
-        private byte GetNextOperation()
+        private byte GetNextDataByte()
         {
-            return GetNextByte();
-        }
-
-        private byte GetNextByte()
-        {
-            // Note: We don't increment the cycle count here since this operation is included in overall cycle count for each instruction
-            var data = _memory[_pc.Word];
-
-            if (_currentAddress == 0)
-            {
-                _currentAddress = _pc.Word;
-            }
-            else
-            {
-                // Only set current data if reading additional information beyond command itself
-                _currentData.Append($"{data:X2} ");
-            }
-
-            _cpuLogger.LogMemoryRead(_pc.Word, data);
-
-            _pc.Word++;
+            var data = GetNextByteByProgramCounter();
+            _currentData.Append(data.ToString("X2"));
             return data;
         }
 
-        private ushort GetNextTwoBytes()
+        private ushort GetNextTwoDataBytes()
         {
-            ushort data = GetNextOperation();
-            data += (ushort)(GetNextOperation() << 8);
+            ushort data = GetNextByteByProgramCounter();
+            data += (ushort)(GetNextByteByProgramCounter() << 8);
+            _currentData.Append(data.ToString("X4"));
             return data;
         }
 
@@ -112,7 +94,7 @@ namespace Kmse.Core.Z80
             _memory[--currentPointer] = register.High;
             _memory[--currentPointer] = register.Low;
             _stackPointer.Word = currentPointer;
-            _cpuLogger.LogDebug($"Push to stack - Old - {oldPointer}, New = {_stackPointer.Word}");
+            _cpuLogger.Debug($"Push to stack - Old - {oldPointer}, New = {_stackPointer.Word}");
         }
 
         private void PopRegisterFromStack(ref Z80Register register)
@@ -122,7 +104,7 @@ namespace Kmse.Core.Z80
             register.Low = _memory[currentPointer++];
             register.High = _memory[currentPointer++];
             _stackPointer.Word = currentPointer;
-            _cpuLogger.LogDebug($"Pop from stack - Old - {oldPointer}, New = {_stackPointer.Word}");
+            _cpuLogger.Debug($"Pop from stack - Old - {oldPointer}, New = {_stackPointer.Word}");
         }
 
         private void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)

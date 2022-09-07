@@ -1,4 +1,6 @@
-﻿namespace Kmse.Core;
+﻿using Kmse.Core.Z80.Support;
+
+namespace Kmse.Core;
 
 public interface IMasterSystemConsole
 {
@@ -7,5 +9,8 @@ public interface IMasterSystemConsole
     void PowerOff();
     void Pause();
     void Unpause();
+    bool IsRunning();
+    bool IsPaused();
     void Run();
+    CpuStatus GetCpuStatus();
 }

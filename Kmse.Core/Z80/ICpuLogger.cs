@@ -2,7 +2,7 @@
 
 public interface ICpuLogger
 {
-    void LogDebug(string message);
-    void LogMemoryRead(ushort address, byte data);
-    void LogInstruction(ushort baseAddress, byte opCode, string operation, string data);
+    void Debug(string message);
+    void Error(string message);
+    void LogInstruction(ushort baseAddress, string opCode, string operationName, string operationDescription, string data);
 }

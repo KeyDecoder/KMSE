@@ -259,12 +259,12 @@ public class MasterSystemMemory : IMasterSystemMemory
                 {
                     // Swap in the ram banks
                     _currentRamBank = Bitwise.IsSet(data, 2) ? 1 : 0;
-                    _memoryLogger.Information($"Setting RAM bank to {_currentRamBank}");
+                    _memoryLogger.Debug($"Setting RAM bank to {_currentRamBank}");
                 }
                 else
                 {
                     // Clear ram bank setting since not being used
-                    _memoryLogger.Information($"Disabling RAM bank, was previously ({_currentRamBank})");
+                    _memoryLogger.Debug($"Disabling RAM bank, was previously ({_currentRamBank})");
                     _currentRamBank = -1;
                 }
             }

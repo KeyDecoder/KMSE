@@ -6,6 +6,7 @@ namespace Kmse.Console.Logging;
 public class SerilogIoLogger : IIoPortLogger
 {
     private readonly ILogger _logger;
+    private bool _verboseLoggingEnabled;
 
     public SerilogIoLogger(ILogger logger)
     {
@@ -14,6 +15,11 @@ public class SerilogIoLogger : IIoPortLogger
 
     public void Debug(string port, string message)
     {
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
         _logger.Debug("{Port}: {Message}", port, message);
     }
 
@@ -27,27 +33,65 @@ public class SerilogIoLogger : IIoPortLogger
         _logger.Error("{Port}: {Message}", port, message);
     }
 
-    public void ReadPort(ushort address, byte data)
+    public void PortRead(ushort address, byte data)
     {
-#if CONSOLE_LOG
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
         _logger.Debug("Read I/O Port at address {Address:X4}, got {Data}", address, data);
-#endif
     }
 
-    public void WritePort(ushort address, byte newData)
+    public void PortWrite(ushort address, byte newData)
     {
-#if CONSOLE_LOG
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
         _logger.Debug("Wrote to I/O port at address {Address:X4} to {NewData:X2}", address, newData);
-#endif
     }
 
     public void SetMaskableInterruptStatus(bool status)
     {
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
         _logger.Debug("Set MI to {Status}", status);
     }
 
     public void SetNonMaskableInterruptStatus(bool status)
     {
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
         _logger.Debug("Set NMI to {Status}", status);
+    }
+
+    public void EnableVerboseLogging()
+    {
+        _verboseLoggingEnabled = true;
+    }
+
+    public void DisableVerboseLogging()
+    {
+        _verboseLoggingEnabled = false;
+    }
+
+    public void EnableDisableVerboseLogging()
+    {
+        if (_verboseLoggingEnabled)
+        {
+            DisableVerboseLogging();
+        }
+        else
+        {
+            EnableVerboseLogging();
+        }
     }
 }

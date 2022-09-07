@@ -1,5 +1,8 @@
-﻿using Kmse.Console.Logging;
+﻿using System.Text;
+using Kmse.Console.Logging;
 using Kmse.Core;
+using Kmse.Core.Utilities;
+using Kmse.Core.Z80.Support;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -8,18 +11,23 @@ namespace Kmse.Console;
 internal class EmulatorService : BackgroundService
 {
     private readonly IHostApplicationLifetime _applicationLifetime;
-    private readonly DebugFileLogger _instructionFileLogger;
+    private readonly SerilogCpuLogger _cpuLogger;
+    private readonly SerilogIoLogger _ioLogger;
     private readonly ILogger _log;
     private readonly IMasterSystemConsole _masterSystemConsole;
+    private readonly SerilogMemoryLogger _memoryLogger;
     private readonly string _romFilename;
 
     public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole,
-        IHostApplicationLifetime applicationLifetime, DebugFileLogger instructionFileLogger)
+        IHostApplicationLifetime applicationLifetime,
+        SerilogCpuLogger cpuLogger, SerilogMemoryLogger memoryLogger, SerilogIoLogger ioLogger)
     {
         _log = log;
         _masterSystemConsole = masterSystemConsole;
         _applicationLifetime = applicationLifetime;
-        _instructionFileLogger = instructionFileLogger;
+        _cpuLogger = cpuLogger;
+        _memoryLogger = memoryLogger;
+        _ioLogger = ioLogger;
         _romFilename = options.Filename;
     }
 
@@ -34,21 +42,143 @@ internal class EmulatorService : BackgroundService
         // Run two tasks, one to run the main CPU loop and one to capture key inputs
         // Key inputs is temporary until we wire up proper inputs
 
-        var task = Task.Run(() => { _masterSystemConsole.Run(); }, stoppingToken);
+        var task = Task.Run(() => RunEmulation(stoppingToken), stoppingToken);
+        await Task.Run(() => HandleInputs(stoppingToken), stoppingToken);
 
-        var controlTask = Task.Run(() =>
-        {
-            System.Console.WriteLine("Press Enter key to stop");
-            System.Console.ReadLine();
-            _masterSystemConsole.PowerOff();
-        }, stoppingToken);
-
-        await Task.WhenAll(task, controlTask);
-
-        _log.Information("Stopping");
-        _instructionFileLogger.CloseAndFlush();
+        _log.Information("Emulation stopped");
         System.Console.WriteLine("Press any key to exit");
         System.Console.ReadKey();
         _applicationLifetime.StopApplication();
+    }
+
+    private void RunEmulation(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            // This loop allows us to restart since if powered off then just stays here until we power it back on again
+            if (_masterSystemConsole.IsRunning())
+            {
+                _masterSystemConsole.Run();
+            }
+            else
+            {
+                Thread.Sleep(1);
+            }
+        }
+    }
+
+    private void HandleInputs(CancellationToken cancellationToken)
+    {
+        System.Console.WriteLine("Esc to exit console app");
+        System.Console.WriteLine("TAB to stop/start emulation");
+        System.Console.WriteLine("F to turn on/off file logging (default is off)");
+        System.Console.WriteLine("P to pause/unpause emulation (directly)");
+        System.Console.WriteLine("L to enable/disable CPU verbose logging");
+        System.Console.WriteLine("M to enable/disable Memory verbose logging");
+        System.Console.WriteLine("I to enable/disable I/O ports verbose logging");
+        System.Console.WriteLine("S to get CPU current status");
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            if (!System.Console.KeyAvailable)
+            {
+                Thread.Sleep(1);
+                continue;
+            }
+
+            var key = System.Console.ReadKey(true);
+
+            switch (key.Key)
+            {
+                case ConsoleKey.Escape:
+                {
+                    _log.Information("Existing emulation console app");
+                    return;
+                }
+                case ConsoleKey.Tab:
+                {
+                    if (_masterSystemConsole.IsRunning())
+                    {
+                        _log.Information("Stopping emulation");
+                        _masterSystemConsole.PowerOff();
+                    }
+                    else
+                    {
+                        _log.Information("Starting emulation");
+                        _masterSystemConsole.PowerOn();
+                    }
+                }
+                    break;
+                case ConsoleKey.P:
+                {
+                    if (_masterSystemConsole.IsPaused())
+                    {
+                        _log.Information("Unpausing emulation");
+                        _masterSystemConsole.Unpause();
+                    }
+                    else
+                    {
+                        _log.Information("Pausing emulation");
+                        _masterSystemConsole.Pause();
+                    }
+                }
+                    break;
+                case ConsoleKey.S:
+                {
+                    var status = _masterSystemConsole.GetCpuStatus();
+                    _log.Information($"Flags: {GetStatusFlagsAsString(status)}");
+                    _log.Information($"Registers: {GetRegistersAsString(status)}");
+                }
+                    break;
+                case ConsoleKey.L:
+                {
+                    _log.Information("Enabling/Disabling CPU logging");
+                    _cpuLogger.EnableDisableVerboseLogging();
+                }
+                    break;
+                case ConsoleKey.M:
+                {
+                    _log.Information("Enabling/Disabling Memory logging");
+                    _memoryLogger.EnableDisableVerboseLogging();
+                }
+                    break;
+                case ConsoleKey.I:
+                {
+                    _log.Information("Enabling/Disabling I/O logging");
+                    _ioLogger.EnableDisableVerboseLogging();
+                }
+                    break;
+            }
+        }
+
+        _masterSystemConsole.PowerOff();
+    }
+
+    private string GetStatusFlagsAsString(CpuStatus status)
+    {
+        var flags = new[] { "C", "N", "P/V", "X", "H", "X", "Z", "S" };
+        var flagString = new StringBuilder();
+        for (var i = 0; i < flags.Length; i++)
+        {
+            flagString.Append(Bitwise.IsSet(status.Af.High, i) ? flags[i] : ".");
+        }
+
+        return flagString.ToString();
+    }
+
+    private string GetRegistersAsString(CpuStatus status)
+    {
+        var data = $"A: {status.Af.High:X2} ";
+        data += $"BC: {status.Bc.Word:X4} ";
+        data += $"DE: {status.De.Word:X4} ";
+        data += $"HL: {status.Hl.Word:X4} ";
+        data += $"IX: {status.Ix.Word:X4} ";
+        data += $"IY: {status.Iy.Word:X4} ";
+        data += $"PC: {status.Pc.Word:X4} ";
+        data += $"SP: {status.StackPointer.Word:X4} ";
+        data += $"I: {status.IRegister:X2} ";
+        data += $"R: {status.RRegister:X2} ";
+        data += $"Halt: {status.Halted}";
+        return data;
     }
 }
