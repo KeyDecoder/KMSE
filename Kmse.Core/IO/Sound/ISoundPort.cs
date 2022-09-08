@@ -3,5 +3,6 @@
 public interface ISoundPort
 {
     void Reset();
-    void WritePort(ushort port, byte value);
+    void WritePort(byte port, byte value);
+    void Execute(int cycles);
 }

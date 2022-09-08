@@ -6,7 +6,11 @@ public class SoundPort : ISoundPort
     {
     }
 
-    public void WritePort(ushort port, byte value)
+    public void WritePort(byte port, byte value)
+    {
+    }
+
+    public void Execute(int cycles)
     {
     }
 }

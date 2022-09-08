@@ -134,10 +134,12 @@ public class MasterSystemMk2 : IMasterSystemConsole
             while (totalCycles < cpuCyclesPerFrame)
             {
                 var cpuCycles = _cpu.ExecuteNextCycle();
-
-                // TODO: Update VDP
-                // TODO: Update Sound chip
-                // TODO: Process any inputs from controllers and update controller port
+                var canRefresh = _vdp.Execute(cpuCycles);
+                if (canRefresh)
+                {
+                    // TODO: Display current frame on screen
+                }
+                _sound.Execute(cpuCycles);
 
                 totalCycles += cpuCycles;
 
@@ -147,7 +149,10 @@ public class MasterSystemMk2 : IMasterSystemConsole
                 }
             }
 
-            while (stopWatch.ElapsedMilliseconds - startTime < timePerFrame) Thread.Sleep(1);
+            while (stopWatch.ElapsedMilliseconds - startTime < timePerFrame)
+            {
+                Thread.Sleep(1);
+            }
 
             // TODO: Calculate actual running frame rate for diagnostics
         }

@@ -105,48 +105,40 @@ public class MasterSystemIoManager : IMasterSystemIoManager
     {
         // Ignore the upper 8 bits since that is not used
         var address = (ushort)(port & 0xFF);
+        byte dataRead;
 
-        if (address < 0x40)
+        switch (address)
         {
-            /*
-            $00 -$3F : Writes to even addresses go to memory control register.
-                Writes to odd addresses go to I / O control register.
-                Reads return $FF.
-            */
-            _logger.PortRead(port, 0xFF);
-            return 0xFF;
+            case < 0x40:
+                // $00 -$3F : Writes to even addresses go to memory control register.
+                // Writes to odd addresses go to I / O control register.
+                // Reads return $FF.
+                dataRead = 0xFF;
+                break;
+            case <= 0xBF:
+                // $40 -$7F : Writes to any address go to the SN76489 PSG.
+                // Reads from even addresses return the V counter.
+                // Reads from odd address return the H counter.
+
+                // $80 -$BF: Writes to even addresses go to the VDP data port.
+                // Writes to odd addresses go to the VDP control port.
+                // Reads from even addresses return the VDP data port contents.
+                // Reads from odd address return the VDP status flags.
+                dataRead = _vdpPort.ReadPort((byte)(address & 0xFF));
+                break;
+            case <= 0xFF:
+                // $C0 -$FF: Writes have no effect.
+                // Reads from even addresses return the I / O port A/ B register.
+                // Reads from odd address return the I / O port B/ misc.register.
+                dataRead = _controllerPort.ReadPort(address);
+                break;
+            default:
+                _logger.Error($"{port:X4}", $"Reading of port {address:X4} is not supported");
+                throw new InvalidOperationException($"Unsupported read of port at address {address:X4}");
         }
 
-        if (address <= 0xBF)
-        {
-            /*
-            $40 -$7F : Writes to any address go to the SN76489 PSG.
-                Reads from even addresses return the V counter.
-                Reads from odd address return the H counter.
-            $80 -$BF: Writes to even addresses go to the VDP data port.
-                Writes to odd addresses go to the VDP control port.
-                Reads from even addresses return the VDP data port contents.
-                Reads from odd address return the VDP status flags.
-            */
-
-            var data = _vdpPort.ReadPort(address);
-            _logger.PortRead(port, data);
-            return data;
-        }
-
-        if (address <= 0xFF)
-        {
-            /*
-            $C0 -$FF: Writes have no effect.
-                Reads from even addresses return the I / O port A/ B register.
-                Reads from odd address return the I / O port B/ misc.register.
-            */
-            var data = _controllerPort.ReadPort(address);
-            _logger.PortRead(port, data);
-            return data;
-        }
-
-        throw new InvalidOperationException($"Unsupported port read of address {address:X4}");
+        _logger.PortRead(port, dataRead);
+        return dataRead;
     }
 
     public void WritePort(ushort port, byte value)
@@ -176,13 +168,13 @@ public class MasterSystemIoManager : IMasterSystemIoManager
         if (address < 0x80)
         {
             // $40 -$7F : Writes to any address go to the SN76489 PSG.
-            _soundPort.WritePort(address, value);
+            _soundPort.WritePort((byte)(address & 0xFF), value);
             return;
         }
 
         if (address <= 0xBF)
         {
-            _vdpPort.WritePort(address, value);
+            _vdpPort.WritePort((byte)(address & 0xFF), value);
             return;
         }
 
@@ -194,5 +186,6 @@ public class MasterSystemIoManager : IMasterSystemIoManager
 
         // Unknown port mapping, just log it and move on
         _logger.Error($"{port:X4}", "Unhandled write to I/O");
+        throw new InvalidOperationException($"Unsupported write to port at address {address:X4}");  
     }
 }
