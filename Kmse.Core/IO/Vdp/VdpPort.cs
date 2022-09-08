@@ -1,4 +1,6 @@
-﻿namespace Kmse.Core.IO.Vdp;
+﻿using Kmse.Core.Z80.Support;
+
+namespace Kmse.Core.IO.Vdp;
 
 /// <summary>
 ///     Emulate the video display processor
@@ -19,11 +21,11 @@ public class VdpPort : IVdpPort
     private byte _vCounter;
     private ushort _vdpCommandWord;
 
-    // TODO: Define a better handling for these registers, maybe enum flags
-    private byte[] _vdpRegisters;
-    private byte _vdpStatusFlags;
+    private VdpStatusFlags _vdpStatus;
     private byte[] _vRam;
     private DataPortWriteMode _writeMode;
+
+    private VdpRegisters _registers;
 
     public void Reset()
     {
@@ -33,14 +35,14 @@ public class VdpPort : IVdpPort
         _commandWordSecondByte = false;
         _codeRegister = 0x00;
         _addressRegister = 0x00;
-        _vdpStatusFlags = 0x00;
+        _vdpStatus = 0x00;
         _readBuffer = 0x00;
         // Assume 16K of video RAM and 32 bytes of color RAM 
         // https://segaretro.org/Sega_Master_System/Technical_specifications
         _vRam = new byte[100000];
         _cRam = new byte[32];
         _writeMode = DataPortWriteMode.VideoRam;
-        _vdpRegisters = new byte[11];
+        _registers = new VdpRegisters();
     }
 
     public byte ReadPort(byte port)
@@ -95,10 +97,10 @@ public class VdpPort : IVdpPort
             HCounter = _hCounter,
             VCounter = _vCounter,
             CommandWord = _vdpCommandWord,
-            StatusFlags = _vdpStatusFlags,
+            StatusFlags = _vdpStatus,
             CodeRegister = _codeRegister,
             AddressRegister = _addressRegister,
-            VdpRegisters = _vdpRegisters.ToArray(),
+            VdpRegisters = _registers.DumpRegisters(),
             ReadBuffer = _readBuffer,
             WriteMode = _writeMode
         };
@@ -130,7 +132,19 @@ public class VdpPort : IVdpPort
 
         // Command word writing is reset when control port or data port read
         _commandWordSecondByte = false;
-        return port % 2 == 0 ? PerformVdpDataRead() : _vdpStatusFlags;
+        return port % 2 == 0 ? PerformVdpDataRead() : ReadVdpStatus();
+    }
+
+    private byte ReadVdpStatus()
+    {
+        var status = (byte)_vdpStatus;
+
+        // Clear all the flags when the status is read
+        ClearFlag(VdpStatusFlags.FrameInterruptPending);
+        ClearFlag(VdpStatusFlags.SpriteCollision);
+        ClearFlag(VdpStatusFlags.SpriteOverflow);
+
+        return status;
     }
 
     private byte PerformVdpDataRead()
@@ -265,7 +279,7 @@ public class VdpPort : IVdpPort
             return;
         }
 
-        _vdpRegisters[registerNumber] = registerData;
+        _registers.SetRegister(registerNumber, registerData);
     }
 
     private void IncrementAddressRegister()
@@ -296,5 +310,33 @@ public class VdpPort : IVdpPort
     {
         // Only 32 bytes in size, so ignore any higher bits which essentially makes this wrap at 31
         _cRam[address & 0x1F] = value;
+    }
+
+    private void SetFlag(VdpStatusFlags flags)
+    {
+        _vdpStatus |= flags;
+    }
+
+    private void ClearFlag(VdpStatusFlags flags)
+    {
+        _vdpStatus &= ~flags;
+    }
+
+    private void SetClearFlagConditional(VdpStatusFlags flags, bool condition)
+    {
+        if (condition)
+        {
+            SetFlag(flags);
+        }
+        else
+        {
+            ClearFlag(flags);
+        }
+    }
+
+    private bool IsFlagSet(VdpStatusFlags flags)
+    {
+        var currentSetFlags = _vdpStatus & flags;
+        return currentSetFlags == flags;
     }
 }
