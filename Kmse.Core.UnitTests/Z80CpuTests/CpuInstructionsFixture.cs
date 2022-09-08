@@ -2,7 +2,9 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Support;
 using NSubstitute;
+using NSubstitute.ClearExtensions;
 using NUnit.Framework;
 
 namespace Kmse.Core.UnitTests.Z80CpuTests;
@@ -24,6 +26,7 @@ public class CpuInstructionsFixture
     {
         _cpu.Reset();
         _memory.ClearReceivedCalls();
+        _memory.ClearSubstitute();
         _io.ClearReceivedCalls();
         _io.NonMaskableInterrupt.Returns(false);
         _io.MaskableInterrupt.Returns(false);
@@ -67,5 +70,115 @@ public class CpuInstructionsFixture
 
         var status = _cpu.GetStatus();
         status.Pc.Word.Should().Be(expectedPc);
+    }
+
+    [Test]
+    public void WhenExecutingAddWithCarryWithNoCarry()
+    {
+        for (var i = 0; i < 256; i++)
+        {
+            PrepareForTest();
+
+            var originalValue = (byte)i;
+            var valueToAdd = i + 1;
+
+            //ld a, 127
+            _memory[0].Returns((byte)0x3E);
+            _memory[1].Returns((byte)i);
+            //adc a, a
+            _memory[2].Returns((byte)0x8F);
+
+            // Execute ld
+            _cpu.ExecuteNextCycle().Should().Be(7);
+            _cpu.GetStatus().Af.High.Should().Be((byte)i);
+
+            // Execute adc
+            _cpu.ExecuteNextCycle().Should().Be(4);
+
+            var status = _cpu.GetStatus();
+            status.Pc.Word.Should().Be(0x03);
+            
+            var expectedValue = (byte)(i + i);
+            var result = originalValue + valueToAdd;
+            var foundValue = _cpu.GetStatus().Af.High;
+            foundValue.Should().Be(expectedValue);
+
+            var signFlagSet = (expectedValue >> 7) == 0x01;
+            var zeroFlagSet = expectedValue == 0;
+            var hFlagSet = (((originalValue ^ result ^ originalValue) & 0x10) != 0);
+            var pvFlagSet = (((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0);
+            var carryFlagSet = result > 0xFF;
+
+            IsFlagSet(signFlagSet, status.Af.Low, Z80StatusFlags.SignS);
+            IsFlagSet(zeroFlagSet, status.Af.Low, Z80StatusFlags.ZeroZ);
+            IsFlagSet(hFlagSet, status.Af.Low, Z80StatusFlags.HalfCarryH);
+            IsFlagSet(pvFlagSet, status.Af.Low, Z80StatusFlags.ParityOverflowPV);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.AddSubtractN);
+            IsFlagSet(carryFlagSet, status.Af.Low, Z80StatusFlags.CarryC);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.NotUsedX3);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.NotUsedX5);
+        }
+    }
+
+    [Test]
+    public void WhenExecutingAddWithCarryWithCarry()
+    {
+        for (var i = 0; i < 256; i++)
+        {
+            PrepareForTest();
+
+            var originalValue = (byte)i;
+            var valueToAdd = i+1;
+
+            // scf to set carry flag
+            _memory[0].Returns((byte)0x37);
+
+            //ld a, i
+            _memory[1].Returns((byte)0x3E);
+            _memory[2].Returns((byte)i);
+
+            //adc a, a
+            _memory[3].Returns((byte)0x8F);
+
+            // execute scf
+            _cpu.ExecuteNextCycle().Should().Be(4);
+
+            // Execute ld
+            _cpu.ExecuteNextCycle().Should().Be(7);
+            _cpu.GetStatus().Af.High.Should().Be((byte)i);
+
+            // Execute adc
+            _cpu.ExecuteNextCycle().Should().Be(4);
+
+            var status = _cpu.GetStatus();
+            status.Pc.Word.Should().Be(0x04);
+
+            var expectedValue = (byte)(originalValue + valueToAdd);
+            var result = originalValue + valueToAdd;
+            var foundValue = _cpu.GetStatus().Af.High;
+            foundValue.Should().Be(expectedValue);
+
+            var signFlagSet = (expectedValue >> 7) == 0x01;
+            var zeroFlagSet = expectedValue == 0;
+            var hFlagSet = (((originalValue ^ result ^ originalValue) & 0x10) != 0);
+            var pvFlagSet = (((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0);
+            var carryFlagSet = result > 0xFF;
+
+            IsFlagSet(signFlagSet, status.Af.Low, Z80StatusFlags.SignS);
+            IsFlagSet(zeroFlagSet, status.Af.Low, Z80StatusFlags.ZeroZ);
+            IsFlagSet(hFlagSet, status.Af.Low, Z80StatusFlags.HalfCarryH);
+            IsFlagSet(pvFlagSet, status.Af.Low, Z80StatusFlags.ParityOverflowPV);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.AddSubtractN);
+            IsFlagSet(carryFlagSet, status.Af.Low, Z80StatusFlags.CarryC);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.NotUsedX3);
+            IsFlagSet(false, status.Af.Low, Z80StatusFlags.NotUsedX5);
+        }
+    }
+
+    private void IsFlagSet(bool check, byte status, Z80StatusFlags flags)
+    {
+        var currentSetFlags = (Z80StatusFlags)status & flags;
+        var result = currentSetFlags == flags;
+        result.Should().Be(check);
     }
 }

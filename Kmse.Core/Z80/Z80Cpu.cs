@@ -246,7 +246,7 @@ public partial class Z80Cpu : IZ80Cpu
     {
         if (!_genericInstructions.TryGetValue(opCode, out var instruction))
         {
-            _cpuLogger.Debug($"Unhandled instruction - {opCode:X2}");
+            _cpuLogger.Error($"Unhandled instruction - {opCode:X2}");
         }
 
         return instruction;
@@ -262,7 +262,7 @@ public partial class Z80Cpu : IZ80Cpu
         {
             if (!_cbInstructions.TryGetValue(opCode, out var instruction))
             {
-                _cpuLogger.Debug($"Unhandled 0xCB instruction - {opCode:X2}");
+                _cpuLogger.Error($"Unhandled 0xCB instruction - {opCode:X2}");
             }
 
             return instruction;
@@ -281,14 +281,14 @@ public partial class Z80Cpu : IZ80Cpu
             case CbInstructionModes.FD: foundInstruction = _specialFdcbInstructions.TryGetValue(fourthOpCode, out specialCbInstruction); break;
             default:
             {
-                _cpuLogger.Debug($"Unhandled CB instruction mode 0x{mode} - Second Op Code {opCode:X2}, Third Op Code {fourthOpCode:X2}");
+                _cpuLogger.Error($"Unhandled CB instruction mode 0x{mode} - Second Op Code {opCode:X2}, Third Op Code {fourthOpCode:X2}");
                 throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
             }
         }
 
         if (!foundInstruction)
         {
-            _cpuLogger.Debug($"Unhandled 0x{mode} 0xCB instruction - {opCode:X2}");
+            _cpuLogger.Error($"Unhandled 0x{mode} 0xCB instruction - {opCode:X2}");
             return null;
         }
 
@@ -310,7 +310,7 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (!_ddInstructions.TryGetValue(secondOpCode, out var instruction))
         {
-            _cpuLogger.Debug($"Unhandled 0xDD instruction - {secondOpCode:X2}");
+            _cpuLogger.Error($"Unhandled 0xDD instruction - {secondOpCode:X2}");
         }
 
         return instruction;
@@ -328,7 +328,7 @@ public partial class Z80Cpu : IZ80Cpu
         }
         if (!_fdInstructions.TryGetValue(secondOpCode, out var instruction))
         {
-            _cpuLogger.Debug($"Unhandled 0xFD instruction - {secondOpCode:X2}");
+            _cpuLogger.Error($"Unhandled 0xFD instruction - {secondOpCode:X2}");
         }
 
         return instruction;
@@ -340,7 +340,7 @@ public partial class Z80Cpu : IZ80Cpu
         var secondOpCode = GetNextInstruction();
         if (!_edInstructions.TryGetValue(secondOpCode, out var instruction))
         {
-            _cpuLogger.Debug($"Unhandled 0xED instruction - {secondOpCode:X2}");
+            _cpuLogger.Error($"Unhandled 0xED instruction - {secondOpCode:X2}");
         }
 
         return instruction;

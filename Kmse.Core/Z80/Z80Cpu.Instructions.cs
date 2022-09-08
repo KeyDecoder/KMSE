@@ -382,12 +382,6 @@ public partial class Z80Cpu
         AddStandardInstruction(0x24, 4, "INC H", "Increment H", _ => { Increment8Bit(ref _hl.High); });
         AddStandardInstruction(0x2C, 4, "INC L", "Increment L", _ => { Increment8Bit(ref _hl.Low); });
 
-        // Undocumented instructions
-        AddDoubleByteInstruction(0xDD, 0x24, 4, "INC IXH", "Increment IHX", _ => { Increment8Bit(ref _ix.High); });
-        AddDoubleByteInstruction(0xDD, 0x2C, 4, "INC IXL", "Increment IHL", _ => { Increment8Bit(ref _ix.Low); });
-        AddDoubleByteInstruction(0xFD, 0x24, 4, "INC IYH", "Increment IYX", _ => { Increment8Bit(ref _iy.High); });
-        AddDoubleByteInstruction(0xFD, 0x2C, 4, "INC IYL", "Increment IYL", _ => { Increment8Bit(ref _iy.Low); });
-
         AddStandardInstruction(0x3, 6, "INC BC", "Increment BC", _ => { Increment16Bit(ref _bc); });
         AddStandardInstruction(0x13, 6, "INC DE", "Increment DE", _ => { Increment16Bit(ref _de); });
         AddStandardInstruction(0x23, 6, "INC HL", "Increment HL", _ => { Increment16Bit(ref _hl); });
@@ -406,12 +400,6 @@ public partial class Z80Cpu
         AddStandardInstruction(0x1D, 4, "DEC E", "Decrement E", _ => { Decrement8Bit(ref _de.Low); });
         AddStandardInstruction(0x25, 4, "DEC H", "Decrement H", _ => { Decrement8Bit(ref _hl.High); });
         AddStandardInstruction(0x2D, 4, "DEC L", "Decrement L", _ => { Decrement8Bit(ref _hl.Low); });
-
-        // Undocumented instructions
-        AddDoubleByteInstruction(0xDD, 0x25, 4, "DEC IXH", "Decrement IHX", _ => { Decrement8Bit(ref _ix.High); });
-        AddDoubleByteInstruction(0xDD, 0x2D, 4, "DEC IXL", "Decrement IHL", _ => { Decrement8Bit(ref _ix.Low); });
-        AddDoubleByteInstruction(0xFD, 0x25, 4, "DEC IYH", "Decrement IYX", _ => { Decrement8Bit(ref _iy.High); });
-        AddDoubleByteInstruction(0xFD, 0x2D, 4, "DEC IYL", "Decrement IYL", _ => { Decrement8Bit(ref _iy.Low); });
 
         AddStandardInstruction(0x0B, 6, "DEC BC", "Decrement BC", _ => { Decrement16Bit(ref _bc); });
         AddStandardInstruction(0x1B, 6, "DEC DE", "Decrement DE", _ => { Decrement16Bit(ref _de); });
@@ -439,6 +427,50 @@ public partial class Z80Cpu
         AddStandardInstruction(0x27, 4, "DAA", "Decimal Adjust Accumulator", _ => { DecimalAdjustAccumulator();  });
         AddStandardInstruction(0X2F, 4, "CPL", "Complement", _ => { InvertAccumulatorRegister(); });
         AddDoubleByteInstruction(0xED, 0x44, 8, "NEG", "Negate", _ => { NegateAccumulatorRegister(); });
+
+        // Undocumented instructions
+        AddDoubleByteInstruction(0xDD, 0x84, 4, "ADD A, IXH", "Add IXH to A", _ => { AddValueTo8BitRegister(_ix.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0x85, 4, "ADD A, IXL", "Add IXL to A", _ => { AddValueTo8BitRegister(_ix.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0x84, 4, "ADD A, IYH", "Add IYH to A", _ => { AddValueTo8BitRegister(_iy.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0x85, 4, "ADD A, IYL", "Add IYL to A", _ => { AddValueTo8BitRegister(_iy.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0x8C, 4, "ADC H, IXH", "Add IXH to A with Carry", _ => { AddValueTo8BitRegister(_ix.High, ref _af.High, true); });
+        AddDoubleByteInstruction(0xDD, 0x8D, 4, "ADC L, IXL", "Add IXL to A with Carry", _ => { AddValueTo8BitRegister(_ix.Low, ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x8C, 4, "ADC H, IYH", "Add IYH to A with Carry", _ => { AddValueTo8BitRegister(_iy.High, ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x8D, 4, "ADC L, IYL", "Add IYL to A with Carry", _ => { AddValueTo8BitRegister(_iy.Low, ref _af.High, true); });
+        AddDoubleByteInstruction(0xDD, 0x94, 4, "SUB A, IXH", "Subtract IXH from A", _ => { SubtractValueFrom8BitRegister(_ix.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0x95, 4, "SUB A, IXH", "Subtract IXL from A", _ => { SubtractValueFrom8BitRegister(_ix.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0x94, 4, "SUB A, IYH", "Subtract IYH from A", _ => { SubtractValueFrom8BitRegister(_iy.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0x95, 4, "SUB A, IYH", "Subtract IYL from A", _ => { SubtractValueFrom8BitRegister(_iy.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0x9C, 4, "SBC A, IXH", "Subtract IXH from A with Carry", _ => { SubtractValueFrom8BitRegister(_ix.High, ref _af.High, true); });
+        AddDoubleByteInstruction(0xDD, 0x9D, 4, "SBC A, IXL", "Subtract IXL from A with Carry", _ => { SubtractValueFrom8BitRegister(_ix.Low, ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x9C, 4, "SBC A, IYH", "Subtract IYH from A with Carry", _ => { SubtractValueFrom8BitRegister(_iy.High, ref _af.High, true); });
+        AddDoubleByteInstruction(0xFD, 0x9D, 4, "SBC A, IYL", "Subtract IYL from A with Carry", _ => { SubtractValueFrom8BitRegister(_iy.Low, ref _af.High, true); });
+        AddDoubleByteInstruction(0xDD, 0xA4, 4, "AND IXH", "AND A with IXH and Store in A", _ => { And8Bit(_af.High, _ix.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xA5, 4, "AND IXL", "AND A with IXL and Store in A", _ => { And8Bit(_af.High, _ix.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xA4, 4, "AND IYH", "AND A with IYH and Store in A", _ => { And8Bit(_af.High, _iy.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xA5, 4, "AND IYL", "AND A with IYL and Store in A", _ => { And8Bit(_af.High, _iy.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xAC, 4, "XOR IXH", "XOR A with IXH and Store in A", _ => { Xor8Bit(_af.High, _ix.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xAD, 4, "XOR IXL", "XOR A with IXL and Store in A", _ => { Xor8Bit(_af.High, _ix.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xAC, 4, "XOR IYH", "XOR A with IYH and Store in A", _ => { Xor8Bit(_af.High, _iy.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xAD, 4, "XOR IYL", "XOR A with IYL and Store in A", _ => { Xor8Bit(_af.High, _iy.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xB4, 4, "OR IXH", "OR A with IXH and Store in A", _ => { Or8Bit(_af.High, _ix.High, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xB5, 4, "OR IXL", "OR A with IXL and Store in A", _ => { Or8Bit(_af.High, _ix.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xB4, 4, "OR IYH", "OR A with IYH and Store in A", _ => { Or8Bit(_af.High, _iy.High, ref _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xB5, 4, "OR IYL", "OR A with IYL and Store in A", _ => { Or8Bit(_af.High, _iy.Low, ref _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xBC, 4, "CP IXH", "Compare IXH to A", _ => { Compare8Bit(_ix.High, _af.High); });
+        AddDoubleByteInstruction(0xDD, 0xBD, 4, "CP IXL", "Compare IXL to A", _ => { Compare8Bit(_ix.Low, _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xBC, 4, "CP IYH", "Compare IYH to A", _ => { Compare8Bit(_iy.High, _af.High); });
+        AddDoubleByteInstruction(0xFD, 0xBD, 4, "CP IYL", "Compare IYL to A", _ => { Compare8Bit(_iy.Low, _af.High); });
+
+        AddDoubleByteInstruction(0xDD, 0x24, 4, "INC IXH", "Increment IHX", _ => { Increment8Bit(ref _ix.High); });
+        AddDoubleByteInstruction(0xDD, 0x2C, 4, "INC IXL", "Increment IHL", _ => { Increment8Bit(ref _ix.Low); });
+        AddDoubleByteInstruction(0xFD, 0x24, 4, "INC IYH", "Increment IYX", _ => { Increment8Bit(ref _iy.High); });
+        AddDoubleByteInstruction(0xFD, 0x2C, 4, "INC IYL", "Increment IYL", _ => { Increment8Bit(ref _iy.Low); });
+
+        AddDoubleByteInstruction(0xDD, 0x25, 4, "DEC IXH", "Decrement IHX", _ => { Decrement8Bit(ref _ix.High); });
+        AddDoubleByteInstruction(0xDD, 0x2D, 4, "DEC IXL", "Decrement IHL", _ => { Decrement8Bit(ref _ix.Low); });
+        AddDoubleByteInstruction(0xFD, 0x25, 4, "DEC IYH", "Decrement IYX", _ => { Decrement8Bit(ref _iy.High); });
+        AddDoubleByteInstruction(0xFD, 0x2D, 4, "DEC IYL", "Decrement IYL", _ => { Decrement8Bit(ref _iy.Low); });
     }
 
     private void PopulateBitSetResetAndTestGroupInstructions()
@@ -654,6 +686,34 @@ public partial class Z80Cpu
         AddStandardInstruction(0x2E, 7, "LD L,N", "Load n into L", _ => { LoadValueInto8BitRegister(ref _hl.Low, GetNextDataByte()); });
 
         // These are undocumented but zxdoc still runs them
+        // https://iot.onl/asm/z80/opcodes/undocumented/
+        // DD & FD
+        // Officially the 0xDD and 0xFD prefixes cause any instruction that references(HL) to instead work against the IX &IY registers with a displacement, 0xDD for IX and 0xFD for IY.
+        // The undocumented instructions allows for instructions that refer to just H or L can also be used to access the upper or lower 8 - bit components of IX and IY themselves.
+
+        // These first ones are copies of existing instructions but with a DD/FD prefix
+        AddDoubleByteInstructionWithMask(0xDD, 0x78, 3, 4, "LD A,r", "Load 8-bit register into A", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xDD, 0x40, 3, 4, "LD B,r", "Load 8-bit register into B", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xDD, 0x48, 3, 4, "LD C,r", "Load 8-bit register into C", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xDD, 0x50, 3, 4, "LD D,r", "Load 8-bit register into D", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xDD, 0x58, 3, 4, "LD E,r", "Load 8-bit register into E", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xFD, 0x78, 3, 4, "LD A,r", "Load 8-bit register into A", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xFD, 0x40, 3, 4, "LD B,r", "Load 8-bit register into B", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xFD, 0x48, 3, 4, "LD C,r", "Load 8-bit register into C", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xFD, 0x50, 3, 4, "LD D,r", "Load 8-bit register into D", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstructionWithMask(0xFD, 0x58, 3, 4, "LD E,r", "Load 8-bit register into E", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xDD, 0x7F, 4, "LD A,A", "Load 8-bit register into A", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xDD, 0x47, 4, "LD A,B", "Load 8-bit register into B", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xDD, 0x4F, 4, "LD A,C", "Load 8-bit register into C", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xDD, 0x57, 4, "LD A,D", "Load 8-bit register into D", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xDD, 0x5F, 4, "LD A,E", "Load 8-bit register into E", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xFD, 0x7F, 4, "LD A,A", "Load 8-bit register into A", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xFD, 0x47, 4, "LD A,B", "Load 8-bit register into B", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xFD, 0x4F, 4, "LD A,C", "Load 8-bit register into C", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xFD, 0x57, 4, "LD A,D", "Load 8-bit register into D", i => { LoadRR(i.OpCode); });
+        AddDoubleByteInstruction(0xFD, 0x5F, 4, "LD A,E", "Load 8-bit register into E", i => { LoadRR(i.OpCode); });
+        
+        // These are undocumented instructions which operate on the IX/IY high and low nibbles
         AddDoubleByteInstruction(0xDD, 0x26, 7, "LD IXH,N", "Load n into IX high", _ => { LoadValueInto8BitRegister(ref _ix.High, GetNextDataByte()); });
         AddDoubleByteInstruction(0xDD, 0x2E, 7, "LD IXL,N", "Load n into IX low", _ => { LoadValueInto8BitRegister(ref _ix.Low, GetNextDataByte()); });
         AddDoubleByteInstruction(0xFD, 0x26, 7, "LD IYH,N", "Load n into IX high", _ => { LoadValueInto8BitRegister(ref _iy.High, GetNextDataByte()); });

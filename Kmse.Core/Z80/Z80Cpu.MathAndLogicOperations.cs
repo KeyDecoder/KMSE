@@ -275,14 +275,14 @@ public partial class Z80Cpu
 
     private void AddValueTo8BitRegister(byte value, ref byte destination, bool withCarry = false)
     {
-        var valueWithCarry = value;
+        int valueWithCarry = value;
         if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
-            valueWithCarry += 0x01;
+            valueWithCarry = value + 0x01;
         }
         int newValue = destination + valueWithCarry;
 
-        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)newValue, 7));
         SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
         // Half carry occurs if the result of adding the lower nibbles means it will set the next higher bit (basically overflows)
         // This is since the adding is done in two 4 bit operations not 1 8 bit operation internally
@@ -301,7 +301,7 @@ public partial class Z80Cpu
 
     private void Add16BitRegisterTo16BitRegister(Z80Register source, ref Z80Register destination, bool withCarry = false)
     {   
-        var valueWithCarry = source.Word;
+        int valueWithCarry = source.Word;
         if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
             valueWithCarry += 0x01;
@@ -338,7 +338,7 @@ public partial class Z80Cpu
 
     private void SubtractValueFrom8BitRegister(byte value, ref byte destination, bool withCarry = false)
     {
-        var valueWithCarry = value;
+        int valueWithCarry = value;
         if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
             valueWithCarry += 0x01;
@@ -363,7 +363,7 @@ public partial class Z80Cpu
 
     private void Sub16BitRegisterFrom16BitRegister(Z80Register source, ref Z80Register destination, bool withCarry = false)
     {
-        var valueWithCarry = source.Word;
+        int valueWithCarry = source.Word;
         if (withCarry && IsFlagSet(Z80StatusFlags.CarryC))
         {
             valueWithCarry += 0x01;
@@ -374,7 +374,7 @@ public partial class Z80Cpu
         SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFFFF) == 0);
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((((destination.Word ^ newValue ^ valueWithCarry) >> 8) & 0x10) != 0));
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((((destination.Word ^ newValue ^ source.Word) >> 8) & 0x10) != 0));
         SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((source.Word ^ destination.Word) & (destination.Word ^ newValue) & 0x8000) != 0);
 
         SetFlag(Z80StatusFlags.AddSubtractN);

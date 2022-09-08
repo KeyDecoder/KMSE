@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Kmse.Console.Logging;
 using Kmse.Core;
 using Kmse.Core.IO.Controllers;
@@ -203,7 +203,7 @@ internal class EmulatorService : BackgroundService
         var flagString = new StringBuilder();
         for (var i = 0; i < flags.Length; i++)
         {
-            flagString.Append(Bitwise.IsSet(status.Af.High, i) ? flags[i] : ".");
+            flagString.Append(Bitwise.IsSet(status.Af.Low, i) ? flags[i] : ".");
         }
 
         return flagString.ToString();
