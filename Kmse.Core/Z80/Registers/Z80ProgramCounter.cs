@@ -52,7 +52,7 @@ namespace Kmse.Core.Z80.Registers
         }
 
         /// <summary>
-        /// Set program counter to new value, but don't save the old value to the stack 
+        /// Set program counter to new value
         /// </summary>
         /// <param name="address">New address to set PC to</param>
         public void SetProgramCounter(ushort address)

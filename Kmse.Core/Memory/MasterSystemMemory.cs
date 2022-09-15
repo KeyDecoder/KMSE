@@ -89,6 +89,26 @@ public class MasterSystemMemory : IMasterSystemMemory
         set => WriteMemory(address, value);
     }
 
+    public int GetMaximumAvailableMemorySize()
+    {
+        return _internalRAM.Length;
+    }
+
+    public int GetMinimumAvailableMemorySize()
+    {
+        if (IsPagingEnabled())
+        {
+            // If paging enabled, we can access RAM down to the start of the 3rd memory slot
+            // since being used as RAM bank
+            return MemorySlot3;
+        }
+        else
+        {
+            // If paging not enabled, then all three memory slots are for ROM usage only so cannot be accessed
+            return MemorySlot3 + MemoryPageSize;
+        }
+    }
+
     private void Reset()
     {
         _oneMegCartridge = false;
@@ -98,6 +118,11 @@ public class MasterSystemMemory : IMasterSystemMemory
         _firstBankPage = 0;
         _secondBankPage = 1;
         _thirdBankPage = 2;
+    }
+
+    private bool IsPagingEnabled()
+    {
+        return Bitwise.IsSet(_pagingControl, 3);
     }
 
     private byte ReadRam(ushort address)
@@ -152,7 +177,7 @@ public class MasterSystemMemory : IMasterSystemMemory
                 return;
 
             // Allow writing to 3rd slot if RAM bank is mapped to slot 3
-            case < MemorySlot3 + MemoryPageSize when Bitwise.IsSet(_pagingControl, 3):
+            case < MemorySlot3 + MemoryPageSize when IsPagingEnabled():
                 if (_currentRamBank is 0 or 1)
                 {
                     WriteRamBank(_currentRamBank, (ushort)(address & 0x3FFF), data);
@@ -176,8 +201,10 @@ public class MasterSystemMemory : IMasterSystemMemory
         {
             // Writing memory control page registers
             if (_isCodeMasters)
+            {
                 throw new NotImplementedException("Codemasters ROM not supported");
-            
+            }
+
             // Set memory page since writing to memory control registers
             WriteToMemoryControlRegisters(address, data);
         }
@@ -186,11 +213,15 @@ public class MasterSystemMemory : IMasterSystemMemory
         // RAM from $C000 -$DFFF is mirrored to $E000 - $FFFF
 
         if (address < 0xE000)
+        {
             // Anything written to normal memory gets written to mirror, hence add mirror offset
             WriteRam((ushort)(address + MirrorOffset), data);
+        }
         else
+        {
             // Anything written to mirror gets written to original memory, hence minus mirror offset
             WriteRam((ushort)(address - MirrorOffset), data);
+        }
     }
 
     private byte ReadMemory(ushort address)
