@@ -45,7 +45,7 @@ namespace Kmse.Core.Z80
         private void SaveAndUpdateProgramCounter(ushort address)
         {
             // Storing PC in Stack so can resume later
-            PushRegisterToStack(_pc.AsRegister());
+            _stack.PushRegisterToStack(_pc.AsRegister());
 
             // Update PC to execute from new address
             _pc.SetProgramCounter(address);
@@ -60,28 +60,8 @@ namespace Kmse.Core.Z80
         private void ResetProgramCounterFromStack()
         {
             var register = new Z80Register();
-            PopRegisterFromStack(ref register);
+            _stack.PopRegisterFromStack(ref register);
             _pc.SetProgramCounter(register.Word);
-        }
-
-        private void PushRegisterToStack(Z80Register register)
-        {
-            var oldPointer = _stackPointer.Word;
-            var currentPointer = _stackPointer.Word;
-            _memory[--currentPointer] = register.High;
-            _memory[--currentPointer] = register.Low;
-            _stackPointer.Word = currentPointer;
-            _cpuLogger.Debug($"Push to stack - Old - {oldPointer}, New = {_stackPointer.Word}");
-        }
-
-        private void PopRegisterFromStack(ref Z80Register register)
-        {
-            var oldPointer = _stackPointer.Word;
-            var currentPointer = _stackPointer.Word;
-            register.Low = _memory[currentPointer++];
-            register.High = _memory[currentPointer++];
-            _stackPointer.Word = currentPointer;
-            _cpuLogger.Debug($"Pop from stack - Old - {oldPointer}, New = {_stackPointer.Word}");
         }
 
         private void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
@@ -234,17 +214,6 @@ namespace Kmse.Core.Z80
             (register1.Word, register2.Word) = (register2.Word, register1.Word);
         }
 
-        private void SwapRegisterWithStackPointerLocation(ref Z80Register register)
-        {
-            var currentRegisterDataLow = register.Low;
-            var currentRegisterDataHigh = register.High;
-            register.Low = _memory[_stackPointer.Word];
-            register.High = _memory[(ushort)(_stackPointer.Word + 1)];
-
-            _memory[_stackPointer.Word] = currentRegisterDataLow;
-            _memory[(ushort)(_stackPointer.Word + 1)] = currentRegisterDataHigh;
-        }
-
         private void LoadRR(byte opCode)
         {
             // LD r,r' is 0 1 r r r r' r' r'
@@ -356,11 +325,6 @@ namespace Kmse.Core.Z80
         private void LoadValueIntoRegisterMemoryLocation(byte value, Z80Register register, byte offset = 0)
         {
             _memory[(ushort)(register.Word + offset)] = value;
-        }
-
-        private void Load16BitRegisterFrom16BitRegister(ref Z80Register source, Z80Register destination)
-        {
-            destination.Word = source.Word;
         }
 
         private void Load8BitRegisterFrom8BitRegister(byte sourceData, ref byte destination)

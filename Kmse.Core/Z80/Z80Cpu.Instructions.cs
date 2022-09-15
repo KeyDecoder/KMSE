@@ -201,16 +201,16 @@ public partial class Z80Cpu
         AddStandardInstruction(0x09, 11, "ADD HL,BC", "Add BC to HL", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _hl); });
         AddStandardInstruction(0x19, 11, "ADD HL,DE", "Add DE to HL", _ => { Add16BitRegisterTo16BitRegister(_de, ref _hl); });
         AddStandardInstruction(0x29, 11, "ADD HL,HL", "Add HL to HL", _ => { Add16BitRegisterTo16BitRegister(_hl, ref _hl); });
-        AddStandardInstruction(0x39, 11, "ADD HL,SP", "Add SP to HL", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _hl); });
+        AddStandardInstruction(0x39, 11, "ADD HL,SP", "Add SP to HL", _ => { Add16BitRegisterTo16BitRegister(_stack.AsRegister(), ref _hl); });
         AddDoubleByteInstruction(0xDD, 0x19, 15, "ADD IX,DE", "Add DE to IX", _ => { Add16BitRegisterTo16BitRegister(_de, ref _ix); });
         AddDoubleByteInstruction(0xDD, 0x29, 15, "ADD IX,IX", "Add IX to IX", _ => { Add16BitRegisterTo16BitRegister(_ix, ref _ix); });
-        AddDoubleByteInstruction(0xDD, 0x39, 15, "ADD IX,SP", "Add SP to IX", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _ix); });
+        AddDoubleByteInstruction(0xDD, 0x39, 15, "ADD IX,SP", "Add SP to IX", _ => { Add16BitRegisterTo16BitRegister(_stack.AsRegister(), ref _ix); });
         AddDoubleByteInstruction(0xDD, 0x09, 15, "ADD IX,BC", "Add BC to IX", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _ix); });
 
         AddDoubleByteInstruction(0xFD, 0x09, 15, "ADD IY,BC", "Add BC to IY", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _iy); });
         AddDoubleByteInstruction(0xFD, 0x19, 15, "ADD IY,DE", "Add DE to IY", _ => { Add16BitRegisterTo16BitRegister(_de, ref _iy); });
         AddDoubleByteInstruction(0xFD, 0x29, 15, "ADD IY,IY", "Add IY to IY", _ => { Add16BitRegisterTo16BitRegister(_iy, ref _iy); });
-        AddDoubleByteInstruction(0xFD, 0x39, 15, "ADD IY,SP", "Add SP to IY", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _iy); });
+        AddDoubleByteInstruction(0xFD, 0x39, 15, "ADD IY,SP", "Add SP to IY", _ => { Add16BitRegisterTo16BitRegister(_stack.AsRegister(), ref _iy); });
 
         AddStandardInstruction(0x86, 4, "ADD A,(HL)", "Add Data at memory location from HL to A", _ => { AddValueAtRegisterMemoryLocationTo8BitRegister(_hl, 0, ref _af.High); });
         AddDoubleByteInstruction(0xDD, 0x86, 19, "ADD A,(IX+d)", "Add Data at memory location from IX + d to A", _ => { AddValueAtRegisterMemoryLocationTo8BitRegister(_ix, _pc.GetNextDataByte(), ref _af.High); });
@@ -232,7 +232,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x4A, 15, "ADC HL,BC", "Add BC to HL with Carry", _ => { Add16BitRegisterTo16BitRegister(_bc, ref _hl, true); });
         AddDoubleByteInstruction(0xED, 0x5A, 15, "ADC HL,DE", "Add DE to HL with Carry", _ => { Add16BitRegisterTo16BitRegister(_de, ref _hl, true); });
         AddDoubleByteInstruction(0xED, 0x6A, 15, "ADC HL,HL", "Add HL to HL with Carry", _ => { Add16BitRegisterTo16BitRegister(_hl, ref _hl, true); });
-        AddDoubleByteInstruction(0xED, 0x7A, 15, "ADC HL,SP", "Add SP to HL with Carry", _ => { Add16BitRegisterTo16BitRegister(_stackPointer, ref _hl, true); });
+        AddDoubleByteInstruction(0xED, 0x7A, 15, "ADC HL,SP", "Add SP to HL with Carry", _ => { Add16BitRegisterTo16BitRegister(_stack.AsRegister(), ref _hl, true); });
 
         AddStandardInstruction(0x97, 4, "SUB A, A", "Subtract A from A", _ => { SubtractValueFrom8BitRegister(_af.High, ref _af.High); });
         AddStandardInstruction(0x90, 4, "SUB A, B", "Subtract B from A", _ => { SubtractValueFrom8BitRegister(_bc.High, ref _af.High); });
@@ -263,7 +263,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { Sub16BitRegisterFrom16BitRegister(_bc, ref _hl, true); });
         AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { Sub16BitRegisterFrom16BitRegister(_de, ref _hl, true); });
         AddDoubleByteInstruction(0xED, 0x62, 15, "SBC HL,HL", "Subtract with Carry", _ => { Sub16BitRegisterFrom16BitRegister(_hl, ref _hl, true); });
-        AddDoubleByteInstruction(0xED, 0x72, 15, "SBC HL,SP", "Subtract with Carry", _ => { Sub16BitRegisterFrom16BitRegister(_stackPointer, ref _hl, true); });
+        AddDoubleByteInstruction(0xED, 0x72, 15, "SBC HL,SP", "Subtract with Carry", _ => { Sub16BitRegisterFrom16BitRegister(_stack.AsRegister(), ref _hl, true); });
 
         AddStandardInstruction(0xBF, 4, "CP A", "Compare A to A", _ => { Compare8Bit(_af.High, _af.High); });
         AddStandardInstruction(0xB8, 4, "CP B", "Compare B to A", _ => { Compare8Bit(_bc.High, _af.High); });
@@ -386,7 +386,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0x3, 6, "INC BC", "Increment BC", _ => { Increment16Bit(ref _bc); });
         AddStandardInstruction(0x13, 6, "INC DE", "Increment DE", _ => { Increment16Bit(ref _de); });
         AddStandardInstruction(0x23, 6, "INC HL", "Increment HL", _ => { Increment16Bit(ref _hl); });
-        AddStandardInstruction(0x33, 6, "INC SP", "Increment SP", _ => { Increment16Bit(ref _stackPointer); });
+        AddStandardInstruction(0x33, 6, "INC SP", "Increment SP", _ => { _stack.IncrementStackPointer(); });
         AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { Increment16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { Increment16Bit(ref _iy); });
 
@@ -405,7 +405,7 @@ public partial class Z80Cpu
         AddStandardInstruction(0x0B, 6, "DEC BC", "Decrement BC", _ => { Decrement16Bit(ref _bc); });
         AddStandardInstruction(0x1B, 6, "DEC DE", "Decrement DE", _ => { Decrement16Bit(ref _de); });
         AddStandardInstruction(0x2B, 6, "DEC HL", "Decrement HL", _ => { Decrement16Bit(ref _hl); });
-        AddStandardInstruction(0x3B, 6, "DEC SP", "Decrement SP", _ => { Decrement16Bit(ref _stackPointer); });
+        AddStandardInstruction(0x3B, 6, "DEC SP", "Decrement SP", _ => { _stack.DecrementStackPointer(); });
         AddDoubleByteInstruction(0xDD, 0x2B, 10, "DEC IX", "Decrement IX", _ => { Decrement16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x2B, 10, "DEC IY", "Decrement IY", _ => { Decrement16Bit(ref _iy); });
 
@@ -670,9 +670,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xFD, 0x74, 19, "LD (IY+d),H", "Load H into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _hl.High, _pc.GetNextDataByte()); });
         AddDoubleByteInstruction(0xFD, 0x75, 19, "LD (IY+d),L", "Load L into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _hl.Low, _pc.GetNextDataByte()); });
 
-        AddStandardInstruction(0xF9, 6, "LD SP,HL", "Load HL into SP", _ => { Load16BitRegisterFrom16BitRegister(ref _stackPointer, _hl); });
-        AddDoubleByteInstruction(0xDD, 0xF9, 10, "LD SP,IX", "Load IX into SP", _ => { Load16BitRegisterFrom16BitRegister(ref _stackPointer, _ix); });
-        AddDoubleByteInstruction(0xFD, 0xF9, 10, "LD SP,IY", "Load IY into SP", _ => { Load16BitRegisterFrom16BitRegister(ref _stackPointer, _iy); });
+        AddStandardInstruction(0xF9, 6, "LD SP,HL", "Load HL into SP", _ => { _stack.SetStackPointer(_hl.Word); });
+        AddDoubleByteInstruction(0xDD, 0xF9, 10, "LD SP,IX", "Load IX into SP", _ => { _stack.SetStackPointer(_ix.Word); });
+        AddDoubleByteInstruction(0xFD, 0xF9, 10, "LD SP,IY", "Load IY into SP", _ => { _stack.SetStackPointer(_iy.Word); });
 
         AddDoubleByteInstruction(0xED, 0x47, 9, "LD I,A", "Load A into I", _ => { Load8BitRegisterFrom8BitRegister(_af.High, ref _iRegister); });
         AddDoubleByteInstruction(0xED, 0x4F, 9, "LD R,A", "Load A into R", _ => { Load8BitRegisterFrom8BitRegister(_af.High, ref _rRegister); });
@@ -799,14 +799,14 @@ public partial class Z80Cpu
         AddStandardInstruction(0x2A, 16, "LD HL,(NN)", "Load value at memory location NN into HL", _ => { LoadInto16BitRegisterFromMemory(ref _hl, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xED, 0x4B, 20, "LD BC, (NN)", "Load value at memory location NN into BC", _ => { LoadInto16BitRegisterFromMemory(ref _bc, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xED, 0x5B, 20, "LD DE, (NN)", "Load value at memory location NN into DE", _ => { LoadInto16BitRegisterFromMemory(ref _de, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x7B, 20, "LD SP, (NN)", "Load value at memory location NN into SP", _ => { LoadInto16BitRegisterFromMemory(ref _stackPointer, _pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x7B, 20, "LD SP, (NN)", "Load value at memory location NN into SP", _ => { _stack.SetStackPointerFromDataInMemory(_pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xDD, 0x2A, 20, "LD IX, (NN)", "Load value at memory location NN into IX", _ => { LoadInto16BitRegisterFromMemory(ref _ix, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xFD, 0x2A, 20, "LD IY, (NN)", "Load value at memory location NN into IY", _ => { LoadInto16BitRegisterFromMemory(ref _iy, _pc.GetNextTwoDataBytes()); });
 
         AddStandardInstruction(0x01, 10, "LD BC,NN", "Load nn value into BC", _ => { LoadValueInto16BitRegister(ref _bc, _pc.GetNextTwoDataBytes()); });
         AddStandardInstruction(0x11, 10, "LD DE,NN", "Load nn value into DE", _ => { LoadValueInto16BitRegister(ref _de, _pc.GetNextTwoDataBytes()); });
         AddStandardInstruction(0x21, 10, "LD HL,NN", "Load nn value into HL", _ => { LoadValueInto16BitRegister(ref _hl, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x31, 10, "LD SP,NN", "Load nn value into SP", _ => { LoadValueInto16BitRegister(ref _stackPointer, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x31, 10, "LD SP,NN", "Load nn value into SP", _ => { _stack.SetStackPointer(_pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xDD, 0x21, 14, "LD IX, NN", "Load nn value into IX", _ => { LoadValueInto16BitRegister(ref _ix, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xFD, 0x21, 14, "LD IY, NN", "Load nn value into IY", _ => { LoadValueInto16BitRegister(ref _iy, _pc.GetNextTwoDataBytes()); });
 
@@ -816,7 +816,7 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xED, 0x53, 20, "LD(NN), DE", "Load DE into memory location NN", _ => { Save16BitRegisterToMemory(_de, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xDD, 0x22, 20, "LD(NN), IX", "Load IX into memory location NN", _ => { Save16BitRegisterToMemory(_ix, _pc.GetNextTwoDataBytes()); });
         AddDoubleByteInstruction(0xFD, 0x22, 20, "LD(NN), IY", "Load IY into memory location NN", _ => { Save16BitRegisterToMemory(_iy, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load SP into memory location NN", _ => { Save16BitRegisterToMemory(_stackPointer, _pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load SP into memory location NN", _ => { Save16BitRegisterToMemory(_stack.AsRegister(), _pc.GetNextTwoDataBytes()); });
 
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ =>
         {
@@ -904,29 +904,29 @@ public partial class Z80Cpu
             }
         });
 
-        AddStandardInstruction(0xF5, 11, "PUSH AF", "Push AF", _ => { PushRegisterToStack(_af); });
-        AddStandardInstruction(0xC5, 11, "PUSH BC", "Push BC", _ => { PushRegisterToStack(_bc); });
-        AddStandardInstruction(0xD5, 11, "PUSH DE", "Push DE", _ => { PushRegisterToStack(_de); });
-        AddStandardInstruction(0xE5, 11, "PUSH HL", "Push HL", _ => { PushRegisterToStack(_hl); });
-        AddDoubleByteInstruction(0xDD, 0xE5, 15, "PUSH IX", "Push IX", _ => { PushRegisterToStack(_ix); });
-        AddDoubleByteInstruction(0xFD, 0xE5, 15, "PUSH IY", "Push IY", _ => { PushRegisterToStack(_iy); });
+        AddStandardInstruction(0xF5, 11, "PUSH AF", "Push AF", _ => { _stack.PushRegisterToStack(_af); });
+        AddStandardInstruction(0xC5, 11, "PUSH BC", "Push BC", _ => { _stack.PushRegisterToStack(_bc); });
+        AddStandardInstruction(0xD5, 11, "PUSH DE", "Push DE", _ => { _stack.PushRegisterToStack(_de); });
+        AddStandardInstruction(0xE5, 11, "PUSH HL", "Push HL", _ => { _stack.PushRegisterToStack(_hl); });
+        AddDoubleByteInstruction(0xDD, 0xE5, 15, "PUSH IX", "Push IX", _ => { _stack.PushRegisterToStack(_ix); });
+        AddDoubleByteInstruction(0xFD, 0xE5, 15, "PUSH IY", "Push IY", _ => { _stack.PushRegisterToStack(_iy); });
 
-        AddStandardInstruction(0xF1, 10, "POP AF", "Pop AF from Stack", _ => { PopRegisterFromStack(ref _af); });
-        AddStandardInstruction(0xC1, 10, "POP BC", "Pop BC from Stack", _ => { PopRegisterFromStack(ref _bc); });
-        AddStandardInstruction(0xD1, 10, "POP DE", "Pop DE from Stack", _ => { PopRegisterFromStack(ref _de); });
-        AddStandardInstruction(0xE1, 10, "POP HL", "Pop HL from Stack", _ => { PopRegisterFromStack(ref _hl); });
-        AddDoubleByteInstruction(0xDD, 0xE1, 14, "POP IX", "Pop IX from Stack", _ => { PopRegisterFromStack(ref _ix); });
-        AddDoubleByteInstruction(0xFD, 0xE1, 14, "POP IY", "Pop IY from Stack", _ => { PopRegisterFromStack(ref _iy); });
+        AddStandardInstruction(0xF1, 10, "POP AF", "Pop AF from Stack", _ => { _stack.PopRegisterFromStack(ref _af); });
+        AddStandardInstruction(0xC1, 10, "POP BC", "Pop BC from Stack", _ => { _stack.PopRegisterFromStack(ref _bc); });
+        AddStandardInstruction(0xD1, 10, "POP DE", "Pop DE from Stack", _ => { _stack.PopRegisterFromStack(ref _de); });
+        AddStandardInstruction(0xE1, 10, "POP HL", "Pop HL from Stack", _ => { _stack.PopRegisterFromStack(ref _hl); });
+        AddDoubleByteInstruction(0xDD, 0xE1, 14, "POP IX", "Pop IX from Stack", _ => { _stack.PopRegisterFromStack(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0xE1, 14, "POP IY", "Pop IY from Stack", _ => { _stack.PopRegisterFromStack(ref _iy); });
     }
 
     private void PopulateExchangeBlockTransferAndSearchInstructions()
     {
-        AddStandardInstruction(0xE3, 19, "EX (SP),HL", "Exchange HL with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _hl); });
+        AddStandardInstruction(0xE3, 19, "EX (SP),HL", "Exchange HL with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithStackPointerLocation(ref _hl); });
         AddStandardInstruction(0x8, 4, "EX AF,AF'", "Exchange AF and AF Shadow", _ => { SwapRegisters(ref _af, ref _afShadow); });
         AddStandardInstruction(0xEB, 4, "EX DE,HL", "Exchange DE and HL", _ => { SwapRegisters(ref _de, ref _hl); });
         AddStandardInstruction(0xD9, 4, "EXX", "Exchange BC, DE, HL with Shadow Registers", _ => { SwapRegisters(ref _bc, ref _bcShadow); SwapRegisters(ref _de, ref _deShadow); SwapRegisters(ref _hl, ref _hlShadow); });
-        AddDoubleByteInstruction(0xDD, 0xE3, 23, "EX (SP),IX", "Exchange IX with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _ix); });
-        AddDoubleByteInstruction(0xFD, 0xE3, 23, "EX (SP),IY", "Exchange IY with Data from Memory Address in SP", _ => { SwapRegisterWithStackPointerLocation(ref _iy); });
+        AddDoubleByteInstruction(0xDD, 0xE3, 23, "EX (SP),IX", "Exchange IX with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithStackPointerLocation(ref _ix); });
+        AddDoubleByteInstruction(0xFD, 0xE3, 23, "EX (SP),IY", "Exchange IY with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithStackPointerLocation(ref _iy); });
     }
 
     private void PopulateInputOutputInstructions()

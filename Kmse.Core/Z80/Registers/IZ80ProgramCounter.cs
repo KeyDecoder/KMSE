@@ -1,12 +1,7 @@
-﻿using Kmse.Core.Z80.Support;
+﻿namespace Kmse.Core.Z80.Registers;
 
-namespace Kmse.Core.Z80.Registers;
-
-public interface IZ80ProgramCounter
+public interface IZ80ProgramCounter : IZ80Register
 {
-    void Reset();
-    ushort GetValue();
-    Z80Register AsRegister();
     byte GetNextInstruction();
     byte GetNextDataByte();
     ushort GetNextTwoDataBytes();

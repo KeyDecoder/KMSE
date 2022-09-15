@@ -22,10 +22,10 @@ public partial class Z80Cpu : IZ80Cpu
     private Z80Register _af, _bc, _de, _hl;
     private Z80Register _afShadow, _bcShadow, _deShadow, _hlShadow;
     private Z80Register _ix, _iy;
-    private Z80Register _stackPointer;
     private byte _iRegister, _rRegister;
 
     private IZ80ProgramCounter _pc;
+    private IZ80StackManager _stack;
 
     /// <summary>
     /// Disables interrupts from being accepted if set to False
@@ -51,7 +51,6 @@ public partial class Z80Cpu : IZ80Cpu
         _hlShadow = new Z80Register();
         _ix = new Z80Register();
         _iy = new Z80Register();
-        _stackPointer = new Z80Register();
         _iRegister = 0;
         _rRegister = 0;
         PopulateInstructions();
@@ -62,7 +61,10 @@ public partial class Z80Cpu : IZ80Cpu
         _cpuLogger.Debug("Initializing CPU");
         _memory = memory;
         _io = io;
+
+        // TODO: Need to create these indirectly to allow mock interfaces to be injected for testing
         _pc = new Z80ProgramCounter(memory, _instructionLogger);
+        _stack = new Z80StackManager(memory, _cpuLogger);
     }
 
     public CpuStatus GetStatus()
@@ -83,7 +85,7 @@ public partial class Z80Cpu : IZ80Cpu
             Ix = _ix,
             Iy = _iy,
             Pc = _pc.GetValue(),
-            StackPointer = _stackPointer,
+            StackPointer = _stack.GetValue(),
             IRegister = _iRegister,
             RRegister = _rRegister,
             InterruptFlipFlop1 = _interruptFlipFlop1,
@@ -102,6 +104,7 @@ public partial class Z80Cpu : IZ80Cpu
         _currentCycleCount = 0;
 
         _pc.Reset();
+        _stack.Reset();
 
         _halted = false;
         _interruptFlipFlop1 = false;
@@ -110,11 +113,6 @@ public partial class Z80Cpu : IZ80Cpu
 
         _iRegister = 0;
         _rRegister = 0;
-
-        // Stack pointer starts at highest point in RAM
-        // but various hardware register control writes, generally we set to 0xDFF0
-        // https://www.smspower.org/Development/Stack
-        _stackPointer.Word = 0xDFF0;
 
         _af.Word = 0x00;
         _bc.Word = 0x00;

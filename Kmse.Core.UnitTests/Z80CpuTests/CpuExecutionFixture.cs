@@ -52,7 +52,7 @@ public class CpuExecutionFixture
 
         status.IRegister.Should().Be(0);
         status.RRegister.Should().Be(0);
-        status.StackPointer.Word.Should().Be(0xDFF0);
+        status.StackPointer.Should().Be(0xDFF0);
         status.Af.Word.Should().Be(0);
         status.Bc.Word.Should().Be(0);
         status.De.Word.Should().Be(0);
@@ -127,7 +127,7 @@ public class CpuExecutionFixture
         status.Pc.Should().Be(0x66);
 
         // Pc put onto stack
-        status.StackPointer.Word.Should().Be(0xDFEE);
+        status.StackPointer.Should().Be(0xDFEE);
         // Wrote current PC (0x00) onto stack
         _memory.Received(1)[0xDFEF] = 0x00;
         _memory.Received(1)[0xDFEE] = 0x01;
@@ -179,7 +179,7 @@ public class CpuExecutionFixture
             status.Pc.Should().Be(0x38);
 
             // Pc put onto stack
-            status.StackPointer.Word.Should().Be(0xDFEE);
+            status.StackPointer.Should().Be(0xDFEE);
             // Wrote current PC (0x00) onto stack
             _memory.Received(1)[0xDFEF] = 0x00;
             _memory.Received(1)[0xDFEE] = 0x03;
