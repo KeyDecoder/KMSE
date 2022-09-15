@@ -2,6 +2,7 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Logging;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -16,7 +17,7 @@ public class CpuExecutionFixture
         _cpuLogger = Substitute.For<ICpuLogger>();
         _memory = Substitute.For<IMasterSystemMemory>();
         _io = Substitute.For<IMasterSystemIoManager>();
-        _cpu = new Z80Cpu(_cpuLogger);
+        _cpu = new Z80Cpu(_cpuLogger, new Z80InstructionLogger(_cpuLogger));
         _cpu.Initialize(_memory, _io);
     }
 
@@ -43,7 +44,7 @@ public class CpuExecutionFixture
         var status = _cpu.GetStatus();
 
         status.CurrentCycleCount.Should().Be(0);
-        status.Pc.Word.Should().Be(0);
+        status.Pc.Should().Be(0);
         status.Halted.Should().BeFalse();
         status.InterruptFlipFlop1.Should().BeFalse();
         status.InterruptFlipFlop2.Should().BeFalse();
@@ -73,7 +74,7 @@ public class CpuExecutionFixture
 
         var status = _cpu.GetStatus();
         status.Halted.Should().Be(true);
-        status.Pc.Word.Should().Be(0x01);
+        status.Pc.Should().Be(0x01);
     }
 
     [Test]
@@ -88,7 +89,7 @@ public class CpuExecutionFixture
 
         var status = _cpu.GetStatus();
         status.InterruptMode.Should().Be(2);
-        status.Pc.Word.Should().Be(0x02);
+        status.Pc.Should().Be(0x02);
     }
 
     [Test]
@@ -123,7 +124,7 @@ public class CpuExecutionFixture
         status.Halted.Should().Be(false);
         status.InterruptFlipFlop1.Should().BeFalse();
         status.InterruptFlipFlop2.Should().BeTrue();
-        status.Pc.Word.Should().Be(0x66);
+        status.Pc.Should().Be(0x66);
 
         // Pc put onto stack
         status.StackPointer.Word.Should().Be(0xDFEE);
@@ -175,7 +176,7 @@ public class CpuExecutionFixture
             // Interrupt is not cleared in these modes until a RETI or DI is called
             _io.DidNotReceive().ClearMaskableInterrupt();
 
-            status.Pc.Word.Should().Be(0x38);
+            status.Pc.Should().Be(0x38);
 
             // Pc put onto stack
             status.StackPointer.Word.Should().Be(0xDFEE);

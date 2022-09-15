@@ -9,21 +9,6 @@ namespace Kmse.Core.Z80
     /// </summary>
     public partial class Z80Cpu
     {
-        private byte GetNextDataByte()
-        {
-            var data = GetNextByteByProgramCounter();
-            _currentData.Append(data.ToString("X2"));
-            return data;
-        }
-
-        private ushort GetNextTwoDataBytes()
-        {
-            ushort data = GetNextByteByProgramCounter();
-            data += (ushort)(GetNextByteByProgramCounter() << 8);
-            _currentData.Append(data.ToString("X4"));
-            return data;
-        }
-
         private void SetFlag(Z80StatusFlags flags)
         {
             _af.Low |= (byte)flags;
@@ -57,34 +42,26 @@ namespace Kmse.Core.Z80
             return currentSetFlags == flags;
         }
 
-        /// <summary>
-        /// Set program counter to new value, but don't save the old value to the stack 
-        /// </summary>
-        /// <param name="address">New address to set PC to</param>
-        private void SetProgramCounter(ushort address)
-        {
-            // Update PC to execute from new address
-            _pc.Word = address;
-        }
-
         private void SaveAndUpdateProgramCounter(ushort address)
         {
             // Storing PC in Stack so can resume later
-            PushRegisterToStack(_pc);
+            PushRegisterToStack(_pc.AsRegister());
 
             // Update PC to execute from new address
-            _pc.Word = address;
+            _pc.SetProgramCounter(address);
         }
 
         private void SetProgramCounterFromRegister(Z80Register register)
         {
             // Update PC to execute from the value of the register
-            _pc.Word = register.Word;
+            _pc.SetProgramCounter(register.Word);
         }
 
         private void ResetProgramCounterFromStack()
         {
-            PopRegisterFromStack(ref _pc);
+            var register = new Z80Register();
+            PopRegisterFromStack(ref register);
+            _pc.SetProgramCounter(register.Word);
         }
 
         private void PushRegisterToStack(Z80Register register)
@@ -111,7 +88,7 @@ namespace Kmse.Core.Z80
         {
             if (IsFlagSet(flag))
             {
-                SetProgramCounter(address);
+                _pc.SetProgramCounter(address);
             }
         }
 
@@ -119,13 +96,13 @@ namespace Kmse.Core.Z80
         {
             if (!IsFlagSet(flag))
             {
-                SetProgramCounter(address);
+                _pc.SetProgramCounter(address);
             }
         }
 
         private void JumpByOffset(byte offset)
         {
-            var newPcLocation = _pc.Word;
+            var newPcLocation = _pc.GetValue();
 
             // Range is -126 to +129 so we need a signed version
             // However sbyte only goes from -128 to +127 but we need -126 to +129 so have to do this manually
@@ -141,7 +118,7 @@ namespace Kmse.Core.Z80
             }
 
             // Note we don't need to add one here since we always increment the Pc after we read from it, so it's already pointing to next command at this point
-            SetProgramCounter(newPcLocation);
+            _pc.SetProgramCounter(newPcLocation);
         }
 
         private void JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status)

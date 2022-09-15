@@ -1,4 +1,5 @@
 ﻿using Kmse.Core.Z80;
+using Kmse.Core.Z80.Logging;
 using Serilog;
 
 namespace Kmse.Console.Logging;

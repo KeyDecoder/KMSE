@@ -15,7 +15,7 @@ public class CpuStatus
     public Z80Register HlShadow { get; init; }
     public Z80Register Ix { get; init; }
     public Z80Register Iy { get; init; }
-    public Z80Register Pc { get; init; }
+    public ushort Pc { get; init; }
     public Z80Register StackPointer { get; init; }
     public byte IRegister { get; init; }
     public byte RRegister { get; init; }

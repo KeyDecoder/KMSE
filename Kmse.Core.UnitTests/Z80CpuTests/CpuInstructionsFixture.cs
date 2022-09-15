@@ -2,6 +2,7 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Support;
 using NSubstitute;
 using NSubstitute.ClearExtensions;
@@ -18,7 +19,7 @@ public class CpuInstructionsFixture
         _cpuLogger = Substitute.For<ICpuLogger>();
         _memory = Substitute.For<IMasterSystemMemory>();
         _io = Substitute.For<IMasterSystemIoManager>();
-        _cpu = new Z80Cpu(_cpuLogger);
+        _cpu = new Z80Cpu(_cpuLogger, new Z80InstructionLogger(_cpuLogger));
         _cpu.Initialize(_memory, _io);
     }
 
@@ -69,7 +70,7 @@ public class CpuInstructionsFixture
         _cpu.ExecuteNextCycle().Should().Be(12);
 
         var status = _cpu.GetStatus();
-        status.Pc.Word.Should().Be(expectedPc);
+        status.Pc.Should().Be(expectedPc);
     }
 
     [Test]
@@ -96,7 +97,7 @@ public class CpuInstructionsFixture
             _cpu.ExecuteNextCycle().Should().Be(4);
 
             var status = _cpu.GetStatus();
-            status.Pc.Word.Should().Be(0x03);
+            status.Pc.Should().Be(0x03);
             
             var expectedValue = (byte)(i + i);
             var result = originalValue + valueToAdd;
@@ -151,7 +152,7 @@ public class CpuInstructionsFixture
             _cpu.ExecuteNextCycle().Should().Be(4);
 
             var status = _cpu.GetStatus();
-            status.Pc.Word.Should().Be(0x04);
+            status.Pc.Should().Be(0x04);
 
             var expectedValue = (byte)(originalValue + valueToAdd);
             var result = originalValue + valueToAdd;
