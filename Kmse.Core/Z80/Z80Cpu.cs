@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
+using Kmse.Core.Z80.Logging;
+using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80;
@@ -8,6 +10,8 @@ namespace Kmse.Core.Z80;
 public partial class Z80Cpu : IZ80Cpu
 {
     private readonly ICpuLogger _cpuLogger;
+    private readonly IZ80InstructionLogger _instructionLogger;
+
     private int _currentCycleCount;
     private IMasterSystemIoManager _io;
     private IMasterSystemMemory _memory;
@@ -18,27 +22,25 @@ public partial class Z80Cpu : IZ80Cpu
     private Z80Register _af, _bc, _de, _hl;
     private Z80Register _afShadow, _bcShadow, _deShadow, _hlShadow;
     private Z80Register _ix, _iy;
-    private Z80Register _pc, _stackPointer;
+    private Z80Register _stackPointer;
     private byte _iRegister, _rRegister;
+
+    private IZ80ProgramCounter _pc;
 
     /// <summary>
     /// Disables interrupts from being accepted if set to False
     /// </summary>
-    private bool _interruptFlipFlop1 = false;
+    private bool _interruptFlipFlop1;
     /// <summary>
     /// Temporary storage location for FF1 above
     /// </summary>
-    private bool _interruptFlipFlop2 = false;
-    private byte _interruptMode = 0;
+    private bool _interruptFlipFlop2;
+    private byte _interruptMode;
 
-    // TODO: Can we improve handling of logging of instructions and fetching of memory reads
-    private ushort _instructionMemoryAddressStart;
-    private readonly StringBuilder _currentData = new();
-
-    public Z80Cpu(ICpuLogger cpuLogger)
+    public Z80Cpu(ICpuLogger cpuLogger, IZ80InstructionLogger instructionLogger)
     {
         _cpuLogger = cpuLogger;
-        _pc = new Z80Register();
+        _instructionLogger = instructionLogger;
         _af = new Z80Register();
         _bc = new Z80Register();
         _de = new Z80Register();
@@ -60,6 +62,7 @@ public partial class Z80Cpu : IZ80Cpu
         _cpuLogger.Debug("Initializing CPU");
         _memory = memory;
         _io = io;
+        _pc = new Z80ProgramCounter(memory, _instructionLogger);
     }
 
     public CpuStatus GetStatus()
@@ -79,7 +82,7 @@ public partial class Z80Cpu : IZ80Cpu
             HlShadow = _hlShadow,
             Ix = _ix,
             Iy = _iy,
-            Pc = _pc,
+            Pc = _pc.GetValue(),
             StackPointer = _stackPointer,
             IRegister = _iRegister,
             RRegister = _rRegister,
@@ -98,8 +101,7 @@ public partial class Z80Cpu : IZ80Cpu
         _cpuLogger.Debug("Resetting CPU");
         _currentCycleCount = 0;
 
-        // Reset program counter back to start
-        _pc.Word = 0x00;
+        _pc.Reset();
 
         _halted = false;
         _interruptFlipFlop1 = false;
@@ -126,17 +128,18 @@ public partial class Z80Cpu : IZ80Cpu
 
         _io.ClearNonMaskableInterrupt();
         _io.ClearMaskableInterrupt();
+
+        _instructionLogger.StartNewInstruction(0x00);
     }
 
     public int ExecuteNextCycle()
     {
         _currentCycleCount = 0;
-        _instructionMemoryAddressStart = _pc.Word;
-        _currentData.Clear();
+        _instructionLogger.StartNewInstruction(_pc.GetValue());
 
         if (_io.NonMaskableInterrupt)
         {
-            _cpuLogger.LogInstruction(_instructionMemoryAddressStart, "NMI", "Non Maskable Interrupt", "Non Maskable Interrupt", string.Empty);
+            _cpuLogger.LogInstruction(_pc.GetValue(), "NMI", "Non Maskable Interrupt", "Non Maskable Interrupt", string.Empty);
 
             // Copy state of IFF1 into IFF2 to keep a copy and reset IFF1 so processing can continue without a masked interrupt occuring
             // This gets copied back with a RETN occurs
@@ -159,7 +162,7 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (_interruptFlipFlop1 && _io.MaskableInterrupt)
         {
-            _cpuLogger.LogInstruction(_instructionMemoryAddressStart, "MI", "Maskable Interrupt", "Maskable Interrupt", $"Mode {_interruptMode}");
+            _cpuLogger.LogInstruction(_pc.GetValue(), "MI", "Maskable Interrupt", "Maskable Interrupt", $"Mode {_interruptMode}");
 
             _interruptFlipFlop1 = false;
             _interruptFlipFlop2 = false;
@@ -199,7 +202,7 @@ public partial class Z80Cpu : IZ80Cpu
             return NopCycleCount;
         }
 
-        var opCode = GetNextInstruction();
+        var opCode = _pc.GetNextInstruction();
         var instruction = opCode switch
         {
             0xCB => ProcessCBOpCode(CbInstructionModes.Normal),
@@ -212,7 +215,10 @@ public partial class Z80Cpu : IZ80Cpu
         if (instruction == null)
         {
             // Unhandled instruction, just do a NOP
-            _cpuLogger.LogInstruction(_instructionMemoryAddressStart, opCode.ToString("X2"), "Unimplemented Instruction", "Unimplemented Instruction", string.Empty);
+            _instructionLogger
+                .SetOpCode(opCode.ToString("X2"), "Unimplemented Instruction", "Unimplemented Instruction")
+                .Log();
+
             _currentCycleCount += NopCycleCount;
             return _currentCycleCount;
         }
@@ -224,22 +230,11 @@ public partial class Z80Cpu : IZ80Cpu
             _currentCycleCount += instruction.ClockCycles;
         }
 
-        _cpuLogger.LogInstruction(_instructionMemoryAddressStart, instruction.GetOpCode(), instruction.Name, instruction.Description, _currentData.ToString());
+        _instructionLogger
+            .SetOpCode(instruction.GetOpCode(), instruction.Name, instruction.Description)
+            .Log();
 
         return _currentCycleCount;
-    }
-
-    private byte GetNextByteByProgramCounter()
-    {
-        // Note: We don't increment the cycle count here since this operation is included in overall cycle count for each instruction
-        var data = _memory[_pc.Word];
-        _pc.Word++;
-        return data;
-    }
-
-    private byte GetNextInstruction()
-    {
-        return GetNextByteByProgramCounter();
     }
 
     private Instruction ProcessGenericNonPrefixedOpCode(byte opCode)
@@ -255,7 +250,7 @@ public partial class Z80Cpu : IZ80Cpu
     private Instruction ProcessCBOpCode(CbInstructionModes mode)
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
-        var opCode = GetNextInstruction();
+        var opCode = _pc.GetNextInstruction();
 
         // Normal CB instruction, just do a lookup for the instruction
         if (mode == CbInstructionModes.Normal)
@@ -272,7 +267,7 @@ public partial class Z80Cpu : IZ80Cpu
         // FD/DD CB XX OpCode
 
         // We need to read another byte which is the actual op code we use to lookup since third byte is data
-        var fourthOpCode = GetNextInstruction();
+        var fourthOpCode = _pc.GetNextInstruction();
         SpecialCbInstruction specialCbInstruction;
         bool foundInstruction;
         switch (mode)
@@ -300,7 +295,7 @@ public partial class Z80Cpu : IZ80Cpu
     private Instruction ProcessDDOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
-        var secondOpCode = GetNextInstruction();
+        var secondOpCode = _pc.GetNextInstruction();
         if (secondOpCode == 0xCB)
         {
             // Not a normal instruction, but a special instruction
@@ -319,7 +314,7 @@ public partial class Z80Cpu : IZ80Cpu
     private Instruction ProcessFDOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
-        var secondOpCode = GetNextInstruction();
+        var secondOpCode = _pc.GetNextInstruction();
         if (secondOpCode == 0xCB)
         {
             // Not a normal instruction, but a special instruction
@@ -337,7 +332,7 @@ public partial class Z80Cpu : IZ80Cpu
     private Instruction ProcessEDOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
-        var secondOpCode = GetNextInstruction();
+        var secondOpCode = _pc.GetNextInstruction();
         if (!_edInstructions.TryGetValue(secondOpCode, out var instruction))
         {
             _cpuLogger.Error($"Unhandled 0xED instruction - {secondOpCode:X2}");

@@ -8,6 +8,7 @@ using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Logging;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

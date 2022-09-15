@@ -1,4 +1,4 @@
-﻿namespace Kmse.Core.Z80;
+﻿namespace Kmse.Core.Z80.Logging;
 
 public interface ICpuLogger
 {

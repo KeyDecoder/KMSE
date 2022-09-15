@@ -217,7 +217,7 @@ internal class EmulatorService : BackgroundService
         data += $"HL: {status.Hl.Word:X4} ";
         data += $"IX: {status.Ix.Word:X4} ";
         data += $"IY: {status.Iy.Word:X4} ";
-        data += $"PC: {status.Pc.Word:X4} ";
+        data += $"PC: {status.Pc:X4} ";
         data += $"SP: {status.StackPointer.Word:X4} ";
         data += $"I: {status.IRegister:X2} ";
         data += $"R: {status.RRegister:X2} ";
