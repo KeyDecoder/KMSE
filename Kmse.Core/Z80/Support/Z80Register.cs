@@ -2,6 +2,7 @@
 
 namespace Kmse.Core.Z80.Support;
 
+// TODO: Rename to Unsigned16BitValue
 [StructLayout(LayoutKind.Explicit)]
 public struct Z80Register
 {
