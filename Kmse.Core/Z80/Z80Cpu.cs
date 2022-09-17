@@ -1,8 +1,9 @@
-﻿using System.Text;
-using Kmse.Core.IO;
+﻿using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Registers;
+using Kmse.Core.Z80.Registers.General;
+using Kmse.Core.Z80.Registers.SpecialPurpose;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80;
@@ -19,13 +20,24 @@ public partial class Z80Cpu : IZ80Cpu
 
     private const int NopCycleCount = 4;
 
-    private Z80Register _af, _bc, _de, _hl;
-    private Z80Register _afShadow, _bcShadow, _deShadow, _hlShadow;
-    private Z80Register _ix, _iy;
-    private byte _iRegister, _rRegister;
-
     private IZ80ProgramCounter _pc;
     private IZ80StackManager _stack;
+    private IZ80FlagsManager _flags;
+    private IZ80Accumulator _accumulator;
+    private IZ80AfRegister _af;
+    private IZ80BcRegister _bc;
+    private IZ80DeRegister _de;
+    private IZ80HlRegister _hl;
+    private IZ808BitRegister _b;
+    private IZ808BitRegister _c;
+    private IZ808BitRegister _d;
+    private IZ808BitRegister _e;
+    private IZ808BitRegister _h;
+    private IZ808BitRegister _l;
+    private IZ80IndexRegisterX _ix;
+    private IZ80IndexRegisterY _iy;
+    private IZ80MemoryRefreshRegister _rRegister;
+    private IZ80InterruptPageAddressRegister _iRegister;
 
     /// <summary>
     /// Disables interrupts from being accepted if set to False
@@ -41,18 +53,6 @@ public partial class Z80Cpu : IZ80Cpu
     {
         _cpuLogger = cpuLogger;
         _instructionLogger = instructionLogger;
-        _af = new Z80Register();
-        _bc = new Z80Register();
-        _de = new Z80Register();
-        _hl = new Z80Register();
-        _afShadow = new Z80Register();
-        _bcShadow = new Z80Register();
-        _deShadow = new Z80Register();
-        _hlShadow = new Z80Register();
-        _ix = new Z80Register();
-        _iy = new Z80Register();
-        _iRegister = 0;
-        _rRegister = 0;
         PopulateInstructions();
     }
 
@@ -63,8 +63,26 @@ public partial class Z80Cpu : IZ80Cpu
         _io = io;
 
         // TODO: Need to create these indirectly to allow mock interfaces to be injected for testing
-        _pc = new Z80ProgramCounter(memory, _instructionLogger);
+        _af = new Z80AfRegister(memory);
+        _bc = new Z80BcRegister(memory);
+        _de = new Z80DeRegister(memory);
+        _hl = new Z80HlRegister(memory);
+        _ix = new Z80IndexRegisterX(memory);
+        _iy = new Z80IndexRegisterY(memory);
+        _rRegister = new Z80MemoryRefreshRegister(memory);
+        _iRegister = new Z80InterruptPageAddressRegister(memory);
+
+        _accumulator = _af.Accumulator;
+        _flags = _af.Flags;
+        _b = _bc.B;
+        _c = _bc.C;
+        _d = _de.D;
+        _e = _de.E;
+        _h = _hl.H;
+        _l = _hl.L;
+
         _stack = new Z80StackManager(memory, _cpuLogger);
+        _pc = new Z80ProgramCounter(memory, _instructionLogger, _flags, _stack);
     }
 
     public CpuStatus GetStatus()
@@ -74,20 +92,20 @@ public partial class Z80Cpu : IZ80Cpu
             CurrentCycleCount = _currentCycleCount,
             Halted = _halted,
 
-            Af = _af,
-            Bc = _bc,
-            De = _de,
-            Hl = _hl,
-            AfShadow = _afShadow,
-            BcShadow = _bcShadow,
-            DeShadow = _deShadow,
-            HlShadow = _hlShadow,
-            Ix = _ix,
-            Iy = _iy,
-            Pc = _pc.GetValue(),
-            StackPointer = _stack.GetValue(),
-            IRegister = _iRegister,
-            RRegister = _rRegister,
+            Af = _af.AsRegister(),
+            Bc = _bc.AsRegister(),
+            De = _de.AsRegister(),
+            Hl = _hl.AsRegister(),
+            AfShadow = _af.ShadowAsRegister(),
+            BcShadow = _bc.ShadowAsRegister(),
+            DeShadow = _de.ShadowAsRegister(),
+            HlShadow = _hl.ShadowAsRegister(),
+            Ix = _ix.AsRegister(),
+            Iy = _iy.AsRegister(),
+            Pc = _pc.Value,
+            StackPointer = _stack.Value,
+            IRegister = _iRegister.Value,
+            RRegister = _rRegister.Value,
             InterruptFlipFlop1 = _interruptFlipFlop1,
 
             InterruptFlipFlop2 = _interruptFlipFlop2,
@@ -111,18 +129,14 @@ public partial class Z80Cpu : IZ80Cpu
         _interruptFlipFlop2 = false;
         _interruptMode = 0;
 
-        _iRegister = 0;
-        _rRegister = 0;
-
-        _af.Word = 0x00;
-        _bc.Word = 0x00;
-        _de.Word = 0x00;
-        _hl.Word = 0x00;
-
-        _afShadow.Word = 0x00;
-        _bcShadow.Word = 0x00;
-        _deShadow.Word = 0x00;
-        _hlShadow.Word = 0x00;
+        _af.Reset();
+        _bc.Reset();
+        _de.Reset();
+        _hl.Reset();
+        _ix.Reset();
+        _iy.Reset();
+        _iRegister.Reset();
+        _rRegister.Reset();
 
         _io.ClearNonMaskableInterrupt();
         _io.ClearMaskableInterrupt();
@@ -133,11 +147,11 @@ public partial class Z80Cpu : IZ80Cpu
     public int ExecuteNextCycle()
     {
         _currentCycleCount = 0;
-        _instructionLogger.StartNewInstruction(_pc.GetValue());
+        _instructionLogger.StartNewInstruction(_pc.Value);
 
         if (_io.NonMaskableInterrupt)
         {
-            _cpuLogger.LogInstruction(_pc.GetValue(), "NMI", "Non Maskable Interrupt", "Non Maskable Interrupt", string.Empty);
+            _cpuLogger.LogInstruction(_pc.Value, "NMI", "Non Maskable Interrupt", "Non Maskable Interrupt", string.Empty);
 
             // Copy state of IFF1 into IFF2 to keep a copy and reset IFF1 so processing can continue without a masked interrupt occuring
             // This gets copied back with a RETN occurs
@@ -149,10 +163,10 @@ public partial class Z80Cpu : IZ80Cpu
             _io.ClearNonMaskableInterrupt();
 
             // Handle NMI by jumping to 0x66
-            SaveAndUpdateProgramCounter(0x66);
+            _pc.SetAndSaveExisting(0x66);
 
             // If halted then NMI starts it up again
-            _halted = false;
+            ResumeIfHalted();
 
             _currentCycleCount += 11;
             return _currentCycleCount;
@@ -160,7 +174,7 @@ public partial class Z80Cpu : IZ80Cpu
 
         if (_interruptFlipFlop1 && _io.MaskableInterrupt)
         {
-            _cpuLogger.LogInstruction(_pc.GetValue(), "MI", "Maskable Interrupt", "Maskable Interrupt", $"Mode {_interruptMode}");
+            _cpuLogger.LogInstruction(_pc.Value, "MI", "Maskable Interrupt", "Maskable Interrupt", $"Mode {_interruptMode}");
 
             _interruptFlipFlop1 = false;
             _interruptFlipFlop2 = false;
@@ -178,7 +192,7 @@ public partial class Z80Cpu : IZ80Cpu
                 // Basically mode 0 is the same as mode 1
 
                 // Mode 1, jump to address 0x0038h
-                SaveAndUpdateProgramCounter(0x0038);
+                _pc.SetAndSaveExisting(0x0038);
                 _currentCycleCount += 11;
 
                 return _currentCycleCount;
@@ -203,10 +217,10 @@ public partial class Z80Cpu : IZ80Cpu
         var opCode = _pc.GetNextInstruction();
         var instruction = opCode switch
         {
-            0xCB => ProcessCBOpCode(CbInstructionModes.Normal),
-            0xDD => ProcessDDOpCode(),
-            0xFD => ProcessFDOpCode(),
-            0xED => ProcessEDOpCode(),
+            0xCB => ProcessCbOpCode(CbInstructionModes.Normal),
+            0xDD => ProcessDdOpCode(),
+            0xFD => ProcessFdOpCode(),
+            0xED => ProcessEdOpCode(),
             _ => ProcessGenericNonPrefixedOpCode(opCode)
         };
 
@@ -235,6 +249,21 @@ public partial class Z80Cpu : IZ80Cpu
         return _currentCycleCount;
     }
 
+    private void Halt()
+    {
+        _cpuLogger.Debug("Halting CPU");
+        _halted = true;
+    }
+
+    private void ResumeIfHalted()
+    {
+        if (!_halted)
+        {
+            _cpuLogger.Debug("Resuming CPU");
+        }
+        _halted = true;
+    }
+
     private Instruction ProcessGenericNonPrefixedOpCode(byte opCode)
     {
         if (!_genericInstructions.TryGetValue(opCode, out var instruction))
@@ -245,7 +274,7 @@ public partial class Z80Cpu : IZ80Cpu
         return instruction;
     }
 
-    private Instruction ProcessCBOpCode(CbInstructionModes mode)
+    private Instruction ProcessCbOpCode(CbInstructionModes mode)
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
         var opCode = _pc.GetNextInstruction();
@@ -290,7 +319,7 @@ public partial class Z80Cpu : IZ80Cpu
         return specialCbInstruction;
     }
 
-    private Instruction ProcessDDOpCode()
+    private Instruction ProcessDdOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
         var secondOpCode = _pc.GetNextInstruction();
@@ -298,7 +327,7 @@ public partial class Z80Cpu : IZ80Cpu
         {
             // Not a normal instruction, but a special instruction
             // ie. DD CB data opcode
-            return ProcessCBOpCode(CbInstructionModes.DD);
+            return ProcessCbOpCode(CbInstructionModes.DD);
         }
 
         if (!_ddInstructions.TryGetValue(secondOpCode, out var instruction))
@@ -309,7 +338,7 @@ public partial class Z80Cpu : IZ80Cpu
         return instruction;
     }
 
-    private Instruction ProcessFDOpCode()
+    private Instruction ProcessFdOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
         var secondOpCode = _pc.GetNextInstruction();
@@ -317,7 +346,7 @@ public partial class Z80Cpu : IZ80Cpu
         {
             // Not a normal instruction, but a special instruction
             // ie. FD CB data opcode
-            return ProcessCBOpCode(CbInstructionModes.FD);
+            return ProcessCbOpCode(CbInstructionModes.FD);
         }
         if (!_fdInstructions.TryGetValue(secondOpCode, out var instruction))
         {
@@ -327,7 +356,7 @@ public partial class Z80Cpu : IZ80Cpu
         return instruction;
     }
 
-    private Instruction ProcessEDOpCode()
+    private Instruction ProcessEdOpCode()
     {
         // Two byte op code, so get next part of instruction and use that to lookup instruction
         var secondOpCode = _pc.GetNextInstruction();

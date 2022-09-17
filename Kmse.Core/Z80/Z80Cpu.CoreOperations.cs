@@ -1,6 +1,5 @@
 ﻿using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
-using Microsoft.Win32;
 
 namespace Kmse.Core.Z80
 {
@@ -9,156 +8,6 @@ namespace Kmse.Core.Z80
     /// </summary>
     public partial class Z80Cpu
     {
-        private void SetFlag(Z80StatusFlags flags)
-        {
-            _af.Low |= (byte)flags;
-        }
-
-        private void ClearFlag(Z80StatusFlags flags)
-        {
-            _af.Low &= (byte)~flags;
-        }
-
-        private void InvertFlag(Z80StatusFlags flag)
-        {
-            SetClearFlagConditional(flag, !IsFlagSet(flag));
-        }
-
-        private void SetClearFlagConditional(Z80StatusFlags flags, bool condition)
-        {
-            if (condition)
-            {
-                SetFlag(flags);
-            }
-            else
-            {
-                ClearFlag(flags);
-            }
-        }
-
-        private bool IsFlagSet(Z80StatusFlags flags)
-        {
-            var currentSetFlags = (Z80StatusFlags)_af.Low & flags;
-            return currentSetFlags == flags;
-        }
-
-        private void SaveAndUpdateProgramCounter(ushort address)
-        {
-            // Storing PC in Stack so can resume later
-            _stack.PushRegisterToStack(_pc.AsRegister());
-
-            // Update PC to execute from new address
-            _pc.SetProgramCounter(address);
-        }
-
-        private void SetProgramCounterFromRegister(Z80Register register)
-        {
-            // Update PC to execute from the value of the register
-            _pc.SetProgramCounter(register.Word);
-        }
-
-        private void ResetProgramCounterFromStack()
-        {
-            var register = new Z80Register();
-            _stack.PopRegisterFromStack(ref register);
-            _pc.SetProgramCounter(register.Word);
-        }
-
-        private void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
-        {
-            if (IsFlagSet(flag))
-            {
-                _pc.SetProgramCounter(address);
-            }
-        }
-
-        private void Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address)
-        {
-            if (!IsFlagSet(flag))
-            {
-                _pc.SetProgramCounter(address);
-            }
-        }
-
-        private void JumpByOffset(byte offset)
-        {
-            var newPcLocation = _pc.GetValue();
-
-            // Range is -126 to +129 so we need a signed version
-            // However sbyte only goes from -128 to +127 but we need -126 to +129 so have to do this manually
-            if (offset <= 129)
-            {
-                newPcLocation += offset;
-            }
-            else
-            {
-                // 256 minus our offset gives us a positive number for where it would rollover at 129
-                // And we minus this since this would be negative number
-                newPcLocation -= (ushort)(256 - offset);
-            }
-
-            // Note we don't need to add one here since we always increment the Pc after we read from it, so it's already pointing to next command at this point
-            _pc.SetProgramCounter(newPcLocation);
-        }
-
-        private void JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status)
-        {
-            if (IsFlagSet(flag) == status)
-            {
-                JumpByOffset(offset);
-                _currentCycleCount += 12;
-            }
-
-            _currentCycleCount += 7;
-        }
-
-        private void JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset)
-        {
-            JumpByOffsetIfFlagHasStatus(flag, offset, true);
-        }
-
-        private void JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset)
-        {
-            JumpByOffsetIfFlagHasStatus(flag, offset, false);
-        }
-
-        private void CallIfFlagCondition(Z80StatusFlags flag, ushort address)
-        {
-            if (IsFlagSet(flag))
-            {
-                SaveAndUpdateProgramCounter(address);
-            }
-        }
-
-        private void CallIfNotFlagCondition(Z80StatusFlags flag, ushort address)
-        {
-            if (!IsFlagSet(flag))
-            {
-                SaveAndUpdateProgramCounter(address);
-            }
-        }
-
-        private void ReturnIfFlagHasStatus(Z80StatusFlags flag, bool status)
-        {
-            if (IsFlagSet(flag) == status)
-            {
-                ResetProgramCounterFromStack();
-                _currentCycleCount += 11;
-            }
-
-            _currentCycleCount += 5;
-        }
-
-        private void ReturnIfFlag(Z80StatusFlags flag)
-        {
-            ReturnIfFlagHasStatus(flag, true);
-        }
-
-        private void ReturnIfNotFlag(Z80StatusFlags flag)
-        {
-            ReturnIfFlagHasStatus(flag, false);
-        }
-
         private byte ReadFromIo(byte high, byte low)
         {
             var address = (ushort)((high << 8) + low);
@@ -171,12 +20,12 @@ namespace Kmse.Core.Z80
             var data = _io.ReadPort(address);
 
             // If high bit set, then negative so set sign flag
-            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(data, 7));
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, data == 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(data, 7));
+            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, data == 0);
 
-            ClearFlag(Z80StatusFlags.HalfCarryH);
-            SetParityFromValue(data);
-            ClearFlag(Z80StatusFlags.AddSubtractN);
+            _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+            _flags.SetParityFromValue(data);
+            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
 
             return data;
         }
@@ -191,22 +40,6 @@ namespace Kmse.Core.Z80
         {
             var address = (ushort)((high << 8) + low);
             _io.WritePort(address, value);
-        }
-
-        private void SetParityFromValue(byte value)
-        {
-            // Count the number of 1 bits in the value
-            // If odd, then clear flag and if even, then set flag
-            var bitsSet = 0;
-            for (var i = 0; i < 8; i++)
-            {
-                if (Bitwise.IsSet(value, i))
-                {
-                    bitsSet++;
-                }
-            }
-
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, bitsSet == 0 || bitsSet % 2 == 0);
         }
 
         private void SwapRegisters(ref Z80Register register1, ref Z80Register register2)
@@ -332,18 +165,6 @@ namespace Kmse.Core.Z80
             destination = sourceData;
         }
 
-        private void LoadSpecial8BitRegisterToAccumulator(byte sourceData)
-        {
-            _af.High = sourceData;
-
-            // Check flags since copying from special register into accumulator
-            SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 7));
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
-            ClearFlag(Z80StatusFlags.HalfCarryH);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _interruptFlipFlop2);
-            ClearFlag(Z80StatusFlags.AddSubtractN);
-        }
-
         private void CopyMemoryByRegisterLocations(Z80Register source, Z80Register destination)
         {
             _memory[destination.Word] = _memory[source.Word];
@@ -367,14 +188,14 @@ namespace Kmse.Core.Z80
 
         private void CheckIncrementFlags(byte newValue, byte oldValue)
         {
-            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
             // Set half carry is carry from bit 3
             // Basically if all 4 lower bits are set, then incrementing means it would set bit 5 which in the high nibble
             // https://en.wikipedia.org/wiki/Half-carry_flag
-            SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x0F);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x7F);
-            ClearFlag(Z80StatusFlags.AddSubtractN);
+            _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x0F);
+            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x7F);
+            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
         }
 
         private void Decrement8Bit(ref byte register)
@@ -394,16 +215,16 @@ namespace Kmse.Core.Z80
 
         private void CheckDecrementFlags(byte newValue, byte oldValue)
         {
-            SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-            SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
+            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
             // Set half carry is borrow from bit 4
             // Basically if all 4 lower bits are clear, then decrementing would essentially set all the lower bits
             // ie. 0x20 - 1 = 0x1F
             // https://en.wikipedia.org/wiki/Half-carry_flag
             // This could also check by seeing if the new value & 0x0F == 0x0F means all the lower bits were set
-            SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x00);
-            SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x80);
-            SetFlag(Z80StatusFlags.AddSubtractN);
+            _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x00);
+            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x80);
+            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         }
         
         private void Increment16Bit(ref Z80Register register)
