@@ -2,13 +2,13 @@
 
 namespace Kmse.Core.Z80.Registers;
 
-public class Z808BitRegister : IZ808BitRegister
+public abstract class Z808BitRegister : IZ808BitRegister
 {
     protected readonly IMasterSystemMemory Memory;
     public byte Value { get; protected set; }
     public byte ShadowValue { get; protected set; }
 
-    public Z808BitRegister(IMasterSystemMemory memory)
+    protected Z808BitRegister(IMasterSystemMemory memory)
     {
         Memory = memory;
     }
@@ -23,9 +23,30 @@ public class Z808BitRegister : IZ808BitRegister
         Value = value;
     }
 
+    public void Set(IZ808BitRegister register)
+    {
+        Set(register.Value);
+    }
+
     public void SetFromDataInMemory(ushort address, byte offset = 0)
     {
         Value = Memory[(ushort)(address + offset)];
+    }
+
+    public void SetFromDataInMemory(IZ8016BitRegister register, byte offset = 0)
+    {
+        SetFromDataInMemory(register.Value, offset);
+    }
+
+    public void SaveToMemory(ushort address, byte offset = 0)
+    {
+        var location = (ushort)(address + offset);
+        Memory[location] = Value;
+    }
+
+    public void SaveToMemory(IZ8016BitRegister register, byte offset = 0)
+    {
+        SaveToMemory(register.Value, offset);
     }
 
     public void SwapWithShadow()

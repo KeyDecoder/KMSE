@@ -1,4 +1,5 @@
 ﻿using Kmse.Core.Memory;
+using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers;
@@ -31,8 +32,14 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
 
     public void Set(ushort value)
     {
-        LowRegister.Set((byte)(value & 0x00FF));
-        HighRegister.Set((byte)((value & 0xFF00) >> 8));
+        var (high, low) = Bitwise.ToBytes(value);
+        LowRegister.Set(low);
+        HighRegister.Set(high);
+    }
+
+    public void Set(IZ8016BitRegister register)
+    {
+        Set(register.Value);
     }
 
     public void SetHigh(byte value)
@@ -56,6 +63,18 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
         HighRegister.Set(high);
     }
 
+    public void SetFromDataInMemory(IZ8016BitRegister register, byte offset = 0)
+    {
+        SetFromDataInMemory(register.Value, offset);
+    }
+
+    public void SaveToMemory(ushort address, byte offset = 0)
+    {
+        var location = (ushort)(address + offset);
+        _memory[location] = HighRegister.Value;
+        _memory[(ushort)(location + 1)] = LowRegister.Value;
+    }
+
     public void SwapWithShadow()
     {
         LowRegister.SwapWithShadow();
@@ -69,6 +88,20 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
             Low = LowRegister.Value,
             High = HighRegister.Value
         };
+    }
+
+    public void Increment()
+    {
+        var currentValue = Value;
+        currentValue++;
+        Set(currentValue);
+    }
+
+    public void Decrement()
+    {
+        var currentValue = Value;
+        currentValue--;
+        Set(currentValue);
     }
 
     public Z80Register ShadowAsRegister()

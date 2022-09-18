@@ -120,33 +120,33 @@ public partial class Z80Cpu
 
     private void PopulateJumpCallAndReturnOperations()
     {
-        AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_hl); });
-        AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_ix); });
-        AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { SetProgramCounterFromRegister(_iy); });
-        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ =>  { _pc.SetProgramCounter(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xE9, 4, "JP (HL)", "Unconditional Jump", _ => { _pc.Set(_hl); });
+        AddDoubleByteInstruction(0xDD, 0xE9, 8, "JP (IX)", "Unconditional Jump", _ => { _pc.Set(_ix); });
+        AddDoubleByteInstruction(0xFD, 0xE9, 8, "JP (IY)", "Unconditional Jump", _ => { _pc.Set(_iy); });
+        AddStandardInstruction(0xC3, 10, "JP $NN", "Unconditional Jump", _ =>  { _pc.Set(_pc.GetNextTwoDataBytes()); });
 
-        AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump If Carry Set", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xD2, 10, "JP NC,$NN", "Conditional Jump If Carry Not Set", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xFA, 10, "JP M,$NN", "Conditional Jump If Negative", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xF2, 10, "JP P,$NN", "Conditional Jump If Positive", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xCA, 10, "JP Z,$NN", "Conditional Jump if Zero", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xC2, 10, "JP NZ,$NN", "Conditional Jump If Not Zero", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xEA, 10, "JP PE,$NN", "Conditional Jump If Parity Even", _ => { Jump16BitIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump If Parity Odd", _ => { Jump16BitIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xDA, 10, "JP C,$NN", "Conditional Jump If Carry Set", _ => { _pc.Jump16BitIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xD2, 10, "JP NC,$NN", "Conditional Jump If Carry Not Set", _ => { _pc.Jump16BitIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xFA, 10, "JP M,$NN", "Conditional Jump If Negative", _ => { _pc.Jump16BitIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xF2, 10, "JP P,$NN", "Conditional Jump If Positive", _ => { _pc.Jump16BitIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xCA, 10, "JP Z,$NN", "Conditional Jump if Zero", _ => { _pc.Jump16BitIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xC2, 10, "JP NZ,$NN", "Conditional Jump If Not Zero", _ => { _pc.Jump16BitIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xEA, 10, "JP PE,$NN", "Conditional Jump If Parity Even", _ => { _pc.Jump16BitIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump If Parity Odd", _ => { _pc.Jump16BitIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
 
-        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump By Offset", _ => { JumpByOffset(_pc.GetNextDataByte()); });
-        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfNotFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()); });
+        AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump By Offset", _ => { _pc.JumpByOffset(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7; });
+        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfNotFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7; });
+        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7; });
+        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7; });
 
         AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ =>
         {
-            Decrement8Bit(ref _bc.High);
+            _b.Decrement();
             var offset = _pc.GetNextDataByte();
             if (_bc.High != 0)
             {
-                JumpByOffset(offset);
+                _pc.JumpByOffset(offset);
                 _currentCycleCount += 13;
             }
 
@@ -154,37 +154,37 @@ public partial class Z80Cpu
             _currentCycleCount += 8;
         });
 
-        AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { SaveAndUpdateProgramCounter(_pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { CallIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { CallIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { CallIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { CallIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call If Parity Odd", _ => { CallIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { _pc.SetAndSaveExisting(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call If Parity Odd", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
 
-        AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { ResetProgramCounterFromStack(); });
-        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return If Carry Set", _ => { ReturnIfFlag(Z80StatusFlags.CarryC); });
-        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "Conditional Return If Carry Not Set", _ => { ReturnIfNotFlag(Z80StatusFlags.CarryC); });
-        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "Conditional Return If Negative", _ => { ReturnIfFlag(Z80StatusFlags.SignS); });
-        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "Conditional Return If Positive", _ => { ReturnIfNotFlag(Z80StatusFlags.SignS); });
-        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "Conditional Return If Zero", _ => { ReturnIfFlag(Z80StatusFlags.ZeroZ); });
-        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "Conditional Return If Not Zero", _ => { ReturnIfNotFlag(Z80StatusFlags.ZeroZ); });
-        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "Conditional Return If Parity Even", _ => { ReturnIfFlag(Z80StatusFlags.ParityOverflowPV); });
-        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "Conditional Return If Parity Odd", _ => { ReturnIfNotFlag(Z80StatusFlags.ParityOverflowPV); });
+        AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { _pc.SetFromStack(); });
+        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return If Carry Set", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.CarryC) ? 11 : 5; });
+        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "Conditional Return If Carry Not Set", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.CarryC) ? 11 : 5; });
+        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "Conditional Return If Negative", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.SignS) ? 11 : 5; });
+        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "Conditional Return If Positive", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.SignS) ? 11 : 5; });
+        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "Conditional Return If Zero", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.ZeroZ) ? 11 : 5; });
+        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "Conditional Return If Not Zero", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.ZeroZ) ? 11 : 5; });
+        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "Conditional Return If Parity Even", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5; });
+        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "Conditional Return If Parity Odd", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5; });
 
-        AddStandardInstruction(0xC7, 11, "RST 0", "Restart at 0h", _ => { SaveAndUpdateProgramCounter(0x00); });
-        AddStandardInstruction(0xCF, 11, "RST 08H", "Restart at 08h", _ => { SaveAndUpdateProgramCounter(0x08); });
-        AddStandardInstruction(0xD7, 11, "RST 10H", "Restart at 10h", _ => { SaveAndUpdateProgramCounter(0x10); });
-        AddStandardInstruction(0xDF, 11, "RST 18H", "Restart at 18h", _ => { SaveAndUpdateProgramCounter(0x18); });
-        AddStandardInstruction(0xE7, 11, "RST 20H", "Restart at 20h", _ => { SaveAndUpdateProgramCounter(0x20); });
-        AddStandardInstruction(0xEF, 11, "RST 28H", "Restart at 28h", _ => { SaveAndUpdateProgramCounter(0x28); });
-        AddStandardInstruction(0xF7, 11, "RST 30H", "Restart at 30h", _ => { SaveAndUpdateProgramCounter(0x30); });
-        AddStandardInstruction(0xFF, 11, "RST 38H", "Restart at 38h", _ => { SaveAndUpdateProgramCounter(0x38); });
+        AddStandardInstruction(0xC7, 11, "RST 0", "Restart at 0h", _ => { _pc.SetAndSaveExisting(0x00); });
+        AddStandardInstruction(0xCF, 11, "RST 08H", "Restart at 08h", _ => {  _pc.SetAndSaveExisting(0x08); });
+        AddStandardInstruction(0xD7, 11, "RST 10H", "Restart at 10h", _ => {  _pc.SetAndSaveExisting(0x10); });
+        AddStandardInstruction(0xDF, 11, "RST 18H", "Restart at 18h", _ => {  _pc.SetAndSaveExisting(0x18); });
+        AddStandardInstruction(0xE7, 11, "RST 20H", "Restart at 20h", _ => {  _pc.SetAndSaveExisting(0x20); });
+        AddStandardInstruction(0xEF, 11, "RST 28H", "Restart at 28h", _ => {  _pc.SetAndSaveExisting(0x28); });
+        AddStandardInstruction(0xF7, 11, "RST 30H", "Restart at 30h", _ => {  _pc.SetAndSaveExisting(0x30); });
+        AddStandardInstruction(0xFF, 11, "RST 38H", "Restart at 38h", _ => { _pc.SetAndSaveExisting(0x38); });
         
-        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { ResetProgramCounterFromStack(); _io.ClearMaskableInterrupt(); });
-        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { ResetProgramCounterFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; });
+        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { _pc.SetFromStack(); _io.ClearMaskableInterrupt(); });
+        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { _pc.SetFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; });
     }
 
     private void PopulateArthmeticAndLogicalInstructions()
@@ -292,12 +292,12 @@ public partial class Z80Cpu
 
             CompareIncrement();
 
-            if (_bc.Word != 0 && !_flags.IsFlagSet(Z80StatusFlags.ZeroZ))
+            if (_bc.Value != 0 && !_flags.IsFlagSet(Z80StatusFlags.ZeroZ))
             {
                 // If BC not zero and A != (HL), set PC back by 2 so instruction is repeated
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
-                var currentPc = _pc.GetValue();
+                var currentPc = _pc.Value;
                 _pc.MoveProgramCounterBackward(2);
                 _currentCycleCount += 21;
             }
@@ -321,7 +321,7 @@ public partial class Z80Cpu
 
             CompareDecrement();
 
-            if (_bc.Word != 0 && !_flags.IsFlagSet(Z80StatusFlags.ZeroZ))
+            if (_bc.Value != 0 && !_flags.IsFlagSet(Z80StatusFlags.ZeroZ))
             {
                 // If BC not zero and A != (HL), set PC back by 2 so instruction is repeated
                 // Note that this is not a loop here since we still need to process interrupts
@@ -390,9 +390,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x23, 10, "INC IX", "Increment", _ => { Increment16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x23, 10, "INC IY", "Increment", _ => { Increment16Bit(ref _iy); });
 
-        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { IncrementAtRegisterMemoryLocation(_hl, 0); });
-        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_ix, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { IncrementAtRegisterMemoryLocation(_iy, _pc.GetNextDataByte()); });
+        AddStandardInstruction(0x34, 11, "INC (HL)", "Increment (indirect)", _ => { IncrementMemory(_hl, 0); });
+        AddDoubleByteInstruction(0xDD, 0x34, 23, "INC (IX+d)", "Increment", _ => { IncrementMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x34, 23, "INC (IY+d)", "Increment", _ => { IncrementMemory(_iy, _pc.GetNextDataByte()); });
 
         AddStandardInstruction(0x3D, 4, "DEC A", "Decrement A", _ => { Decrement8Bit(ref _af.High); });
         AddStandardInstruction(0x05, 4, "DEC B", "Decrement B", _ => { Decrement8Bit(ref _bc.High); });
@@ -409,9 +409,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xDD, 0x2B, 10, "DEC IX", "Decrement IX", _ => { Decrement16Bit(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0x2B, 10, "DEC IY", "Decrement IY", _ => { Decrement16Bit(ref _iy); });
 
-        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { DecrementAtRegisterMemoryLocation(_hl, 0); });
-        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_ix, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementAtRegisterMemoryLocation(_iy, _pc.GetNextDataByte()); });
+        AddStandardInstruction(0x35, 11, "DEC (HL)", "", _ => { DecrementMemory(_hl); });
+        AddDoubleByteInstruction(0xDD, 0x35, 23, "DEC (IX+d)", "Decrement", _ => { DecrementMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x35, 23, "DEC (IY+d)", "Decrement", _ => { DecrementMemory(_iy, _pc.GetNextDataByte()); });
 
         AddStandardInstruction(0x37, 4, "SCF", "Set Carry Flag", _ =>
         {
@@ -649,42 +649,42 @@ public partial class Z80Cpu
         // Since 0x76 is a seperate instruction (halt) we can't do a mask using all lower 3 bits so skip 0x76 and add 0x77 manually
         AddStandardInstruction(0x77, 7, "LD (HL),A", "Load A into (HL)", i => { LoadRR(i.OpCode); });
 
-        AddStandardInstruction(0x0A, 7, "LD A,(BC)", "Load A from data in memory location at BC", _ => { _accumulator.SetFromDataAtMemoryLocation(_bc.Word); });
-        AddStandardInstruction(0x1A, 7, "LD A,(DE)", "Load A from data in memory location at DE", _ => { _accumulator.SetFromDataAtMemoryLocation(_de.Word); });
-        AddStandardInstruction(0x2, 7, "LD (BC),A", "Load memory location at BC into A", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_bc, _accumulator.Value); });
-        AddStandardInstruction(0x12, 7, "LD (DE),A", "Load memory location at DE into A", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_de, _accumulator.Value); });
+        AddStandardInstruction(0x0A, 7, "LD A,(BC)", "Load A from data in memory location at BC", _ => { _accumulator.SetFromDataInMemory(_bc); });
+        AddStandardInstruction(0x1A, 7, "LD A,(DE)", "Load A from data in memory location at DE", _ => { _accumulator.SetFromDataInMemory(_de); });
+        AddStandardInstruction(0x2, 7, "LD (BC),A", "Load A to memory at BC", _ => { _accumulator.SaveToMemory(_bc); });
+        AddStandardInstruction(0x12, 7, "LD (DE),A", "Load A to memory at DE", _ => { _accumulator.SaveToMemory(_de); });
 
-        AddDoubleByteInstruction(0xDD, 0x77, 19, "LD (IX+d),A", "Load A into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _accumulator.Value, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x70, 19, "LD (IX+d),B", "Load B into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _bc.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x71, 19, "LD (IX+d),C", "Load C into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _bc.Low, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x72, 19, "LD (IX+d),D", "Load D into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _de.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x73, 19, "LD (IX+d),E", "Load E into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _de.Low, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x74, 19, "LD (IX+d),H", "Load H into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _hl.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x75, 19, "LD (IX+d),L", "Load L into memory location at IX+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_ix, _hl.Low, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x77, 19, "LD (IX+d),A", "Load A into memory location at IX+D", _ => { _accumulator.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x70, 19, "LD (IX+d),B", "Load B into memory location at IX+D", _ => { _b.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x71, 19, "LD (IX+d),C", "Load C into memory location at IX+D", _ => { _c.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x72, 19, "LD (IX+d),D", "Load D into memory location at IX+D", _ => { _d.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x73, 19, "LD (IX+d),E", "Load E into memory location at IX+D", _ => { _e.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x74, 19, "LD (IX+d),H", "Load H into memory location at IX+D", _ => { _h.SaveToMemory(_ix, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x75, 19, "LD (IX+d),L", "Load L into memory location at IX+D", _ => { _l.SaveToMemory(_ix, _pc.GetNextDataByte()); });
 
-        AddDoubleByteInstruction(0xFD, 0x77, 19, "LD (IY+d),A", "Load A into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _accumulator.Value, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x70, 19, "LD (IY+d),B", "Load B into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _bc.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x71, 19, "LD (IY+d),C", "Load C into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _bc.Low, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x72, 19, "LD (IY+d),D", "Load D into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _de.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x73, 19, "LD (IY+d),E", "Load E into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _de.Low, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x74, 19, "LD (IY+d),H", "Load H into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _hl.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x75, 19, "LD (IY+d),L", "Load L into memory location at IY+D", _ => { SaveTo16BitRegisterMemoryLocationFrom8BitRegister(_iy, _hl.Low, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x77, 19, "LD (IY+d),A", "Load A into memory location at IY+D", _ => { _accumulator.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x70, 19, "LD (IY+d),B", "Load B into memory location at IY+D", _ => { _b.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x71, 19, "LD (IY+d),C", "Load C into memory location at IY+D", _ => { _c.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x72, 19, "LD (IY+d),D", "Load D into memory location at IY+D", _ => { _d.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x73, 19, "LD (IY+d),E", "Load E into memory location at IY+D", _ => { _e.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x74, 19, "LD (IY+d),H", "Load H into memory location at IY+D", _ => { _h.SaveToMemory(_iy, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x75, 19, "LD (IY+d),L", "Load L into memory location at IY+D", _ => { _l.SaveToMemory(_iy, _pc.GetNextDataByte()); });
 
-        AddStandardInstruction(0xF9, 6, "LD SP,HL", "Load HL into SP", _ => { _stack.Set(_hl.Word); });
-        AddDoubleByteInstruction(0xDD, 0xF9, 10, "LD SP,IX", "Load IX into SP", _ => { _stack.Set(_ix.Word); });
-        AddDoubleByteInstruction(0xFD, 0xF9, 10, "LD SP,IY", "Load IY into SP", _ => { _stack.Set(_iy.Word); });
+        AddStandardInstruction(0xF9, 6, "LD SP,HL", "Load HL into SP", _ => { _stack.Set(_hl); });
+        AddDoubleByteInstruction(0xDD, 0xF9, 10, "LD SP,IX", "Load IX into SP", _ => { _stack.Set(_ix); });
+        AddDoubleByteInstruction(0xFD, 0xF9, 10, "LD SP,IY", "Load IY into SP", _ => { _stack.Set(_iy); });
 
-        AddDoubleByteInstruction(0xED, 0x47, 9, "LD I,A", "Load A into I", _ => { Load8BitRegisterFrom8BitRegister(_accumulator.Value, ref _iRegister); });
-        AddDoubleByteInstruction(0xED, 0x4F, 9, "LD R,A", "Load A into R", _ => { Load8BitRegisterFrom8BitRegister(_accumulator.Value, ref _rRegister); });
+        AddDoubleByteInstruction(0xED, 0x47, 9, "LD I,A", "Load A into I", _ => { _iRegister.Set(_accumulator); });
+        AddDoubleByteInstruction(0xED, 0x4F, 9, "LD R,A", "Load A into R", _ => { _rRegister.Set(_accumulator); });
         AddDoubleByteInstruction(0xED, 0x57, 9, "LD A,I", "Load I into A", _ => { _accumulator.SetFromInterruptRegister(_iRegister, _interruptFlipFlop2); });
         AddDoubleByteInstruction(0xED, 0x5F, 9, "LD A,R", "Load R into A", _ => { _accumulator.SetFromMemoryRefreshRegister(_rRegister, _interruptFlipFlop2); });
         AddStandardInstruction(0x3E, 7, "LD A,N", "Load n into A", _ => { _accumulator.Set(_pc.GetNextDataByte()); });
-        AddStandardInstruction(0x06, 7, "LD B,N", "Load n into B", _ => { LoadValueInto8BitRegister(ref _bc.High, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x0E, 7, "LD C,N", "Load n into C", _ => { LoadValueInto8BitRegister(ref _bc.Low, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x16, 7, "LD D,N", "Load n into D", _ => { LoadValueInto8BitRegister(ref _de.High, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x1E, 7, "LD E,N", "Load n into E", _ => { LoadValueInto8BitRegister(ref _de.Low, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x26, 7, "LD H,N", "Load n into H", _ => { LoadValueInto8BitRegister(ref _hl.High, _pc.GetNextDataByte()); });
-        AddStandardInstruction(0x2E, 7, "LD L,N", "Load n into L", _ => { LoadValueInto8BitRegister(ref _hl.Low, _pc.GetNextDataByte()); });
+        AddStandardInstruction(0x06, 7, "LD B,N", "Load n into B", _ => { _b.Set(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x0E, 7, "LD C,N", "Load n into C", _ => { _c.Set(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x16, 7, "LD D,N", "Load n into D", _ => { _d.Set(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x1E, 7, "LD E,N", "Load n into E", _ => { _e.Set(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x26, 7, "LD H,N", "Load n into H", _ => { _h.Set(_pc.GetNextDataByte()); });
+        AddStandardInstruction(0x2E, 7, "LD L,N", "Load n into L", _ => { _l.Set(_pc.GetNextDataByte()); });
 
         // These are undocumented but zxdoc still runs them
         // https://iot.onl/asm/z80/opcodes/undocumented/
@@ -775,66 +775,62 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xFD, 0x6D, 9, "LD IYL, IYL", "Load IYL into IYL", _ => { Load8BitRegisterFrom8BitRegister(_iy.Low, ref _iy.Low); });
         // end undocumented instructions
 
-        AddDoubleByteInstruction(0xDD, 0x7E, 19, "LD A,(IX+d)", "Load memory at IX + d into A", _ =>
-        {
-            _accumulator.LoadRegisterFromMemory(_ix.Word, _pc.GetNextDataByte());
-            //LoadInto8BitRegisterFromMemory(ref _af.High, _ix.Word, _pc.GetNextDataByte());
-        });
-        AddDoubleByteInstruction(0xDD, 0x46, 19, "LD B,(IX+d)", "Load memory at IX + d into B", _ => { LoadInto8BitRegisterFromMemory(ref _bc.High, _ix.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x4E, 19, "LD C,(IX+d)", "Load memory at IX + d into C", _ => { LoadInto8BitRegisterFromMemory(ref _bc.Low, _ix.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x56, 19, "LD D,(IX+d)", "Load memory at IX + d into D", _ => { LoadInto8BitRegisterFromMemory(ref _de.High, _ix.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x5E, 19, "LD E,(IX+d)", "Load memory at IX + d into E", _ => { LoadInto8BitRegisterFromMemory(ref _de.Low, _ix.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x66, 19, "LD H,(IX+d)", "Load memory at IX + d into H", _ => { LoadInto8BitRegisterFromMemory(ref _hl.High, _ix.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xDD, 0x6E, 19, "LD L,(IX+d)", "Load memory at IX + d into L", _ => { LoadInto8BitRegisterFromMemory(ref _hl.Low, _ix.Word, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x7E, 19, "LD A,(IX+d)", "Load memory at IX + d into A", _ => { _accumulator.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x46, 19, "LD B,(IX+d)", "Load memory at IX + d into B", _ => { _b.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x4E, 19, "LD C,(IX+d)", "Load memory at IX + d into C", _ => { _c.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x56, 19, "LD D,(IX+d)", "Load memory at IX + d into D", _ => { _d.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x5E, 19, "LD E,(IX+d)", "Load memory at IX + d into E", _ => { _e.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x66, 19, "LD H,(IX+d)", "Load memory at IX + d into H", _ => { _h.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x6E, 19, "LD L,(IX+d)", "Load memory at IX + d into L", _ => { _l.SetFromDataInMemory(_ix.Value, _pc.GetNextDataByte()); });
 
-        AddDoubleByteInstruction(0xFD, 0x7E, 19, "LD A,(IY+d)", "Load memory at IY + d into A", _ => { LoadInto8BitRegisterFromMemory(ref _af.High, _iy.Word, _pc.GetNextDataByte());});
-        AddDoubleByteInstruction(0xFD, 0x46, 19, "LD B,(IY+d)", "Load memory at IY + d into B", _ => { LoadInto8BitRegisterFromMemory(ref _bc.High, _iy.Word, _pc.GetNextDataByte());});
-        AddDoubleByteInstruction(0xFD, 0x4E, 19, "LD C,(IY+d)", "Load memory at IY + d into C", _ => { LoadInto8BitRegisterFromMemory(ref _bc.Low, _iy.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x56, 19, "LD D,(IY+d)", "Load memory at IY + d into D", _ => { LoadInto8BitRegisterFromMemory(ref _de.High, _iy.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x5E, 19, "LD E,(IY+d)", "Load memory at IY + d into E", _ => { LoadInto8BitRegisterFromMemory(ref _de.Low, _iy.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x66, 19, "LD H,(IY+d)", "Load memory at IY + d into H", _ => { LoadInto8BitRegisterFromMemory(ref _hl.High, _iy.Word, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xFD, 0x6E, 19, "LD L,(IY+d)", "Load memory at IY + d into L", _ => { LoadInto8BitRegisterFromMemory(ref _hl.Low, _iy.Word, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x7E, 19, "LD A,(IY+d)", "Load memory at IY + d into A", _ => { _accumulator.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte());});
+        AddDoubleByteInstruction(0xFD, 0x46, 19, "LD B,(IY+d)", "Load memory at IY + d into B", _ => { _b.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte());});
+        AddDoubleByteInstruction(0xFD, 0x4E, 19, "LD C,(IY+d)", "Load memory at IY + d into C", _ => { _c.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x56, 19, "LD D,(IY+d)", "Load memory at IY + d into D", _ => { _d.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x5E, 19, "LD E,(IY+d)", "Load memory at IY + d into E", _ => { _e.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x66, 19, "LD H,(IY+d)", "Load memory at IY + d into H", _ => { _h.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xFD, 0x6E, 19, "LD L,(IY+d)", "Load memory at IY + d into L", _ => { _l.SetFromDataInMemory(_iy.Value, _pc.GetNextDataByte()); });
 
-        AddStandardInstruction(0x36, 10, "LD (HL),N", "Load value n into memory at HL", _ => { LoadValueIntoRegisterMemoryLocation(_pc.GetNextDataByte(), _hl); });
-        AddDoubleByteInstruction(0xDD, 0x36, 19, "LD(IX + d), N", "Load value n into location at IX + d", _ =>  {  var offset = _pc.GetNextDataByte();  var value = _pc.GetNextDataByte();  LoadValueIntoRegisterMemoryLocation(value, _ix, offset); });
-        AddDoubleByteInstruction(0xFD, 0x36, 19, "LD(IY + d), N", "Load value n into location at IY + d", _ => { var offset = _pc.GetNextDataByte(); var value = _pc.GetNextDataByte(); LoadValueIntoRegisterMemoryLocation(value, _iy, offset); });
+        AddStandardInstruction(0x36, 10, "LD (HL),N", "Load value n into memory at HL", _ => { WriteToMemory(_hl, _pc.GetNextDataByte()); });
+        AddDoubleByteInstruction(0xDD, 0x36, 19, "LD(IX + d), N", "Load value n into location at IX + d", _ =>  {  var offset = _pc.GetNextDataByte();  var value = _pc.GetNextDataByte(); WriteToMemory(_ix, value, offset); });
+        AddDoubleByteInstruction(0xFD, 0x36, 19, "LD(IY + d), N", "Load value n into location at IY + d", _ => { var offset = _pc.GetNextDataByte(); var value = _pc.GetNextDataByte(); WriteToMemory(_iy, value, offset); });
 
-        AddStandardInstruction(0x3A, 13, "LD A,(NN)", "Load value at memory location NN into A", _ => { LoadInto8BitRegisterFromMemory(ref _af.High, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x2A, 16, "LD HL,(NN)", "Load value at memory location NN into HL", _ => { LoadInto16BitRegisterFromMemory(ref _hl, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x4B, 20, "LD BC, (NN)", "Load value at memory location NN into BC", _ => { LoadInto16BitRegisterFromMemory(ref _bc, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x5B, 20, "LD DE, (NN)", "Load value at memory location NN into DE", _ => { LoadInto16BitRegisterFromMemory(ref _de, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x7B, 20, "LD SP, (NN)", "Load value at memory location NN into SP", _ => { _stack.SetStackPointerFromDataInMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xDD, 0x2A, 20, "LD IX, (NN)", "Load value at memory location NN into IX", _ => { LoadInto16BitRegisterFromMemory(ref _ix, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xFD, 0x2A, 20, "LD IY, (NN)", "Load value at memory location NN into IY", _ => { LoadInto16BitRegisterFromMemory(ref _iy, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x3A, 13, "LD A,(NN)", "Load value at memory location NN into A", _ => { _accumulator.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x2A, 16, "LD HL,(NN)", "Load value at memory location NN into HL", _ => { _hl.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x4B, 20, "LD BC, (NN)", "Load value at memory location NN into BC", _ => { _bc.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x5B, 20, "LD DE, (NN)", "Load value at memory location NN into DE", _ => { _de.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x7B, 20, "LD SP, (NN)", "Load value at memory location NN into SP", _ => { _stack.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xDD, 0x2A, 20, "LD IX, (NN)", "Load value at memory location NN into IX", _ => { _ix.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xFD, 0x2A, 20, "LD IY, (NN)", "Load value at memory location NN into IY", _ => { _iy.SetFromDataInMemory(_pc.GetNextTwoDataBytes()); });
 
-        AddStandardInstruction(0x01, 10, "LD BC,NN", "Load nn value into BC", _ => { LoadValueInto16BitRegister(ref _bc, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x11, 10, "LD DE,NN", "Load nn value into DE", _ => { LoadValueInto16BitRegister(ref _de, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x21, 10, "LD HL,NN", "Load nn value into HL", _ => { LoadValueInto16BitRegister(ref _hl, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x31, 10, "LD SP,NN", "Load nn value into SP", _ => { _stack.SetStackPointer(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xDD, 0x21, 14, "LD IX, NN", "Load nn value into IX", _ => { LoadValueInto16BitRegister(ref _ix, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xFD, 0x21, 14, "LD IY, NN", "Load nn value into IY", _ => { LoadValueInto16BitRegister(ref _iy, _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x01, 10, "LD BC,NN", "Load nn value into BC", _ => { _bc.Set(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x11, 10, "LD DE,NN", "Load nn value into DE", _ => { _de.Set(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x21, 10, "LD HL,NN", "Load nn value into HL", _ => { _hl.Set(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x31, 10, "LD SP,NN", "Load nn value into SP", _ => { _stack.Set(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xDD, 0x21, 14, "LD IX, NN", "Load nn value into IX", _ => { _ix.Set(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xFD, 0x21, 14, "LD IY, NN", "Load nn value into IY", _ => { _iy.Set(_pc.GetNextTwoDataBytes()); });
 
-        AddStandardInstruction(0x32, 13, "LD (NN),A", "Load A into memory location NN", _ => { Save8BitRegisterValueToMemory(_af.High, _pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0x22, 16, "LD (NN),HL", "Load HL into memory location NN", _ => { Save16BitRegisterToMemory(_hl, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x43, 20, "LD(NN), BC", "Load BC into memory location NN", _ => { Save16BitRegisterToMemory(_bc, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x53, 20, "LD(NN), DE", "Load DE into memory location NN", _ => { Save16BitRegisterToMemory(_de, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xDD, 0x22, 20, "LD(NN), IX", "Load IX into memory location NN", _ => { Save16BitRegisterToMemory(_ix, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xFD, 0x22, 20, "LD(NN), IY", "Load IY into memory location NN", _ => { Save16BitRegisterToMemory(_iy, _pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load SP into memory location NN", _ => { Save16BitRegisterToMemory(_stack.AsRegister(), _pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x32, 13, "LD (NN),A", "Load A into memory location NN", _ => { _accumulator.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddStandardInstruction(0x22, 16, "LD (NN),HL", "Load HL into memory location NN", _ => { _hl.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x43, 20, "LD(NN), BC", "Load BC into memory location NN", _ => { _bc.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x53, 20, "LD(NN), DE", "Load DE into memory location NN", _ => { _de.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xDD, 0x22, 20, "LD(NN), IX", "Load IX into memory location NN", _ => { _ix.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xFD, 0x22, 20, "LD(NN), IY", "Load IY into memory location NN", _ => { _iy.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load SP into memory location NN", _ => { _stack.SaveToMemory(_pc.GetNextTwoDataBytes()); });
 
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ =>
         {
-            CopyMemoryByRegisterLocations(_hl, _de);
+            CopyMemory(_hl, _de);
             Increment16Bit(ref _hl);
             Increment16Bit(ref _de);
             Decrement16Bit(ref _bc);
             _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
             _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
         });
         AddDoubleByteInstruction(0xED, 0xB0, DynamicCycleHandling, "LDIR", "Load, Increment, Repeat", _ =>
         {
-            if (_bc.Word == 0)
+            if (_bc.Value == 0)
             {
                 // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
                 //_bc.Word = 64 * 1024;
@@ -843,15 +839,15 @@ public partial class Z80Cpu
                 return;
             }
 
-            CopyMemoryByRegisterLocations(_hl, _de);
+            CopyMemory(_hl, _de);
             Increment16Bit(ref _hl);
             Increment16Bit(ref _de);
             Decrement16Bit(ref _bc);
             _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
             _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
 
-            if (_bc.Word != 0)
+            if (_bc.Value != 0)
             {
                 // If not zero, set PC back by 2 so instruction is repeated
                 // Note that this is not a loop here since we still need to process interrupts
@@ -866,17 +862,17 @@ public partial class Z80Cpu
         });
         AddDoubleByteInstruction(0xED, 0xA8, 16, "LDD", "Load and Decrement", _ =>
         {
-            CopyMemoryByRegisterLocations(_hl, _de);
+            CopyMemory(_hl, _de);
             Decrement16Bit(ref _hl);
             Decrement16Bit(ref _de);
             Decrement16Bit(ref _bc);
             _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
             _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Word != 0);
+            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
         });
         AddDoubleByteInstruction(0xED, 0xB8, DynamicCycleHandling, "LDDR", "Load, Decrement, Repeat", _ =>
         {
-            if (_bc.Word == 0)
+            if (_bc.Value == 0)
             {
                 // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
                 //_bc.Word = 64 * 1024;
@@ -885,7 +881,7 @@ public partial class Z80Cpu
                 return;
             }
 
-            CopyMemoryByRegisterLocations(_hl, _de);
+            CopyMemory(_hl, _de);
             Decrement16Bit(ref _hl);
             Decrement16Bit(ref _de);
             Decrement16Bit(ref _bc);
@@ -894,7 +890,7 @@ public partial class Z80Cpu
             // This is not a typo, for some reason in LDDR the PV flag is reset unlike the other LDx instructions
             _flags.ClearFlag(Z80StatusFlags.ParityOverflowPV);
 
-            if (_bc.Word != 0)
+            if (_bc.Value != 0)
             {
                 // If not zero, set PC back by 2 so instruction is repeated
                 // Note that this is not a loop here since we still need to process interrupts
@@ -927,7 +923,7 @@ public partial class Z80Cpu
     {
         AddStandardInstruction(0xE3, 19, "EX (SP),HL", "Exchange HL with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithDataAtStackPointerAddress(ref _hl); });
         AddStandardInstruction(0x8, 4, "EX AF,AF'", "Exchange AF and AF Shadow", _ => { SwapRegisters(ref _af, ref _afShadow); });
-        AddStandardInstruction(0xEB, 4, "EX DE,HL", "Exchange DE and HL", _ => { SwapRegisters(ref _de, ref _hl); });
+        AddStandardInstruction(0xEB, 4, "EX DE,HL", "Exchange DE and HL", _ => { _hl.SwapWithDeRegister(_de); });
         AddStandardInstruction(0xD9, 4, "EXX", "Exchange BC, DE, HL with Shadow Registers", _ => { SwapRegisters(ref _bc, ref _bcShadow); SwapRegisters(ref _de, ref _deShadow); SwapRegisters(ref _hl, ref _hlShadow); });
         AddDoubleByteInstruction(0xDD, 0xE3, 23, "EX (SP),IX", "Exchange IX with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithDataAtStackPointerAddress(ref _ix); });
         AddDoubleByteInstruction(0xFD, 0xE3, 23, "EX (SP),IY", "Exchange IY with Data from Memory Address in SP", _ => { _stack.SwapRegisterWithDataAtStackPointerAddress(ref _iy); });
@@ -935,23 +931,23 @@ public partial class Z80Cpu
 
     private void PopulateInputOutputInstructions()
     {
-        AddStandardInstruction(0xDB, 11, "IN A,(N)", "Read I/O at N into A", _ => { _af.High = ReadFromIo(_af.High, _pc.GetNextDataByte()); });
-        AddDoubleByteInstruction(0xED, 0x70, 12, "IN (C)", "Read I/O at B/C But Only Set Flags", _ => { ReadFromIoAndSetFlags(_bc.High, _bc.Low); });
-        AddDoubleByteInstruction(0xED, 0x78, 12, "IN A,(C)", "Read I/O at B/C into A with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _af.High); });
-        AddDoubleByteInstruction(0xED, 0x40, 12, "IN B,(C)", "Read I/O at B/C into B with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _bc.High); });
-        AddDoubleByteInstruction(0xED, 0x48, 12, "IN C,(C)", "Read I/O at B/C into C with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _bc.Low); });
-        AddDoubleByteInstruction(0xED, 0x50, 12, "IN D,(C)", "Read I/O at B/C into D with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _de.High); });
-        AddDoubleByteInstruction(0xED, 0x58, 12, "IN E,(C)", "Read I/O at B/C into E with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _de.Low); });
-        AddDoubleByteInstruction(0xED, 0x60, 12, "IN H,(C)", "Read I/O at B/C into H with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.High); });
-        AddDoubleByteInstruction(0xED, 0x68, 12, "IN L,(C)", "Read I/O at B/C into L with flags", _ => { ReadFromIoIntoRegister(_bc.High, _bc.Low, ref _hl.Low); });
+        AddStandardInstruction(0xDB, 11, "IN A,(N)", "Read I/O at N into A", _ => { _accumulator.Set(_ioManagement.Read(_af.High, _pc.GetNextDataByte(), false)); });
+        AddDoubleByteInstruction(0xED, 0x70, 12, "IN (C)", "Read I/O at B/C But Only Set Flags", _ => { _ioManagement.Read(_bc.High, _bc.Low, true); });
+        AddDoubleByteInstruction(0xED, 0x78, 12, "IN A,(C)", "Read I/O at B/C into A with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _accumulator); });
+        AddDoubleByteInstruction(0xED, 0x40, 12, "IN B,(C)", "Read I/O at B/C into B with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _b); });
+        AddDoubleByteInstruction(0xED, 0x48, 12, "IN C,(C)", "Read I/O at B/C into C with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _c); });
+        AddDoubleByteInstruction(0xED, 0x50, 12, "IN D,(C)", "Read I/O at B/C into D with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _d); });
+        AddDoubleByteInstruction(0xED, 0x58, 12, "IN E,(C)", "Read I/O at B/C into E with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _e); });
+        AddDoubleByteInstruction(0xED, 0x60, 12, "IN H,(C)", "Read I/O at B/C into H with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _h); });
+        AddDoubleByteInstruction(0xED, 0x68, 12, "IN L,(C)", "Read I/O at B/C into L with flags", _ => { _ioManagement.ReadAndSetRegister(_bc, _l); });
         
         AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ =>
         {
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             var data = _io.ReadPort(portAddress);
-            Save8BitRegisterValueToMemory(data, _hl.Word);
-            Decrement8Bit(ref _bc.High);
-            Increment16Bit(ref _hl);
+            _memoryManagement.WriteToMemory(_hl, data);
+            _b.Decrement();
+            _hl.Increment();
             _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
@@ -968,9 +964,9 @@ public partial class Z80Cpu
 
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             var data = _io.ReadPort(portAddress);
-            Save8BitRegisterValueToMemory(data, _hl.Word);
-            Decrement8Bit(ref _bc.High);
-            Increment16Bit(ref _hl);
+            _memoryManagement.WriteToMemory(_hl, data);
+            _b.Decrement();
+            _hl.Increment();
             _flags.SetFlag(Z80StatusFlags.ZeroZ);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
 
@@ -992,9 +988,9 @@ public partial class Z80Cpu
         {
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             var data = _io.ReadPort(portAddress);
-            Save8BitRegisterValueToMemory(data, _hl.Word);
-            Decrement8Bit(ref _bc.High);
-            Decrement16Bit(ref _hl);
+            _memoryManagement.WriteToMemory(_hl, data);
+            _b.Decrement();
+            _hl.Decrement();
             _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
@@ -1011,9 +1007,9 @@ public partial class Z80Cpu
 
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             var data = _io.ReadPort(portAddress);
-            Save8BitRegisterValueToMemory(data, _hl.Word);
-            Decrement8Bit(ref _bc.High);
-            Decrement16Bit(ref _hl);
+            _memoryManagement.WriteToMemory(_hl, data);
+            _b.Decrement();
+            _hl.Decrement();
             _flags.SetFlag(Z80StatusFlags.ZeroZ);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
 
@@ -1032,23 +1028,23 @@ public partial class Z80Cpu
         });
 
 
-        AddStandardInstruction(0xD3, 11, "OUT (N),A", "Write I/O at n from A", _ => { WriteToIo(_af.High, _pc.GetNextDataByte(), _af.High); });
-        AddDoubleByteInstruction(0xED, 0x79, 12, "OUT (C),A", "Write I/O at B/C from A", _ => { WriteToIo(_bc.High, _bc.Low, _af.High); });
-        AddDoubleByteInstruction(0xED, 0x41, 12, "OUT (C),B", "Write I/O at B/C from B", _ => { WriteToIo(_bc.High, _bc.Low, _bc.High); });
-        AddDoubleByteInstruction(0xED, 0x49, 12, "OUT (C),C", "Write I/O at B/C from C", _ => { WriteToIo(_bc.High, _bc.Low, _bc.Low); });
-        AddDoubleByteInstruction(0xED, 0x51, 12, "OUT (C),D", "Write I/O at B/C from D", _ => { WriteToIo(_bc.High, _bc.Low, _de.High); });
-        AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Write I/O at B/C from E", _ => { WriteToIo(_bc.High, _bc.Low, _de.Low); });
-        AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Write I/O at B/C from H", _ => { WriteToIo(_bc.High, _bc.Low, _hl.High); });
-        AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Write I/O at B/C from L", _ => { WriteToIo(_bc.High, _bc.Low, _hl.Low); });
+        AddStandardInstruction(0xD3, 11, "OUT (N),A", "Write I/O at n from A", _ => { _ioManagement.Write(_af.High, _pc.GetNextDataByte(), _accumulator); });
+        AddDoubleByteInstruction(0xED, 0x79, 12, "OUT (C),A", "Write I/O at B/C from A", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _accumulator); });
+        AddDoubleByteInstruction(0xED, 0x41, 12, "OUT (C),B", "Write I/O at B/C from B", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _b); });
+        AddDoubleByteInstruction(0xED, 0x49, 12, "OUT (C),C", "Write I/O at B/C from C", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _c); });
+        AddDoubleByteInstruction(0xED, 0x51, 12, "OUT (C),D", "Write I/O at B/C from D", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _d); });
+        AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Write I/O at B/C from E", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _e); });
+        AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Write I/O at B/C from H", _ => {  _ioManagement.Write(_b.Value, _bc.Low, _h); });
+        AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Write I/O at B/C from L", _ => { _ioManagement.Write(_b.Value, _bc.Low, _l); });
 
         AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ =>
         {
-            var data = GetValueFromMemoryByRegisterLocation(_hl);
-            Decrement8Bit(ref _bc.High);
+            var data = _memoryManagement.ReadFromMemory(_hl);
+            _b.Decrement();
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             _io.WritePort(portAddress, data);
 
-            Increment16Bit(ref _hl);
+            _hl.Increment();
             _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
@@ -1063,12 +1059,12 @@ public partial class Z80Cpu
                 return;
             }
 
-            var data = GetValueFromMemoryByRegisterLocation(_hl);
-            Decrement8Bit(ref _bc.High);
+            var data = _memoryManagement.ReadFromMemory(_hl);
+            _b.Decrement();
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             _io.WritePort(portAddress, data);
 
-            Increment16Bit(ref _hl);
+            _hl.Increment();
             _flags.SetFlag(Z80StatusFlags.ZeroZ);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
 
@@ -1088,12 +1084,12 @@ public partial class Z80Cpu
 
         AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ =>
         {
-            var data = GetValueFromMemoryByRegisterLocation(_hl);
-            Decrement8Bit(ref _bc.High);
+            var data = _memoryManagement.ReadFromMemory(_hl);
+            _b.Decrement();
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             _io.WritePort(portAddress, data);
 
-            Decrement16Bit(ref _hl);
+             _hl.Decrement();
             _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _bc.High == 0);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
@@ -1108,12 +1104,12 @@ public partial class Z80Cpu
                 return;
             }
 
-            var data = GetValueFromMemoryByRegisterLocation(_hl);
-            Decrement8Bit(ref _bc.High);
+            var data = _memoryManagement.ReadFromMemory(_hl);
+            _b.Decrement();
             var portAddress = (ushort)((_bc.High << 8) + _bc.Low);
             _io.WritePort(portAddress, data);
 
-            Decrement16Bit(ref _hl);
+            _hl.Decrement();
             _flags.SetFlag(Z80StatusFlags.ZeroZ);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
 

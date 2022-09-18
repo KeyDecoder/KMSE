@@ -35,6 +35,11 @@ public abstract class Z8016BitRegisterBase : IZ8016BitRegister
         Register.Word = value;
     }
 
+    public void Set(IZ8016BitRegister register)
+    {
+        Register.Word = register.Value;
+    }
+
     public void SetHigh(byte value)
     {
         Register.High = value;
@@ -53,8 +58,30 @@ public abstract class Z8016BitRegisterBase : IZ8016BitRegister
         SetHigh(_memory[location]);
     }
 
+    public void SetFromDataInMemory(IZ8016BitRegister register, byte offset = 0)
+    {
+        SetFromDataInMemory(register.Value, offset);
+    }
+
+    public void SaveToMemory(ushort address, byte offset = 0)
+    {
+        var location = (ushort)(address + offset);
+        _memory[location] = Register.Low;
+        _memory[(ushort)(location + 1)] = Register.High;
+    }
+
     public Z80Register AsRegister()
     {
         return Register;
+    }
+
+    public void Increment()
+    {
+        Register.Word++;
+    }
+
+    public void Decrement()
+    {
+        Register.Word--;
     }
 }

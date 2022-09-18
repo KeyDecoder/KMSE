@@ -322,4 +322,21 @@ public class BitWiseTestFixture
         Bitwise.SetOrClearIf(ref output, bit, func);
         output.Should().Be(expectedValue);
     }
+
+    private static object[] _toUnsignedShortTestCases =
+    {
+        new object[] { (byte)0, (byte)0, (ushort)0 },
+        new object[] { (byte)1, (byte)1, (ushort)0x0101 },
+        new object[] { (byte)1, (byte)0xFF, (ushort)0x01FF },
+        new object[] { (byte)0xFF, (byte)0x01, (ushort)0xFF01 },
+        new object[] { (byte)0xAB, (byte)0xCD, (ushort)0xABCD },
+        new object[] { (byte)0xFF, (byte)0xFF, (ushort)0xFFFF }
+    };
+
+    [Test]
+    [TestCaseSource(nameof(_toUnsignedShortTestCases))]
+    public void WhenCheckingIntIfBitSet(byte high, byte low, ushort value)
+    {
+        Bitwise.ToUnsigned16BitValue(high, low).Should().Be(value);
+    }
 }
