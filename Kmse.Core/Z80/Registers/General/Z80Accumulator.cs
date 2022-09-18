@@ -5,14 +5,11 @@ using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.General;
 
-public class Z80Accumulator : Z808BitRegister, IZ80Accumulator
+public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
 {
-    private readonly IZ80FlagsManager _flags;
-
     public Z80Accumulator(IZ80FlagsManager flags, IMasterSystemMemory memory)
-        : base(memory)
+        : base(memory, flags)
     {
-        _flags = flags;
     }
 
     public void SetFromInterruptRegister(IZ80InterruptPageAddressRegister register, bool interruptFlipFlop2Status)
@@ -38,11 +35,11 @@ public class Z80Accumulator : Z808BitRegister, IZ80Accumulator
         // A is higher bits of A left same + higher bits of hl 
         var newAValue = (byte)((ah << 4) + hlh);
 
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
-        _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-        _flags.SetParityFromValue(newAValue);
-        _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
+        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
+        Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+        Flags.SetParityFromValue(newAValue);
+        Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
 
         Memory[hl.Value] = newHlValue;
         Value = newAValue;
@@ -61,11 +58,11 @@ public class Z80Accumulator : Z808BitRegister, IZ80Accumulator
         // A is higher bits of A left same + higher bits of hl 
         var newAValue = (byte)((ah << 4) + hll);
 
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
-        _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-        _flags.SetParityFromValue(newAValue);
-        _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newAValue, 7));
+        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newAValue == 0);
+        Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+        Flags.SetParityFromValue(newAValue);
+        Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
 
         Memory[hl.Value] = newHlValue;
         Value = newAValue;
@@ -76,10 +73,10 @@ public class Z80Accumulator : Z808BitRegister, IZ80Accumulator
         Value = sourceData;
 
         // Check flags since copying from special register into accumulator
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
-        _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-        _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, interruptFlipFlop2Status);
-        _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 7));
+        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
+        Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, interruptFlipFlop2Status);
+        Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
     }
 }

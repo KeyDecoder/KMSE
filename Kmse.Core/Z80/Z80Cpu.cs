@@ -1,6 +1,8 @@
 ﻿using Kmse.Core.IO;
 using Kmse.Core.Memory;
+using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
+using Kmse.Core.Z80.Memory;
 using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
@@ -28,16 +30,18 @@ public partial class Z80Cpu : IZ80Cpu
     private IZ80BcRegister _bc;
     private IZ80DeRegister _de;
     private IZ80HlRegister _hl;
-    private IZ808BitRegister _b;
-    private IZ808BitRegister _c;
-    private IZ808BitRegister _d;
-    private IZ808BitRegister _e;
-    private IZ808BitRegister _h;
-    private IZ808BitRegister _l;
+    private IZ808BitGeneralPurposeRegister _b;
+    private IZ808BitGeneralPurposeRegister _c;
+    private IZ808BitGeneralPurposeRegister _d;
+    private IZ808BitGeneralPurposeRegister _e;
+    private IZ808BitGeneralPurposeRegister _h;
+    private IZ808BitGeneralPurposeRegister _l;
     private IZ80IndexRegisterX _ix;
     private IZ80IndexRegisterY _iy;
     private IZ80MemoryRefreshRegister _rRegister;
     private IZ80InterruptPageAddressRegister _iRegister;
+    private IZ80CpuInputOutput _ioManagement;
+    private IZ80CpuMemoryManagement _memoryManagement;
 
     /// <summary>
     /// Disables interrupts from being accepted if set to False
@@ -64,9 +68,9 @@ public partial class Z80Cpu : IZ80Cpu
 
         // TODO: Need to create these indirectly to allow mock interfaces to be injected for testing
         _af = new Z80AfRegister(memory);
-        _bc = new Z80BcRegister(memory);
-        _de = new Z80DeRegister(memory);
-        _hl = new Z80HlRegister(memory);
+        _bc = new Z80BcRegister(memory, _af.Flags);
+        _de = new Z80DeRegister(memory, _af.Flags);
+        _hl = new Z80HlRegister(memory, _af.Flags);
         _ix = new Z80IndexRegisterX(memory);
         _iy = new Z80IndexRegisterY(memory);
         _rRegister = new Z80MemoryRefreshRegister(memory);
@@ -83,6 +87,9 @@ public partial class Z80Cpu : IZ80Cpu
 
         _stack = new Z80StackManager(memory, _cpuLogger);
         _pc = new Z80ProgramCounter(memory, _instructionLogger, _flags, _stack);
+
+        _ioManagement = new Z80CpuInputOutput(_io, _flags);
+        _memoryManagement = new Z80CpuMemoryManagement(_memory, _flags);
     }
 
     public CpuStatus GetStatus()

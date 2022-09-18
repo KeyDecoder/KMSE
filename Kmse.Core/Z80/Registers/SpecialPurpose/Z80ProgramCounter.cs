@@ -85,20 +85,26 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
         Set(register.Word);
     }
 
-    public void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
+    public bool Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
     {
         if (_flags.IsFlagSet(flag))
         {
             Set(address);
+            return true;
         }
+
+        return false;
     }
 
-    public void Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address)
+    public bool Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address)
     {
         if (!_flags.IsFlagSet(flag))
         {
             Set(address);
+            return true;
         }
+
+        return false;
     }
 
     public void JumpByOffset(byte offset)
@@ -135,30 +141,36 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
         return false;
     }
 
-    public void JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset)
+    public bool JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset)
     {
-        JumpByOffsetIfFlagHasStatus(flag, offset, true);
+        return JumpByOffsetIfFlagHasStatus(flag, offset, true);
     }
 
-    public void JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset)
+    public bool JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset)
     {
-        JumpByOffsetIfFlagHasStatus(flag, offset, false);
+        return JumpByOffsetIfFlagHasStatus(flag, offset, false);
     }
 
-    public void CallIfFlagCondition(Z80StatusFlags flag, ushort address)
+    public bool CallIfFlagCondition(Z80StatusFlags flag, ushort address)
     {
         if (_flags.IsFlagSet(flag))
         {
             SetAndSaveExisting(address);
+            return true;
         }
+
+        return false;
     }
 
-    public void CallIfNotFlagCondition(Z80StatusFlags flag, ushort address)
+    public bool CallIfNotFlagCondition(Z80StatusFlags flag, ushort address)
     {
         if (!_flags.IsFlagSet(flag))
         {
             SetAndSaveExisting(address);
+            return true;
         }
+
+        return false;
     }
 
     public bool ReturnIfFlagHasStatus(Z80StatusFlags flag, bool status)

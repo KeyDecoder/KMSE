@@ -4,11 +4,11 @@ namespace Kmse.Core.Z80.Registers.General;
 
 public class Z80DeRegister : Z8016BitCombinedRegisterBase, IZ80DeRegister
 {
-    public Z80DeRegister(IMasterSystemMemory memory)
+    public Z80DeRegister(IMasterSystemMemory memory, IZ80FlagsManager flags)
         : base(memory)
     {
-        D = new Z808BitRegister(memory);
-        E = new Z808BitRegister(memory);
+        D = new Z808BitGeneralPurposeRegister(memory, flags);
+        E = new Z808BitGeneralPurposeRegister(memory, flags);
     }
 
     protected override IZ808BitRegister HighRegister => D;

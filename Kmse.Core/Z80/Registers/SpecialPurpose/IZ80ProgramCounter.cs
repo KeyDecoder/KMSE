@@ -38,14 +38,14 @@ public interface IZ80ProgramCounter : IZ8016BitRegister
     /// </summary>
     void SetFromStack();
 
-    void Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address);
-    void Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address);
+    bool Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address);
+    bool Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address);
     void JumpByOffset(byte offset);
     bool JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status);
-    void JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset);
-    void JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset);
-    void CallIfFlagCondition(Z80StatusFlags flag, ushort address);
-    void CallIfNotFlagCondition(Z80StatusFlags flag, ushort address);
+    bool JumpByOffsetIfFlag(Z80StatusFlags flag, byte offset);
+    bool JumpByOffsetIfNotFlag(Z80StatusFlags flag, byte offset);
+    bool CallIfFlagCondition(Z80StatusFlags flag, ushort address);
+    bool CallIfNotFlagCondition(Z80StatusFlags flag, ushort address);
     bool ReturnIfFlagHasStatus(Z80StatusFlags flag, bool status);
     bool ReturnIfFlag(Z80StatusFlags flag);
     bool ReturnIfNotFlag(Z80StatusFlags flag);
