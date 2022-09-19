@@ -167,9 +167,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Value = (byte)twosComplementValue;
     }
 
-    public void AddFromMemory(Z80Register register, int offset, bool withCarry = false)
+    public void AddFromMemory(IZ8016BitRegister register, int offset, bool withCarry = false)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         Add(value, withCarry);
     }
 
@@ -201,9 +201,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Set((byte)newValue);
     }
 
-    public void SubtractFromMemory(Z80Register register, int offset, bool withCarry = false)
+    public void SubtractFromMemory(IZ8016BitRegister register, int offset, bool withCarry = false)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         Subtract(value, withCarry);
     }
 
@@ -250,9 +250,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Flags.SetClearFlagConditional(Z80StatusFlags.CarryC, Value < value);
     }
 
-    public void CompareFromMemory(Z80Register register, int offset)
+    public void CompareFromMemory(IZ8016BitRegister register, int offset)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         Compare(value);
     }
 
@@ -270,9 +270,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Set(newValue);
     }
 
-    public void AddFromMemory(Z80Register register, int offset, byte valueToAndAgainst)
+    public void AndFromMemory(IZ8016BitRegister register, int offset, byte valueToAndAgainst)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         And(value, valueToAndAgainst);
     }
 
@@ -290,9 +290,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Set(newValue);
     }
 
-    public void OrFromMemory(Z80Register register, int offset, byte valueToOrAgainst)
+    public void OrFromMemory(IZ8016BitRegister register, int offset, byte valueToOrAgainst)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         Or(value, valueToOrAgainst);
     }
 
@@ -310,9 +310,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Set(newValue);
     }
 
-    public void XorFromMemory(Z80Register register, int offset, byte valueToXorAgainst)
+    public void XorFromMemory(IZ8016BitRegister register, int offset, byte valueToXorAgainst)
     {
-        var value = Memory[(ushort)(register.Word + offset)];
+        var value = Memory[(ushort)(register.Value + offset)];
         Xor(value, valueToXorAgainst);
     }
 

@@ -81,6 +81,11 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
         Set((ushort)newValue);
     }
 
+    public void Add(IZ8016BitRegister register, bool withCarry = false)
+    {
+        Add(register.Value, withCarry);
+    }
+
     public void Subtract(ushort source, bool withCarry = false)
     {
         int valueWithCarry = source;
@@ -104,6 +109,11 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
         Flags.SetClearFlagConditional(Z80StatusFlags.CarryC, (newValue & 0x10000) != 0);
 
         Set((ushort)newValue);
+    }
+
+    public void Subtract(IZ8016BitRegister register, bool withCarry = false)
+    {
+        Subtract(register.Value, withCarry);
     }
 
     public void RotateLeftCircular(int offset)

@@ -7,9 +7,9 @@ public static class Bitwise
         return (ushort)((high << 8) + low);
     }
 
-    public static (byte, byte) ToBytes(ushort value)
+    public static (byte High, byte Low) ToBytes(ushort value)
     {
-        return ((byte)(value & 0xFF00 >> 8), (byte)(value & 0x00FF));
+        return ((byte)((value & 0xFF00) >> 8), (byte)(value & 0x00FF));
     }
 
     public static bool IsSet(byte value, int bit)

@@ -335,8 +335,27 @@ public class BitWiseTestFixture
 
     [Test]
     [TestCaseSource(nameof(_toUnsignedShortTestCases))]
-    public void WhenCheckingIntIfBitSet(byte high, byte low, ushort value)
+    public void WhenConvertingFromBytesToUnsignedShort(byte high, byte low, ushort value)
     {
         Bitwise.ToUnsigned16BitValue(high, low).Should().Be(value);
+    }
+
+    private static object[] _toBytesFromUnsignedShortTestCases =
+    {
+        new object[] { (ushort)0, (byte)0, (byte)0 },
+        new object[] { (ushort)0x0101, (byte)1, (byte)1 },
+        new object[] { (ushort)0x01FF, (byte)1, (byte)0xFF },
+        new object[] { (ushort)0xFF01, (byte)0xFF, (byte)0x01 },
+        new object[] { (ushort)0xCBAD, (byte)0xCB, (byte)0xAD },
+        new object[] { (ushort)0xFFFF, (byte)0xFF, (byte)0xFF }
+    };
+
+    [Test]
+    [TestCaseSource(nameof(_toBytesFromUnsignedShortTestCases))]
+    public void WhenConvertingFromUnsignedShortToBytes(ushort value, byte high, byte low)
+    {
+        var output = Bitwise.ToBytes(value);
+        output.High.Should().Be(high);
+        output.Low.Should().Be(low);
     }
 }
