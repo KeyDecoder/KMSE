@@ -1,17 +1,18 @@
 ﻿using Kmse.Core.Memory;
 using Kmse.Core.Z80.Logging;
+using Kmse.Core.Z80.Registers.General;
 
 namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
-public class Z80StackManager : Z8016BitRegisterBase, IZ80StackManager
+public class Z80StackManager : Z8016BitSpecialRegisterBase, IZ80StackManager
 {
     private const ushort DefaultStackAddress = 0xDFF0;
     private readonly ICpuLogger _cpuLogger;
     private readonly IMasterSystemMemory _memory;
     private int _maximumMemorySize;
 
-    public Z80StackManager(IMasterSystemMemory memory, ICpuLogger cpuLogger)
-        : base(memory)
+    public Z80StackManager(IMasterSystemMemory memory, ICpuLogger cpuLogger, IZ80FlagsManager flags)
+        : base(memory, flags)
     {
         _memory = memory;
         _cpuLogger = cpuLogger;

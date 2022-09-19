@@ -1,16 +1,30 @@
 ﻿using Kmse.Core.Memory;
+using Kmse.Core.Z80.Registers.General;
 
 namespace Kmse.Core.Z80.Registers;
 
-public abstract class Z808BitRegister : IZ808BitRegister
+public abstract class Z808BitRegister : Z80RegisterBase, IZ808BitRegister
 {
     protected readonly IMasterSystemMemory Memory;
-    public byte Value { get; protected set; }
-    public byte ShadowValue { get; protected set; }
+    protected byte InternalShadowValue;
+    protected byte InternalValue;
 
-    protected Z808BitRegister(IMasterSystemMemory memory)
+    protected Z808BitRegister(IMasterSystemMemory memory, IZ80FlagsManager flags)
+        : base(flags)
     {
         Memory = memory;
+    }
+
+    public byte Value
+    {
+        get => InternalValue;
+        protected set => InternalValue = value;
+    }
+
+    public byte ShadowValue
+    {
+        get => InternalShadowValue;
+        protected set => InternalShadowValue = value;
     }
 
     public void Reset()

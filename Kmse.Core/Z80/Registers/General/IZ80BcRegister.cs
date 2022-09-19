@@ -1,7 +1,7 @@
 ﻿namespace Kmse.Core.Z80.Registers.General;
 
-public interface IZ80BcRegister : IZ8016BitCombinedRegister
+public interface IZ80BcRegister : IZ8016BitGeneralPurposeRegister
 {
-    IZ808BitRegister B { get; }
-    IZ808BitRegister C { get; }
+    IZ808BitGeneralPurposeRegister B { get; }
+    IZ808BitGeneralPurposeRegister C { get; }
 }

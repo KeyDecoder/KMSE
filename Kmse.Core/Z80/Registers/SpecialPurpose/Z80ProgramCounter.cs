@@ -5,21 +5,17 @@ using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
-public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
+public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 {
-    private readonly IZ80FlagsManager _flags;
-    private readonly IMasterSystemMemory _memory;
     private readonly IZ80StackManager _stack;
     private readonly IZ80InstructionLogger _z80InstructionLogger;
     private Z80Register _pc;
 
     public Z80ProgramCounter(IMasterSystemMemory memory, IZ80InstructionLogger z80InstructionLogger,
         IZ80FlagsManager flags, IZ80StackManager stack)
-        : base(memory)
+        : base(memory, flags)
     {
-        _memory = memory;
         _z80InstructionLogger = z80InstructionLogger;
-        _flags = flags;
         _stack = stack;
     }
 
@@ -87,7 +83,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
     {
-        if (_flags.IsFlagSet(flag))
+        if (Flags.IsFlagSet(flag))
         {
             Set(address);
             return true;
@@ -98,7 +94,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool Jump16BitIfNotFlagCondition(Z80StatusFlags flag, ushort address)
     {
-        if (!_flags.IsFlagSet(flag))
+        if (!Flags.IsFlagSet(flag))
         {
             Set(address);
             return true;
@@ -130,7 +126,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status)
     {
-        if (_flags.IsFlagSet(flag) == status)
+        if (Flags.IsFlagSet(flag) == status)
         {
             JumpByOffset(offset);
             return true;
@@ -153,7 +149,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool CallIfFlagCondition(Z80StatusFlags flag, ushort address)
     {
-        if (_flags.IsFlagSet(flag))
+        if (Flags.IsFlagSet(flag))
         {
             SetAndSaveExisting(address);
             return true;
@@ -164,7 +160,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool CallIfNotFlagCondition(Z80StatusFlags flag, ushort address)
     {
-        if (!_flags.IsFlagSet(flag))
+        if (!Flags.IsFlagSet(flag))
         {
             SetAndSaveExisting(address);
             return true;
@@ -175,7 +171,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
 
     public bool ReturnIfFlagHasStatus(Z80StatusFlags flag, bool status)
     {
-        if (_flags.IsFlagSet(flag) == status)
+        if (Flags.IsFlagSet(flag) == status)
         {
             SetFromStack();
             return true;
@@ -199,7 +195,7 @@ public class Z80ProgramCounter : Z8016BitRegisterBase, IZ80ProgramCounter
     private byte GetNextByteByProgramCounter()
     {
         // Note: We don't increment the cycle count here since this operation is included in overall cycle count for each instruction
-        var data = _memory[_pc.Word];
+        var data = Memory[_pc.Word];
         _pc.Word++;
         return data;
     }

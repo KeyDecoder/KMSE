@@ -1,5 +1,6 @@
 ﻿using Kmse.Core.Memory;
 using Kmse.Core.Utilities;
+using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers;
@@ -7,21 +8,17 @@ namespace Kmse.Core.Z80.Registers;
 /// <summary>
 ///     Base class for a 16 bit register which is composed of two 8 bit registers
 /// </summary>
-public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
+public abstract class Z8016BitGeneralPurposeRegisterBase : Z8016BitRegisterBase, IZ8016BitGeneralPurposeRegister
 {
-    private readonly IMasterSystemMemory _memory;
-
-    protected Z8016BitCombinedRegisterBase(IMasterSystemMemory memory)
-    {
-        _memory = memory;
-    }
+    protected Z8016BitGeneralPurposeRegisterBase(IMasterSystemMemory memory, IZ80FlagsManager flags)
+        : base(memory, flags) { }
 
     protected abstract IZ808BitRegister HighRegister { get; }
     protected abstract IZ808BitRegister LowRegister { get; }
 
-    public ushort Value => (ushort)(LowRegister.Value + (HighRegister.Value << 8));
-    public byte High => HighRegister.Value;
-    public byte Low => LowRegister.Value;
+    public override ushort Value => (ushort)(LowRegister.Value + (HighRegister.Value << 8));
+    public override byte High => HighRegister.Value;
+    public override byte Low => LowRegister.Value;
     public ushort ShadowValue => (ushort)(LowRegister.ShadowValue + (HighRegister.ShadowValue << 8));
 
     public void Reset()
@@ -30,7 +27,7 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
         HighRegister.Reset();
     }
 
-    public void Set(ushort value)
+    public override void Set(ushort value)
     {
         var (high, low) = Bitwise.ToBytes(value);
         LowRegister.Set(low);
@@ -55,9 +52,9 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
     public void SetFromDataInMemory(ushort address, byte offset = 0)
     {
         var location = (ushort)(address + offset);
-        var low = _memory[location];
+        var low = Memory[location];
         location++;
-        var high = _memory[location];
+        var high = Memory[location];
 
         LowRegister.Set(low);
         HighRegister.Set(high);
@@ -71,8 +68,8 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
     public void SaveToMemory(ushort address, byte offset = 0)
     {
         var location = (ushort)(address + offset);
-        _memory[location] = HighRegister.Value;
-        _memory[(ushort)(location + 1)] = LowRegister.Value;
+        Memory[location] = HighRegister.Value;
+        Memory[(ushort)(location + 1)] = LowRegister.Value;
     }
 
     public void SwapWithShadow()
@@ -90,6 +87,15 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
         };
     }
 
+    public Z80Register ShadowAsRegister()
+    {
+        return new Z80Register
+        {
+            Low = LowRegister.ShadowValue,
+            High = HighRegister.ShadowValue
+        };
+    }
+
     public void Increment()
     {
         var currentValue = Value;
@@ -102,14 +108,5 @@ public abstract class Z8016BitCombinedRegisterBase : IZ8016BitCombinedRegister
         var currentValue = Value;
         currentValue--;
         Set(currentValue);
-    }
-
-    public Z80Register ShadowAsRegister()
-    {
-        return new Z80Register
-        {
-            Low = LowRegister.ShadowValue,
-            High = HighRegister.ShadowValue
-        };
     }
 }
