@@ -9,7 +9,6 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 {
     private readonly IZ80StackManager _stack;
     private readonly IZ80InstructionLogger _z80InstructionLogger;
-    private Z80Register _pc;
 
     public Z80ProgramCounter(IMasterSystemMemory memory, IZ80InstructionLogger z80InstructionLogger,
         IZ80FlagsManager flags, IZ80StackManager stack)
@@ -46,7 +45,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
     public void MoveProgramCounterForward(ushort offset)
     {
         // If this goes above ushort max, we assume that when PC hits the limit it just wraps around instead of throwing an error or failing
-        _pc.Word += offset;
+        Register.Word += offset;
     }
 
     /// <summary>
@@ -56,7 +55,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
     public void MoveProgramCounterBackward(ushort offset)
     {
         // If this goes below zero/negative, we assume that when PC hits -1 it just wraps around instead of throwing an error or failing
-        _pc.Word -= offset;
+        Register.Word -= offset;
     }
 
     public void SetAndSaveExisting(ushort address)
@@ -76,9 +75,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 
     public void SetFromStack()
     {
-        var register = new Z80Register();
         _stack.PopRegisterFromStack(this);
-        Set(register.Word);
     }
 
     public bool Jump16BitIfFlagCondition(Z80StatusFlags flag, ushort address)
@@ -105,7 +102,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 
     public void JumpByOffset(byte offset)
     {
-        var newPcLocation = _pc.Word;
+        var newPcLocation = Register.Word;
 
         // Range is -126 to +129 so we need a signed version
         // However sbyte only goes from -128 to +127 but we need -126 to +129 so have to do this manually
@@ -195,8 +192,8 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
     private byte GetNextByteByProgramCounter()
     {
         // Note: We don't increment the cycle count here since this operation is included in overall cycle count for each instruction
-        var data = Memory[_pc.Word];
-        _pc.Word++;
+        var data = Memory[Register.Word];
+        Register.Word++;
         return data;
     }
 }

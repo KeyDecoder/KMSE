@@ -31,7 +31,7 @@ namespace Kmse.Core.Z80
 
             if (destinationRegisterId == 0x06)
             {
-                var register = Get8BitRegisterByRIdentifier(destinationRegisterId);
+                var register = Get8BitRegisterByRIdentifier(sourceRegisterId);
                 _memoryManagement.WriteToMemory(_hl, register.Value);
                 _currentCycleCount += 3;
                 return;

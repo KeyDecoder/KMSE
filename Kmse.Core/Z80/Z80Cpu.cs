@@ -36,8 +36,8 @@ public partial class Z80Cpu : IZ80Cpu
     private IZ808BitGeneralPurposeRegister _e;
     private IZ808BitGeneralPurposeRegister _h;
     private IZ808BitGeneralPurposeRegister _l;
-    private IZ80IndexRegisterX _ix;
-    private IZ80IndexRegisterY _iy;
+    private IZ80IndexRegisterXy _ix;
+    private IZ80IndexRegisterXy _iy;
     private IZ80MemoryRefreshRegister _rRegister;
     private IZ80InterruptPageAddressRegister _iRegister;
     private IZ80CpuInputOutput _ioManagement;
@@ -71,8 +71,8 @@ public partial class Z80Cpu : IZ80Cpu
         _bc = new Z80BcRegister(memory, _af.Flags);
         _de = new Z80DeRegister(memory, _af.Flags);
         _hl = new Z80HlRegister(memory, _af.Flags);
-        _ix = new Z80IndexRegisterX(memory, _af.Flags);
-        _iy = new Z80IndexRegisterY(memory, _af.Flags);
+        _ix = new Z80IndexRegisterXy(memory, _af.Flags);
+        _iy = new Z80IndexRegisterXy(memory, _af.Flags);
         _rRegister = new Z80MemoryRefreshRegister(memory, _af.Flags);
         _iRegister = new Z80InterruptPageAddressRegister(memory, _af.Flags);
 
@@ -264,11 +264,11 @@ public partial class Z80Cpu : IZ80Cpu
 
     private void ResumeIfHalted()
     {
-        if (!_halted)
+        if (_halted)
         {
             _cpuLogger.Debug("Resuming CPU");
         }
-        _halted = true;
+        _halted = false;
     }
 
     private Instruction ProcessGenericNonPrefixedOpCode(byte opCode)
