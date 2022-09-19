@@ -1,6 +1,6 @@
 ﻿namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
-public interface IZ80StackManager : IZ8016BitRegister
+public interface IZ80StackManager : IZ8016BitSpecialRegister
 {
     void IncrementStackPointer();
     void DecrementStackPointer();

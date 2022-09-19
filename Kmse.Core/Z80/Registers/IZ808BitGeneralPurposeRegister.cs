@@ -6,6 +6,16 @@
 /// </summary>
 public interface IZ808BitGeneralPurposeRegister : IZ808BitRegister
 {
-    void Increment();
-    void Decrement();
+    public void Increment();
+    public void Decrement();
+    public void ClearBit(int bit);
+    public void SetBit(int bit);
+    public void RotateLeftCircular();
+    public void RotateLeft();
+    public void RotateRightCircular();
+    public void RotateRight();
+    public void ShiftLeftArithmetic();
+    public void ShiftRightArithmetic();
+    public void ShiftLeftLogical();
+    public void ShiftRightLogical();
 }

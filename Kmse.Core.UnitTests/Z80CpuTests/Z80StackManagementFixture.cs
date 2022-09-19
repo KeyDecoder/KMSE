@@ -2,6 +2,7 @@
 using Kmse.Core.Memory;
 using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Registers;
+using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
 using NSubstitute;
 using NUnit.Framework;
@@ -12,6 +13,7 @@ public class Z80StackManagementFixture
 {
     private ICpuLogger _cpuLogger;
     private IMasterSystemMemory _memory;
+    private IZ80FlagsManager _flags;
     private Z80StackManager _stackManager;
 
     [SetUp]
@@ -19,7 +21,8 @@ public class Z80StackManagementFixture
     {
         _memory = Substitute.For<IMasterSystemMemory>();
         _cpuLogger = Substitute.For<ICpuLogger>();
-        _stackManager = new Z80StackManager(_memory, _cpuLogger);
+        _flags = Substitute.For<IZ80FlagsManager>();
+        _stackManager = new Z80StackManager(_memory, _cpuLogger, _flags);
 
         _memory.GetMinimumAvailableMemorySize().Returns(100);
         _memory.GetMaximumAvailableMemorySize().Returns(0x5000);
@@ -94,7 +97,7 @@ public class Z80StackManagementFixture
     [Test]
     public void WhenPushingRegisterToStackThenValueIsWrittenToMemoryAtStackPointerAddressAndPointerDecremented()
     {
-        var register = new Test16BitClass(_memory);
+        var register = new Test16BitClass(_memory, _flags);
         register.Set(0x1234);
         _stackManager.Set(1000);
         _stackManager.PushRegisterToStack(register);
@@ -112,7 +115,7 @@ public class Z80StackManagementFixture
         _memory[1000].Returns((byte)0x23);
         _memory[1001].Returns((byte)0x67);
 
-        var register = new Test16BitClass(_memory);
+        var register = new Test16BitClass(_memory, _flags);
         register.Set(0x00);
         _stackManager.Set(1000);
         _stackManager.PopRegisterFromStack(register);
@@ -124,12 +127,12 @@ public class Z80StackManagementFixture
     }
 
     [Test]
-    public void WhenSwappingRegisterWithDataInMemoryAtStackPointerLocationThenValueIsReturnedAndStackpointerUnchanged()
+    public void WhenSwappingRegisterWithDataInMemoryAtStackPointerLocationThenValueIsReturnedAndStackPointerUnchanged()
     {
         _memory[1000].Returns((byte)0x23);
         _memory[1001].Returns((byte)0x47);
 
-        var register = new Test16BitClass(_memory);
+        var register = new Test16BitClass(_memory, _flags);
         register.Set(0x1234);
         _stackManager.Set(1000);
         _stackManager.SwapRegisterWithDataAtStackPointerAddress(register);
@@ -143,8 +146,8 @@ public class Z80StackManagementFixture
         _stackManager.AsRegister().Word.Should().Be(1000);
     }
 
-    private class Test16BitClass : Z8016BitRegisterBase
+    private class Test16BitClass : Z8016BitSpecialRegisterBase
     {
-        public Test16BitClass(IMasterSystemMemory memory) : base(memory) { }
+        public Test16BitClass(IMasterSystemMemory memory, IZ80FlagsManager flags) : base(memory, flags) { }
     }
 }

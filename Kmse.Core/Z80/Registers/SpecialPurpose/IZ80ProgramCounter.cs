@@ -2,23 +2,23 @@
 
 namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
-public interface IZ80ProgramCounter : IZ8016BitRegister
+public interface IZ80ProgramCounter : IZ8016BitSpecialRegister
 {
-    public byte GetNextInstruction();
-    public byte GetNextDataByte();
-    public ushort GetNextTwoDataBytes();
+    byte GetNextInstruction();
+    byte GetNextDataByte();
+    ushort GetNextTwoDataBytes();
 
     /// <summary>
     ///     Move program counter forward by the provided value
     /// </summary>
     /// <param name="offset">Add this offset to the current PC</param>
-    public void MoveProgramCounterForward(ushort offset);
+    void MoveProgramCounterForward(ushort offset);
 
     /// <summary>
     ///     Move program counter backward by the provided value
     /// </summary>
     /// <param name="offset">Subtract this offset from the current PC</param>
-    public void MoveProgramCounterBackward(ushort offset);
+    void MoveProgramCounterBackward(ushort offset);
 
     /// <summary>
     ///     Set the Program Counter but first push the current PC value to the stack

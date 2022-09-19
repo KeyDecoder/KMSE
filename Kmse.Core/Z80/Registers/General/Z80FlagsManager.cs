@@ -1,12 +1,39 @@
-﻿using Kmse.Core.Memory;
-using Kmse.Core.Utilities;
+﻿using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.General;
 
-public class Z80FlagsManager : Z808BitRegister, IZ80FlagsManager
+public class Z80FlagsManager : IZ80FlagsManager
 {
-    public Z80FlagsManager(IMasterSystemMemory memory) : base(memory) { }
+    protected byte InternalShadowValue;
+    protected byte InternalValue;
+
+    public byte Value
+    {
+        get => InternalValue;
+        protected set => InternalValue = value;
+    }
+
+    public byte ShadowValue
+    {
+        get => InternalShadowValue;
+        protected set => InternalShadowValue = value;
+    }
+
+    public void Reset()
+    {
+        Value = 0;
+    }
+
+    public void Set(byte value)
+    {
+        Value = value;
+    }
+
+    public void SwapWithShadow()
+    {
+        (Value, ShadowValue) = (ShadowValue, Value);
+    }
 
     public void SetFlag(Z80StatusFlags flags)
     {

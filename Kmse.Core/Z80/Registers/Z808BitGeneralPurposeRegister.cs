@@ -7,12 +7,7 @@ namespace Kmse.Core.Z80.Registers;
 
 public class Z808BitGeneralPurposeRegister : Z808BitRegister, IZ808BitGeneralPurposeRegister
 {
-    protected readonly IZ80FlagsManager Flags;
-
-    public Z808BitGeneralPurposeRegister(IMasterSystemMemory memory, IZ80FlagsManager flags) : base(memory)
-    {
-        Flags = flags;
-    }
+    public Z808BitGeneralPurposeRegister(IMasterSystemMemory memory, IZ80FlagsManager flags) : base(memory, flags) { }
 
     public void Increment()
     {
@@ -20,6 +15,74 @@ public class Z808BitGeneralPurposeRegister : Z808BitRegister, IZ808BitGeneralPur
         var newValue = (byte)(Value + 1);
         Set(newValue);
         CheckIncrementFlags(newValue, oldValue);
+    }
+
+    public void Decrement()
+    {
+        var oldValue = Value;
+        var newValue = (byte)(Value - 1);
+        Set(newValue);
+        CheckDecrementFlags(newValue, oldValue);
+    }
+
+    public void ClearBit(int bit)
+    {
+        if (bit is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException($"Bit {bit} is not a valid bit to reset");
+        }
+
+        Bitwise.Clear(ref InternalValue, bit);
+    }
+
+    public void SetBit(int bit)
+    {
+        if (bit is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException($"Bit {bit} is not a valid bit to reset");
+        }
+
+        Bitwise.Set(ref InternalValue, bit);
+    }
+
+    public void RotateLeftCircular()
+    {
+        RotateLeftCircular(ref InternalValue);
+    }
+
+    public void RotateLeft()
+    {
+        RotateLeft(ref InternalValue);
+    }
+
+    public void RotateRightCircular()
+    {
+        RotateRightCircular(ref InternalValue);
+    }
+
+    public void RotateRight()
+    {
+        RotateRight(ref InternalValue);
+    }
+
+    public void ShiftLeftArithmetic()
+    {
+        ShiftLeftArithmetic(ref InternalValue);
+    }
+
+    public void ShiftRightArithmetic()
+    {
+        ShiftRightArithmetic(ref InternalValue);
+    }
+
+    public void ShiftLeftLogical()
+    {
+        ShiftLeftLogical(ref InternalValue);
+    }
+
+    public void ShiftRightLogical()
+    {
+        ShiftRightLogical(ref InternalValue);
     }
 
     private void CheckIncrementFlags(byte newValue, byte oldValue)
@@ -32,14 +95,6 @@ public class Z808BitGeneralPurposeRegister : Z808BitRegister, IZ808BitGeneralPur
         Flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (oldValue & 0x0F) == 0x0F);
         Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, oldValue == 0x7F);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-    }
-
-    public void Decrement()
-    {
-        var oldValue = Value;
-        var newValue = (byte)(Value - 1);
-        Set(newValue);
-        CheckDecrementFlags(newValue, oldValue);
     }
 
     private void CheckDecrementFlags(byte newValue, byte oldValue)

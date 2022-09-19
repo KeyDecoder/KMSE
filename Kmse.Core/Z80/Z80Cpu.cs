@@ -71,10 +71,10 @@ public partial class Z80Cpu : IZ80Cpu
         _bc = new Z80BcRegister(memory, _af.Flags);
         _de = new Z80DeRegister(memory, _af.Flags);
         _hl = new Z80HlRegister(memory, _af.Flags);
-        _ix = new Z80IndexRegisterX(memory);
-        _iy = new Z80IndexRegisterY(memory);
-        _rRegister = new Z80MemoryRefreshRegister(memory);
-        _iRegister = new Z80InterruptPageAddressRegister(memory);
+        _ix = new Z80IndexRegisterX(memory, _af.Flags);
+        _iy = new Z80IndexRegisterY(memory, _af.Flags);
+        _rRegister = new Z80MemoryRefreshRegister(memory, _af.Flags);
+        _iRegister = new Z80InterruptPageAddressRegister(memory, _af.Flags);
 
         _accumulator = _af.Accumulator;
         _flags = _af.Flags;
@@ -85,7 +85,7 @@ public partial class Z80Cpu : IZ80Cpu
         _h = _hl.H;
         _l = _hl.L;
 
-        _stack = new Z80StackManager(memory, _cpuLogger);
+        _stack = new Z80StackManager(memory, _cpuLogger, _af.Flags);
         _pc = new Z80ProgramCounter(memory, _instructionLogger, _flags, _stack);
 
         _ioManagement = new Z80CpuInputOutput(_io, _flags);
