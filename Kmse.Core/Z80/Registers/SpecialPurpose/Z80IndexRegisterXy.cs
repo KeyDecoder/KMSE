@@ -13,7 +13,7 @@ public class Z80IndexRegisterXy : Z8016BitSpecialRegisterBase, IZ80IndexRegister
     {
         var oldValue = Register.High;
         var newValue = (byte)(Register.High + 1);
-        Set(newValue);
+        SetHigh(newValue);
         CheckIncrementFlags(newValue, oldValue);
     }
 
@@ -21,23 +21,23 @@ public class Z80IndexRegisterXy : Z8016BitSpecialRegisterBase, IZ80IndexRegister
     {
         var oldValue = Register.High;
         var newValue = (byte)(Register.High - 1);
-        Set(newValue);
+        SetHigh(newValue);
         CheckDecrementFlags(newValue, oldValue);
     }
 
     public void IncrementLow()
     {
-        var oldValue = Register.High;
-        var newValue = (byte)(Register.High + 1);
-        Set(newValue);
+        var oldValue = Register.Low;
+        var newValue = (byte)(Register.Low + 1);
+        SetLow(newValue);
         CheckIncrementFlags(newValue, oldValue);
     }
 
     public void DecrementLow()
     {
-        var oldValue = Register.High;
-        var newValue = (byte)(Register.High - 1);
-        Set(newValue);
+        var oldValue = Register.Low;
+        var newValue = (byte)(Register.Low - 1);
+        SetLow(newValue);
         CheckDecrementFlags(newValue, oldValue);
     }
 

@@ -31,8 +31,9 @@ public class Z80StackManager : Z8016BitSpecialRegisterBase, IZ80StackManager
     {
         if (Register.Word >= _maximumMemorySize)
         {
-            throw new InvalidOperationException(
-                $"Cannot increment Stack Pointer higher than available RAM - {_maximumMemorySize} bytes");
+            _cpuLogger.Error($"Warning: Stack Pointer has been incremented beyond maximum RAM size and will rollover to 0, current stack pointer '{Register.Word:X4}'");
+            Register.Word = 0x00;
+            return;
         }
 
         Register.Word++;
@@ -44,8 +45,8 @@ public class Z80StackManager : Z8016BitSpecialRegisterBase, IZ80StackManager
         // Although it is unlikely any ROM is going to use so much stack that it basically uses all the RAM
         if (Register.Word <= _memory.GetMinimumAvailableMemorySize())
         {
-            throw new InvalidOperationException(
-                $"Cannot decrement Stack Pointer lower than available RAM - {_memory.GetMinimumAvailableMemorySize()} bytes");
+            // We use this as a warning since zexdoc will decrement this down pass ROM space as part of testing so this may be a legitimate, if unusual, manipulation of the stack
+            _cpuLogger.Error($"Warning: Stack Pointer has been decremented into ROM memory slots, current stack pointer '{Register.Word:X4}'");
         }
 
         Register.Word--;
