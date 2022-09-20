@@ -467,9 +467,9 @@ public partial class Z80Cpu
         AddDoubleByteInstruction(0xFD, 0x24, 4, "INC IYH", "Increment IYX", _ => { _iy.IncrementHigh(); });
         AddDoubleByteInstruction(0xFD, 0x2C, 4, "INC IYL", "Increment IYL", _ => { _iy.IncrementLow(); });
 
-        AddDoubleByteInstruction(0xDD, 0x25, 4, "DEC IXH", "Decrement IHX", _ => { _ix.DecrementHigh(); });
-        AddDoubleByteInstruction(0xDD, 0x2D, 4, "DEC IXL", "Decrement IHL", _ => { _ix.DecrementLow(); });
-        AddDoubleByteInstruction(0xFD, 0x25, 4, "DEC IYH", "Decrement IYX", _ => { _iy.DecrementHigh(); });
+        AddDoubleByteInstruction(0xDD, 0x25, 4, "DEC IXH", "Decrement IXH", _ => { _ix.DecrementHigh(); });
+        AddDoubleByteInstruction(0xDD, 0x2D, 4, "DEC IXL", "Decrement IXL", _ => { _ix.DecrementLow(); });
+        AddDoubleByteInstruction(0xFD, 0x25, 4, "DEC IYH", "Decrement IYH", _ => { _iy.DecrementHigh(); });
         AddDoubleByteInstruction(0xFD, 0x2D, 4, "DEC IYL", "Decrement IYL", _ => { _iy.DecrementLow(); });
     }
 
@@ -811,11 +811,11 @@ public partial class Z80Cpu
 
         AddStandardInstruction(0x32, 13, "LD (NN),A", "Load A into memory location NN", _ => { _accumulator.SaveToMemory(_pc.GetNextTwoDataBytes()); });
         AddStandardInstruction(0x22, 16, "LD (NN),HL", "Load HL into memory location NN", _ => { _hl.SaveToMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x43, 20, "LD(NN), BC", "Load BC into memory location NN", _ => { _bc.SaveToMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x53, 20, "LD(NN), DE", "Load DE into memory location NN", _ => { _de.SaveToMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xDD, 0x22, 20, "LD(NN), IX", "Load IX into memory location NN", _ => { _ix.SaveToMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xFD, 0x22, 20, "LD(NN), IY", "Load IY into memory location NN", _ => { _iy.SaveToMemory(_pc.GetNextTwoDataBytes()); });
-        AddDoubleByteInstruction(0xED, 0x73, 20, "LD(NN), SP", "Load SP into memory location NN", _ => { _stack.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x43, 20, "LD (NN), BC", "Load BC into memory location NN", _ => { _bc.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x53, 20, "LD (NN), DE", "Load DE into memory location NN", _ => { _de.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xDD, 0x22, 20, "LD (NN), IX", "Load IX into memory location NN", _ => { _ix.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xFD, 0x22, 20, "LD (NN), IY", "Load IY into memory location NN", _ => { _iy.SaveToMemory(_pc.GetNextTwoDataBytes()); });
+        AddDoubleByteInstruction(0xED, 0x73, 20, "LD (NN), SP", "Load SP into memory location NN", _ => { _stack.SaveToMemory(_pc.GetNextTwoDataBytes()); });
 
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ =>
         {

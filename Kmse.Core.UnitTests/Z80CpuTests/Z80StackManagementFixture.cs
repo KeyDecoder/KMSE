@@ -75,23 +75,25 @@ public class Z80StackManagementFixture
     }
 
     [Test]
-    public void WhenStackPointerIncrementedWhichOverflowsThenThrowsException()
+    public void WhenStackPointerIncrementedWhichOverflowsThenWrapsAround()
     {
         _memory.GetMaximumAvailableMemorySize().Returns(1000);
         _stackManager.Reset();
         _stackManager.Set(1000);
-        var action = () => _stackManager.IncrementStackPointer();
-        action.Should().Throw<InvalidOperationException>();
+        _stackManager.IncrementStackPointer();
+        _stackManager.Value.Should().Be(0);
+        _cpuLogger.Received(1).Error(Arg.Is<string>(x => x.Contains("Stack Pointer has been incremented", StringComparison.InvariantCultureIgnoreCase)));
     }
 
     [Test]
-    public void WhenStackPointerDecrementedWhichOverflowsThenThrowsException()
+    public void WhenStackPointerDecrementedWhichOverflowsThenLogsError()
     {
         _memory.GetMinimumAvailableMemorySize().Returns(100);
         _stackManager.Reset();
         _stackManager.Set(100);
-        var action = () => _stackManager.DecrementStackPointer();
-        action.Should().Throw<InvalidOperationException>();
+        _stackManager.DecrementStackPointer();
+        _stackManager.Value.Should().Be(99);
+        _cpuLogger.Received(1).Error(Arg.Is<string>(x => x.Contains("Stack Pointer has been decremented", StringComparison.InvariantCultureIgnoreCase)));
     }
 
     [Test]

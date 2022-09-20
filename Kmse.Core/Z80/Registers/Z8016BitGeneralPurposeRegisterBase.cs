@@ -68,8 +68,8 @@ public abstract class Z8016BitGeneralPurposeRegisterBase : Z8016BitRegisterBase,
     public void SaveToMemory(ushort address, byte offset = 0)
     {
         var location = (ushort)(address + offset);
-        Memory[location] = HighRegister.Value;
-        Memory[(ushort)(location + 1)] = LowRegister.Value;
+        Memory[location] = LowRegister.Value;
+        Memory[(ushort)(location + 1)] = HighRegister.Value;
     }
 
     public void SwapWithShadow()

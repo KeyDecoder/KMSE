@@ -127,10 +127,8 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
         {
             JumpByOffset(offset);
             return true;
-            //_currentCycleCount += 12;
         }
 
-        //_currentCycleCount += 7;
         return false;
     }
 
@@ -172,10 +170,8 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
         {
             SetFromStack();
             return true;
-            //_currentCycleCount += 11;
         }
 
-        //_currentCycleCount += 5;
         return false;
     }
 
