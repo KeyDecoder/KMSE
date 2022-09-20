@@ -111,11 +111,11 @@ public partial class Z80Cpu
         AddStandardInstruction(0x00, 4, "NOP", "No Operation", (_) => { });
         AddStandardInstruction(0x76, 4, "HALT", "Halt", (_) => { Halt(); });
 
-        AddStandardInstruction(0xF3, 4, "DI", "Disable Interrupts", (_) => { _interruptFlipFlop1 = false; _interruptFlipFlop2 = false; });
-        AddStandardInstruction(0xFB, 4, "EI", "Enable Interrupts", (_) => { _interruptFlipFlop1 = true; _interruptFlipFlop2 = true; });
-        AddDoubleByteInstruction(0xED, 0x46, 8, "IM 0", "Set Maskable Interrupt to Mode 0", (_) => { _interruptMode = 0; });
-        AddDoubleByteInstruction(0xED, 0x56, 8, "IM 1", "Set Maskable Interrupt to Mode 1", (_) => { _interruptMode = 1; });
-        AddDoubleByteInstruction(0xED, 0x5E, 8, "IM 2", "Set Maskable Interrupt to Mode 2", (_) => { _interruptMode = 2; });
+        AddStandardInstruction(0xF3, 4, "DI", "Disable Interrupts", (_) => { _interruptManagement.DisableMaskableInterrupts(); });
+        AddStandardInstruction(0xFB, 4, "EI", "Enable Interrupts", (_) => { _interruptManagement.EnableMaskableInterrupts(); });
+        AddDoubleByteInstruction(0xED, 0x46, 8, "IM 0", "Set Maskable Interrupt to Mode 0", (_) => { _interruptManagement.SetInterruptMode(0); });
+        AddDoubleByteInstruction(0xED, 0x56, 8, "IM 1", "Set Maskable Interrupt to Mode 1", (_) => { _interruptManagement.SetInterruptMode(1); });
+        AddDoubleByteInstruction(0xED, 0x5E, 8, "IM 2", "Set Maskable Interrupt to Mode 2", (_) => { _interruptManagement.SetInterruptMode(2); });
     }
 
     private void PopulateJumpCallAndReturnOperations()
@@ -183,8 +183,8 @@ public partial class Z80Cpu
         AddStandardInstruction(0xF7, 11, "RST 30H", "Restart at 30h", _ => {  _pc.SetAndSaveExisting(0x30); });
         AddStandardInstruction(0xFF, 11, "RST 38H", "Restart at 38h", _ => { _pc.SetAndSaveExisting(0x38); });
         
-        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { _pc.SetFromStack(); _io.ClearMaskableInterrupt(); });
-        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { _pc.SetFromStack(); _interruptFlipFlop1 = _interruptFlipFlop2; });
+        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { _pc.SetFromStack(); _interruptManagement.ClearMaskableInterrupt(); });
+        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { _pc.SetFromStack(); _interruptManagement.ResetInterruptEnableFlipFlopFromTemporaryStorage(); });
     }
 
     private void PopulateArthmeticAndLogicalInstructions()
@@ -675,8 +675,8 @@ public partial class Z80Cpu
 
         AddDoubleByteInstruction(0xED, 0x47, 9, "LD I,A", "Load A into I", _ => { _iRegister.Set(_accumulator); });
         AddDoubleByteInstruction(0xED, 0x4F, 9, "LD R,A", "Load A into R", _ => { _rRegister.Set(_accumulator); });
-        AddDoubleByteInstruction(0xED, 0x57, 9, "LD A,I", "Load I into A", _ => { _accumulator.SetFromInterruptRegister(_iRegister, _interruptFlipFlop2); });
-        AddDoubleByteInstruction(0xED, 0x5F, 9, "LD A,R", "Load R into A", _ => { _accumulator.SetFromMemoryRefreshRegister(_rRegister, _interruptFlipFlop2); });
+        AddDoubleByteInstruction(0xED, 0x57, 9, "LD A,I", "Load I into A", _ => { _accumulator.SetFromInterruptRegister(_iRegister, _interruptManagement.InterruptEnableFlipFlopTempStorageStatus); });
+        AddDoubleByteInstruction(0xED, 0x5F, 9, "LD A,R", "Load R into A", _ => { _accumulator.SetFromMemoryRefreshRegister(_rRegister, _interruptManagement.InterruptEnableFlipFlopTempStorageStatus); });
         AddStandardInstruction(0x3E, 7, "LD A,N", "Load n into A", _ => { _accumulator.Set(_pc.GetNextDataByte()); });
         AddStandardInstruction(0x06, 7, "LD B,N", "Load n into B", _ => { _b.Set(_pc.GetNextDataByte()); });
         AddStandardInstruction(0x0E, 7, "LD C,N", "Load n into C", _ => { _c.Set(_pc.GetNextDataByte()); });

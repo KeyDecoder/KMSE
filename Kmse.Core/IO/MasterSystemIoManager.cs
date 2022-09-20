@@ -3,6 +3,7 @@ using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Logging;
 using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.Z80.Interrupts;
 
 namespace Kmse.Core.IO;
 
@@ -53,36 +54,6 @@ public class MasterSystemIoManager : IMasterSystemIoManager
     {
         _memoryControlRegister = 0x00;
         _ioControlRegister = 0x00;
-    
-        ClearMaskableInterrupt();
-        ClearNonMaskableInterrupt();
-    }
-
-    public bool NonMaskableInterrupt { get; private set; }
-    public bool MaskableInterrupt { get; private set; }
-
-    public void SetMaskableInterrupt()
-    {
-        MaskableInterrupt = true;
-        _logger.SetMaskableInterruptStatus(MaskableInterrupt);
-    }
-
-    public void ClearMaskableInterrupt()
-    {
-        MaskableInterrupt = false;
-        _logger.SetMaskableInterruptStatus(MaskableInterrupt);
-    }
-
-    public void SetNonMaskableInterrupt()
-    {
-        NonMaskableInterrupt = true;
-        _logger.SetNonMaskableInterruptStatus(NonMaskableInterrupt);
-    }
-
-    public void ClearNonMaskableInterrupt()
-    {
-        NonMaskableInterrupt = false;
-        _logger.SetNonMaskableInterruptStatus(NonMaskableInterrupt);
     }
 
     /* SMS MkII Port Mapping

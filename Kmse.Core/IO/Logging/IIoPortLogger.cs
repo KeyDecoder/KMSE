@@ -8,8 +8,5 @@
         
         void PortRead(ushort address, byte data);
         void PortWrite(ushort address, byte newData);
-
-        void SetMaskableInterruptStatus(bool status);
-        void SetNonMaskableInterruptStatus(bool status);
     }
 }

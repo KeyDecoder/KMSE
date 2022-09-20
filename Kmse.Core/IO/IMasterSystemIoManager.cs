@@ -11,14 +11,6 @@ public interface IMasterSystemIoManager
         IDebugConsolePort debugConsolePort);
     void Reset();
 
-    bool NonMaskableInterrupt { get; }
-    bool MaskableInterrupt { get; }
-
-    void SetMaskableInterrupt();
-    void ClearMaskableInterrupt();
-    void SetNonMaskableInterrupt();
-    void ClearNonMaskableInterrupt();
-
     byte ReadPort(ushort port);
     void WritePort(ushort port, byte value);
 }
