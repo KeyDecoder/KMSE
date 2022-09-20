@@ -84,10 +84,8 @@ public class VdpPort : IVdpPort
     ///     Execute update of VDP based on the number of cycles that have been executed by the CPU
     /// </summary>
     /// <param name="cycles">Number of cycles executed since last update</param>
-    /// <returns>True if display can be written/refreshed or false if not ready to be written/refreshed</returns>
-    public bool Execute(int cycles)
+    public void Execute(int cycles)
     {
-        return false;
     }
 
     public VdpPortStatus GetStatus()

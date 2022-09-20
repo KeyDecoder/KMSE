@@ -5,7 +5,7 @@ public interface IVdpPort
     void Reset();
     byte ReadPort(byte port);
     void WritePort(byte port, byte value);
-    bool Execute(int cycles);
+    void Execute(int cycles);
 
     VdpPortStatus GetStatus();
     byte[] DumpVideoRam();

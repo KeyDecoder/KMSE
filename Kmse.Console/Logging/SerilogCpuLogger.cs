@@ -42,6 +42,26 @@ public class SerilogCpuLogger : ICpuLogger
             : $"0x{baseAddress:X4}: {opCode} ({operationName} - {operationDescription})");
     }
 
+    public void SetMaskableInterruptStatus(bool status)
+    {
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
+        _log.Debug("Set MI to {Status}", status);
+    }
+
+    public void SetNonMaskableInterruptStatus(bool status)
+    {
+        if (!_verboseLoggingEnabled)
+        {
+            return;
+        }
+
+        _log.Debug("Set NMI to {Status}", status);
+    }
+
     public void EnableVerboseLogging()
     {
         _verboseLoggingEnabled = true;

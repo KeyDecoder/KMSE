@@ -2,6 +2,7 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.Logging;
 using NSubstitute;
 using NUnit.Framework;
@@ -19,6 +20,7 @@ public class CpuExecutionFixture
         _io = Substitute.For<IMasterSystemIoManager>();
         _cpu = new Z80Cpu(_cpuLogger, new Z80InstructionLogger(_cpuLogger));
         _cpu.Initialize(_memory, _io);
+        _interruptManagement = _cpu.GetInterruptManagementInterface();
     }
 
     private void PrepareForTest()
@@ -26,21 +28,26 @@ public class CpuExecutionFixture
         _cpu.Reset();
         _memory.ClearReceivedCalls();
         _io.ClearReceivedCalls();
-        _io.NonMaskableInterrupt.Returns(false);
-        _io.MaskableInterrupt.Returns(false);
+        _interruptManagement.ClearMaskableInterrupt();
+        _interruptManagement.ClearNonMaskableInterrupt();
     }
 
     private Z80Cpu _cpu;
     private ICpuLogger _cpuLogger;
     private IMasterSystemMemory _memory;
     private IMasterSystemIoManager _io;
+    private IZ80InterruptManagement _interruptManagement;
 
     [Test]
     public void WhenResettingCpu()
     {
+        _interruptManagement.SetMaskableInterrupt();
+        _interruptManagement.SetNonMaskableInterrupt();
+
         _cpu.Reset();
-        _io.Received(1).ClearMaskableInterrupt();
-        _io.Received(1).ClearNonMaskableInterrupt();
+        _interruptManagement.MaskableInterrupt.Should().BeFalse();
+        _interruptManagement.NonMaskableInterrupt.Should().BeFalse();
+
         var status = _cpu.GetStatus();
 
         status.CurrentCycleCount.Should().Be(0);
@@ -115,8 +122,8 @@ public class CpuExecutionFixture
         // This allows us to better test handling since Pc is non zero and interrupts are on
         _cpu.ExecuteNextCycle().Should().Be(4);
 
-        _io.NonMaskableInterrupt.Returns(true);
-        _io.MaskableInterrupt.Returns(false);
+        _interruptManagement.ClearMaskableInterrupt();
+        _interruptManagement.SetNonMaskableInterrupt();
 
         var cycleCount = _cpu.ExecuteNextCycle();
         cycleCount.Should().Be(11);
@@ -158,15 +165,16 @@ public class CpuExecutionFixture
         _cpu.ExecuteNextCycle().Should().Be(4);
         _cpu.ExecuteNextCycle().Should().Be(8);
 
-        _io.NonMaskableInterrupt.Returns(false);
-        _io.MaskableInterrupt.Returns(true);
+        _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeTrue();
+        _interruptManagement.InterruptEnableFlipFlopTempStorageStatus.Should().BeTrue();
+        _interruptManagement.SetMaskableInterrupt(); ;
 
         var cycleCount = _cpu.ExecuteNextCycle();
         var status = _cpu.GetStatus();
 
         status.Halted.Should().Be(false);
-        status.InterruptFlipFlop1.Should().BeFalse();
-        status.InterruptFlipFlop2.Should().BeFalse();
+        _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeFalse();
+        _interruptManagement.InterruptEnableFlipFlopTempStorageStatus.Should().BeFalse();
 
         // Jumps to 0x38 when in mode 0 or 1
         if (mode is 0 or 1)
@@ -174,7 +182,7 @@ public class CpuExecutionFixture
             cycleCount.Should().Be(11);
 
             // Interrupt is not cleared in these modes until a RETI or DI is called
-            _io.DidNotReceive().ClearMaskableInterrupt();
+            _interruptManagement.MaskableInterrupt.Should().BeTrue();
 
             status.Pc.Should().Be(0x38);
 
@@ -190,7 +198,7 @@ public class CpuExecutionFixture
             cycleCount.Should().Be(4);
 
             // Interrupt is cleared in this modes since this mode is not supported
-            _io.Received(1).ClearMaskableInterrupt();
+            _interruptManagement.MaskableInterrupt.Should().BeFalse();
         }
     }
 
@@ -205,14 +213,12 @@ public class CpuExecutionFixture
 
         // Execute EI first
         _cpu.ExecuteNextCycle().Should().Be(4);
-        var status = _cpu.GetStatus();
-        status.InterruptFlipFlop1.Should().BeTrue();
-        status.InterruptFlipFlop2.Should().BeTrue();
+        _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeTrue();
+        _interruptManagement.InterruptEnableFlipFlopTempStorageStatus.Should().BeTrue();
 
         // Execute disable interrupt
         _cpu.ExecuteNextCycle().Should().Be(4);
-        status = _cpu.GetStatus();
-        status.InterruptFlipFlop1.Should().BeFalse();
-        status.InterruptFlipFlop2.Should().BeFalse();
+        _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeFalse();
+        _interruptManagement.InterruptEnableFlipFlopTempStorageStatus.Should().BeFalse();
     }
 }

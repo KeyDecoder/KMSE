@@ -53,26 +53,6 @@ public class SerilogIoLogger : IIoPortLogger
         _logger.Debug("Wrote to I/O port at address {Address:X4} to {NewData:X2}", address, newData);
     }
 
-    public void SetMaskableInterruptStatus(bool status)
-    {
-        if (!_verboseLoggingEnabled)
-        {
-            return;
-        }
-
-        _logger.Debug("Set MI to {Status}", status);
-    }
-
-    public void SetNonMaskableInterruptStatus(bool status)
-    {
-        if (!_verboseLoggingEnabled)
-        {
-            return;
-        }
-
-        _logger.Debug("Set NMI to {Status}", status);
-    }
-
     public void EnableVerboseLogging()
     {
         _verboseLoggingEnabled = true;

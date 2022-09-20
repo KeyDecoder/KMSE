@@ -2,6 +2,7 @@
 using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Support;
 using NSubstitute;
@@ -29,8 +30,6 @@ public class CpuInstructionsFixture
         _memory.ClearReceivedCalls();
         _memory.ClearSubstitute();
         _io.ClearReceivedCalls();
-        _io.NonMaskableInterrupt.Returns(false);
-        _io.MaskableInterrupt.Returns(false);
     }
 
     private Z80Cpu _cpu;
