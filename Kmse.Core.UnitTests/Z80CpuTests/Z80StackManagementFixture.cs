@@ -34,7 +34,7 @@ public class Z80StackManagementFixture
     {
         _stackManager.Reset();
         _stackManager.Value.Should().Be(0xDFF0);
-        _stackManager.AsRegister().Word.Should().Be(0xDFF0);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(0xDFF0);
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class Z80StackManagementFixture
     {
         _stackManager.Set(0x1235);
         _stackManager.Value.Should().Be(0x1235);
-        _stackManager.AsRegister().Word.Should().Be(0x1235);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(0x1235);
     }
 
     [Test]
@@ -53,7 +53,7 @@ public class Z80StackManagementFixture
         _stackManager.SetFromDataInMemory(0x1122);
 
         _stackManager.Value.Should().Be(0x2756);
-        _stackManager.AsRegister().Word.Should().Be(0x2756);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(0x2756);
     }
 
     [Test]
@@ -62,7 +62,7 @@ public class Z80StackManagementFixture
         _stackManager.Set(0x1133);
         _stackManager.IncrementStackPointer();
         _stackManager.Value.Should().Be(0x1134);
-        _stackManager.AsRegister().Word.Should().Be(0x1134);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(0x1134);
     }
 
     [Test]
@@ -71,7 +71,7 @@ public class Z80StackManagementFixture
         _stackManager.Set(0x1133);
         _stackManager.DecrementStackPointer();
         _stackManager.Value.Should().Be(0x1132);
-        _stackManager.AsRegister().Word.Should().Be(0x1132);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(0x1132);
     }
 
     [Test]
@@ -108,7 +108,7 @@ public class Z80StackManagementFixture
         _memory.Received()[998] = 0x34;
 
         _stackManager.Value.Should().Be(998);
-        _stackManager.AsRegister().Word.Should().Be(998);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(998);
     }
 
     [Test]
@@ -125,7 +125,7 @@ public class Z80StackManagementFixture
         register.Value.Should().Be(0x6723);
 
         _stackManager.Value.Should().Be(1002);
-        _stackManager.AsRegister().Word.Should().Be(1002);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(1002);
     }
 
     [Test]
@@ -145,7 +145,7 @@ public class Z80StackManagementFixture
         _memory.Received()[1001] = 0x12;
 
         _stackManager.Value.Should().Be(1000);
-        _stackManager.AsRegister().Word.Should().Be(1000);
+        _stackManager.AsUnsigned16BitValue().Word.Should().Be(1000);
     }
 
     private class Test16BitClass : Z8016BitSpecialRegisterBase

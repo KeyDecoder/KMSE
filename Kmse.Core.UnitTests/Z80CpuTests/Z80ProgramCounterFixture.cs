@@ -31,7 +31,7 @@ public class Z80ProgramCounterFixture
     {
         _programCounter.Reset();
         _programCounter.Value.Should().Be(0);
-        _programCounter.AsRegister().Word.Should().Be(0);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0);
     }
 
     [Test]
@@ -39,7 +39,7 @@ public class Z80ProgramCounterFixture
     {
         _programCounter.Set(0x1234);
         _programCounter.Value.Should().Be(0x1234);
-        _programCounter.AsRegister().Word.Should().Be(0x1234);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x1234);
     }
 
     [Test]
@@ -48,7 +48,7 @@ public class Z80ProgramCounterFixture
         _programCounter.Set(ushort.MaxValue);
         _programCounter.MoveProgramCounterForward(3);
         _programCounter.Value.Should().Be(0x02);
-        _programCounter.AsRegister().Word.Should().Be(0x02);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x02);
     }
 
     [Test]
@@ -57,7 +57,7 @@ public class Z80ProgramCounterFixture
         _programCounter.Set(0x1234);
         _programCounter.MoveProgramCounterForward(10);
         _programCounter.Value.Should().Be(0x123E);
-        _programCounter.AsRegister().Word.Should().Be(0x123E);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x123E);
     }
 
     [Test]
@@ -66,7 +66,7 @@ public class Z80ProgramCounterFixture
         _programCounter.Set(0x1234);
         _programCounter.MoveProgramCounterBackward(10);
         _programCounter.Value.Should().Be(0x122A);
-        _programCounter.AsRegister().Word.Should().Be(0x122A);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x122A);
     }
 
     [Test]
@@ -75,7 +75,7 @@ public class Z80ProgramCounterFixture
         _programCounter.Set(0);
         _programCounter.MoveProgramCounterBackward(3);
         _programCounter.Value.Should().Be(ushort.MaxValue - 2);
-        _programCounter.AsRegister().Word.Should().Be(ushort.MaxValue - 2);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(ushort.MaxValue - 2);
     }
 
     [Test]
@@ -87,7 +87,7 @@ public class Z80ProgramCounterFixture
         data.Should().Be(0x12);
 
         _programCounter.Value.Should().Be(0x06);
-        _programCounter.AsRegister().Word.Should().Be(0x06);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x06);
 
         _instructionLogger.Received(1).AddOperationData(0x12);
     }
@@ -103,7 +103,7 @@ public class Z80ProgramCounterFixture
         data.Should().Be(0x3412);
 
         _programCounter.Value.Should().Be(0x07);
-        _programCounter.AsRegister().Word.Should().Be(0x07);
+        _programCounter.AsUnsigned16BitValue().Word.Should().Be(0x07);
 
         _instructionLogger.Received(1).AddOperationData(0x3412);
     }

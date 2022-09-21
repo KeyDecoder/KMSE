@@ -80,18 +80,18 @@ public class Z80AfRegister : IZ80AfRegister
         Accumulator.SwapWithShadow();
     }
 
-    public Z80Register AsRegister()
+    public Unsigned16BitValue AsUnsigned16BitValue()
     {
-        return new Z80Register
+        return new Unsigned16BitValue
         {
             Low = Flags.Value,
             High = Accumulator.Value
         };
     }
 
-    public Z80Register ShadowAsRegister()
+    public Unsigned16BitValue ShadowAsUnsigned16BitValue()
     {
-        return new Z80Register
+        return new Unsigned16BitValue
         {
             Low = Flags.ShadowValue,
             High = Accumulator.ShadowValue

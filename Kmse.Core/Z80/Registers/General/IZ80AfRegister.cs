@@ -17,5 +17,5 @@ public interface IZ80AfRegister : IZ8016BitRegister
     IZ80Accumulator Accumulator { get; }
     IZ80FlagsManager Flags { get; }
     void SwapWithShadow();
-    Z80Register ShadowAsRegister();
+    Unsigned16BitValue ShadowAsUnsigned16BitValue();
 }
