@@ -2,7 +2,7 @@
 using Kmse.Core.Cartridge;
 using Kmse.Core.Memory;
 
-namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionTests;
+namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionHashTests;
 
 public class TestMemory : IMasterSystemMemory
 {

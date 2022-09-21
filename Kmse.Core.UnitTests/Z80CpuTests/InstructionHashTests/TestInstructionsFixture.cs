@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Instructions;
 using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
@@ -17,7 +18,7 @@ using Kmse.Core.Z80.Support;
 using NSubstitute;
 using NUnit.Framework;
 
-namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionTests;
+namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionHashTests;
 
 /// <summary>
 /// Test all the instructions by executing each possible instruction and validating that a hash of the current CPU, IO and Memory state matches expected
@@ -62,6 +63,7 @@ public class TestInstructionsFixture
         var ioManagement = new Z80CpuInputOutput(_io, af.Flags);
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
         var interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
+        var cycleCounter = new Z80CpuCycleCounter();
 
         var registers = new Z80CpuRegisters
         {
@@ -80,7 +82,8 @@ public class TestInstructionsFixture
         {
             IoManagement = ioManagement,
             InterruptManagement = interruptManagement,
-            MemoryManagement = memoryManagement
+            MemoryManagement = memoryManagement,
+            CycleCounter = cycleCounter
         };
 
         _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, registers, cpuManagement);
@@ -112,7 +115,7 @@ public class TestInstructionsFixture
     {
         public IEnumerator GetEnumerator()
         {
-            var testInstructions = DeserializeTestFile<IEnumerable<TestInstructionData>>("Kmse.Core.UnitTests.Z80CpuTests.InstructionTests.Data.TestInstructions.json");
+            var testInstructions = DeserializeTestFile<IEnumerable<TestInstructionData>>("Kmse.Core.UnitTests.Z80CpuTests.InstructionHashTests.Data.TestInstructions.json");
             foreach (var instruction in testInstructions)
             {
                 var instructions = instruction.HexInstructions.Split(',').Select(x => byte.Parse(x, NumberStyles.AllowHexSpecifier)).ToArray();

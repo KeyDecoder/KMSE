@@ -25,7 +25,7 @@ namespace Kmse.Core.Z80
             if (sourceRegisterId == 0x06)
             {
                 Get8BitRegisterByRIdentifier(destinationRegisterId).SetFromDataInMemory(_hl);
-                _currentCycleCount += 3;
+                _cycleCounter.Increment(3);
                 return;
             }
 
@@ -33,7 +33,7 @@ namespace Kmse.Core.Z80
             {
                 var register = Get8BitRegisterByRIdentifier(sourceRegisterId);
                 _memoryManagement.WriteToMemory(_hl, register.Value);
-                _currentCycleCount += 3;
+                _cycleCounter.Increment(3);
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace Kmse.Core.Z80
             {
                 _hl.ResetBitByRegisterLocation(bit, 0);
                 // Accessing (HL) increases cycle count
-                _currentCycleCount += 7;
+                _cycleCounter.Increment(7);
                 return;
             }
 
@@ -93,7 +93,7 @@ namespace Kmse.Core.Z80
             {
                 _hl.SetBitByRegisterLocation(bit, 0);
                 // Accessing (HL) increases cycle count
-                _currentCycleCount += 7;
+                _cycleCounter.Increment(7);
                 return;
             }
 
@@ -114,7 +114,7 @@ namespace Kmse.Core.Z80
             {
                 _hl.TestBitByRegisterLocation(bit, 0);
                 // Testing bit via (HL) memory location increases cycle count
-                _currentCycleCount += 4;
+                _cycleCounter.Increment(4);
                 return;
             }
 
