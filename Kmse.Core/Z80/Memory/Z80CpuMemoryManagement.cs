@@ -40,13 +40,13 @@ public class Z80CpuMemoryManagement : IZ80CpuMemoryManagement
 
         _memory[address] = newValue;
 
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+        _flags.SetIfNegative(newValue);
+        _flags.SetIfZero(newValue);
         // Set half carry is carry from bit 3
         // Basically if all 4 lower bits are set, then incrementing means it would set bit 5 which in the high nibble
         // https://en.wikipedia.org/wiki/Half-carry_flag
         _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (value & 0x0F) == 0x0F);
-        _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, value == 0x7F);
+        _flags.SetIfIncrementOverflow(value);
         _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
     }
 
@@ -58,15 +58,16 @@ public class Z80CpuMemoryManagement : IZ80CpuMemoryManagement
 
         _memory[address] = newValue;
 
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, newValue == 0);
+        _flags.SetIfNegative(newValue);
+        _flags.SetIfZero(newValue);
+
         // Set half carry is borrow from bit 4
         // Basically if all 4 lower bits are clear, then decrementing would essentially set all the lower bits
         // ie. 0x20 - 1 = 0x1F
         // https://en.wikipedia.org/wiki/Half-carry_flag
         // This could also check by seeing if the new value & 0x0F == 0x0F means all the lower bits were set
         _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (value & 0x0F) == 0x00);
-        _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, value == 0x80);
+        _flags.SetIfDecrementOverflow(value);
         _flags.SetFlag(Z80StatusFlags.AddSubtractN);
     }
 }

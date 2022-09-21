@@ -1,4 +1,5 @@
-﻿using Kmse.Core.Utilities;
+﻿using System.Reflection.PortableExecutable;
+using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.General;
@@ -84,5 +85,57 @@ public class Z80FlagsManager : IZ80FlagsManager
         SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, bitsSet == 0 || bitsSet % 2 == 0);
     }
 
-    // TODO: Add generic methods for setting flags for sign, zero, carry to cut down on duplication as much as possible etc
+    public void SetIfZero(byte value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, value == 0);
+    }
+
+    public void SetIfZero(ushort value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, value == 0);
+    }
+
+    public void SetIfZero(int value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.ZeroZ, value == 0);
+    }
+
+    public void SetIfNegative(byte value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(value, 7));
+    }
+
+    public void SetIfNegative(ushort value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(value, 15));
+    }
+
+    public void SetIfNegative(int twosComplementValue)
+    {
+        SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(twosComplementValue, 7));
+    }
+
+    public void SetIfIncrementOverflow(byte value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, value == 0x7F);
+    }
+
+    public void SetIfDecrementOverflow(byte value)
+    {
+        SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, value == 0x80);
+    }
+
+    public void SetIfHalfCarry(byte currentValue, byte operand, int changedValue)
+    {
+        // Half carry occurs if the result of subtracting the higher nibbles means it will set the next lower bit (basically underflows)
+        // We check if the subtraction means that adding higher nibbles sets bit 3
+        // This is then combined with the DAA instruction which adjusts the result to get the valid value
+        //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((currentValue ^ changedValue ^ operand) & 0x10) != 0);
+    }
+
+    public void SetIfHalfCarry(ushort currentValue, ushort operand)
+    {
+        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (currentValue & 0x0FFF) + (operand & 0x0FFF) > 0x0FFF);
+    }
 }

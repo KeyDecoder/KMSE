@@ -27,4 +27,16 @@ public interface IZ80FlagsManager
     void SetClearFlagConditional(Z80StatusFlags flags, bool condition);
     bool IsFlagSet(Z80StatusFlags flags);
     void SetParityFromValue(byte value);
+
+    void SetIfZero(byte value);
+    void SetIfZero(ushort value);
+    void SetIfNegative(byte value);
+    void SetIfNegative(ushort value);
+    void SetIfNegative(int twosComplementValue);
+    void SetIfZero(int value);
+
+    void SetIfIncrementOverflow(byte value);
+    void SetIfDecrementOverflow(byte value);
+
+    void SetIfHalfCarry(byte currentValue, byte operand, int changedValue);
 }

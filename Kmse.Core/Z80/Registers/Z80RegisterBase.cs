@@ -24,8 +24,9 @@ public abstract class Z80RegisterBase
             Bitwise.Set(ref newValue, 0);
         }
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
+
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -45,8 +46,8 @@ public abstract class Z80RegisterBase
             Bitwise.Set(ref newValue, 0);
         }
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -66,8 +67,8 @@ public abstract class Z80RegisterBase
             Bitwise.Set(ref newValue, 7);
         }
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -88,8 +89,8 @@ public abstract class Z80RegisterBase
             Bitwise.Set(ref newValue, 7);
         }
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -103,8 +104,8 @@ public abstract class Z80RegisterBase
         // Shift register left by 1 bit, bit 7 is copied to carry flag
         var newValue = (byte)(register << 1);
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -126,8 +127,8 @@ public abstract class Z80RegisterBase
             Bitwise.Set(ref newValue, 7);
         }
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -144,8 +145,8 @@ public abstract class Z80RegisterBase
         // The difference between shift left logical and shift left arithmetic is this sets bit 0
         Bitwise.Set(ref newValue, 0);
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
@@ -163,8 +164,8 @@ public abstract class Z80RegisterBase
         // The difference between shift right logical and shift right arithmetic is this does maintain bit 7 when shifting and just clears it
         Bitwise.Clear(ref newValue, 7);
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(newValue, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFF) == 0);
+        Flags.SetIfNegative(newValue);
+        Flags.SetIfZero(newValue);
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetParityFromValue(newValue);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);

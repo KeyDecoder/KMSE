@@ -28,8 +28,8 @@ public class Z80CpuInputOutput : IZ80CpuInputOutput
         }
 
         // If high bit set, then negative so set sign flag
-        _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(data, 7));
-        _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, data == 0);
+        _flags.SetIfNegative(data);
+        _flags.SetIfZero(data);
 
         _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         _flags.SetParityFromValue(data);
