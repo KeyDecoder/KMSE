@@ -4,7 +4,7 @@ using Kmse.Console.Logging;
 using Kmse.Core;
 using Kmse.Core.IO.Controllers;
 using Kmse.Core.Utilities;
-using Kmse.Core.Z80.Support;
+using Kmse.Core.Z80.Model;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 

@@ -1,5 +1,4 @@
 ﻿using Kmse.Core.Z80.Registers.SpecialPurpose;
-using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.General;
 

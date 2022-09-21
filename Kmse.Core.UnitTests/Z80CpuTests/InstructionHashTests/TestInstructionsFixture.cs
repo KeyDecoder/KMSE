@@ -11,10 +11,11 @@ using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Memory;
+using Kmse.Core.Z80.Model;
 using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
-using Kmse.Core.Z80.Support;
+using Kmse.Core.Z80.Running;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -64,6 +65,7 @@ public class TestInstructionsFixture
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
         var interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
         var cycleCounter = new Z80CpuCycleCounter();
+        var runningStateManager = new Z80CpuRunningStateManager(_cpuLogger);
 
         var registers = new Z80CpuRegisters
         {
@@ -83,10 +85,12 @@ public class TestInstructionsFixture
             IoManagement = ioManagement,
             InterruptManagement = interruptManagement,
             MemoryManagement = memoryManagement,
-            CycleCounter = cycleCounter
+            CycleCounter = cycleCounter,
+            RunningStateManager = runningStateManager
         };
 
-        _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, registers, cpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(_memory, _io, _cpuLogger, registers, cpuManagement);
+        _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, cpuInstructions, registers, cpuManagement);
     }
 
     protected static T DeserializeTestFile<T>(string filename)

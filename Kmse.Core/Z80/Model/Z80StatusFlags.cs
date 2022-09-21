@@ -1,4 +1,4 @@
-﻿namespace Kmse.Core.Z80.Support;
+﻿namespace Kmse.Core.Z80.Model;
 
 [Flags]
 public enum Z80StatusFlags : byte

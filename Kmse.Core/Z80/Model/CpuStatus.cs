@@ -1,4 +1,4 @@
-﻿namespace Kmse.Core.Z80.Support;
+﻿namespace Kmse.Core.Z80.Model;
 
 public class CpuStatus
 {

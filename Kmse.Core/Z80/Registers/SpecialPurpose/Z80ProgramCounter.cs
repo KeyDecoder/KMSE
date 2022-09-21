@@ -1,7 +1,7 @@
 ﻿using Kmse.Core.Memory;
 using Kmse.Core.Z80.Logging;
+using Kmse.Core.Z80.Model;
 using Kmse.Core.Z80.Registers.General;
-using Kmse.Core.Z80.Support;
 
 namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 

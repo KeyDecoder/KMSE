@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using Kmse.Core.Z80.Support;
+using Kmse.Core.Z80.Model;
 using NSubstitute;
 using NUnit.Framework;
 
