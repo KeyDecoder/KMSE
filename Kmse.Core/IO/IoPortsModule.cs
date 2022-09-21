@@ -10,10 +10,10 @@ public class IoPortsModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterType<MasterSystemIoManager>().As<IMasterSystemIoManager>().InstancePerDependency();
-        builder.RegisterType<ControllerPort>().As<IControllerPort>().InstancePerDependency();
-        builder.RegisterType<VdpPort>().As<IVdpPort>().InstancePerDependency();
-        builder.RegisterType<SoundPort>().As<ISoundPort>().InstancePerDependency();
-        builder.RegisterType<DebugConsolePort>().As<IDebugConsolePort>().InstancePerDependency();
+        builder.RegisterType<MasterSystemIoManager>().As<IMasterSystemIoManager>().InstancePerLifetimeScope();
+        builder.RegisterType<ControllerPort>().As<IControllerPort>().InstancePerLifetimeScope();
+        builder.RegisterType<VdpPort>().As<IVdpPort>().InstancePerLifetimeScope();
+        builder.RegisterType<SoundPort>().As<ISoundPort>().InstancePerLifetimeScope();
+        builder.RegisterType<DebugConsolePort>().As<IDebugConsolePort>().InstancePerLifetimeScope();
     }
 }

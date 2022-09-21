@@ -23,7 +23,7 @@ public class Z80ProgramCounterFixture
         _instructionLogger = Substitute.For<IZ80InstructionLogger>();
         _flags = Substitute.For<IZ80FlagsManager>();
         _stack = Substitute.For<IZ80StackManager>();
-        _programCounter = new Z80ProgramCounter(_memory, _instructionLogger, _flags, _stack);
+        _programCounter = new Z80ProgramCounter(_memory, _flags, _stack, _instructionLogger);
     }
 
     [Test]

@@ -8,14 +8,13 @@ namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 {
     private readonly IZ80StackManager _stack;
-    private readonly IZ80InstructionLogger _z80InstructionLogger;
+    private readonly IZ80InstructionLogger _instructionLogger;
 
-    public Z80ProgramCounter(IMasterSystemMemory memory, IZ80InstructionLogger z80InstructionLogger,
-        IZ80FlagsManager flags, IZ80StackManager stack)
+    public Z80ProgramCounter(IMasterSystemMemory memory, IZ80FlagsManager flags, IZ80StackManager stack, IZ80InstructionLogger instructionLogger)
         : base(memory, flags)
     {
-        _z80InstructionLogger = z80InstructionLogger;
         _stack = stack;
+        _instructionLogger = instructionLogger;
     }
 
     public byte GetNextInstruction()
@@ -26,7 +25,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
     public byte GetNextDataByte()
     {
         var data = GetNextByteByProgramCounter();
-        _z80InstructionLogger.AddOperationData(data);
+        _instructionLogger.AddOperationData(data);
         return data;
     }
 
@@ -34,7 +33,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
     {
         ushort data = GetNextByteByProgramCounter();
         data += (ushort)(GetNextByteByProgramCounter() << 8);
-        _z80InstructionLogger.AddOperationData(data);
+        _instructionLogger.AddOperationData(data);
         return data;
     }
 

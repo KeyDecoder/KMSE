@@ -44,7 +44,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
     private bool _running;
 
     public MasterSystemMk2(IZ80Cpu cpu, IMasterSystemIoManager io, IVdpPort vdp, IControllerPort controllers,
-        ISoundPort sound, IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge, IMasterSystemMemory memory, ICpuLogger cpuLogger)
+        ISoundPort sound, IDebugConsolePort debugConsole, IMasterSystemCartridge cartridge, IMasterSystemMemory memory, ICpuLogger cpuLogger, IZ80InterruptManagement cpuInterruptManagement)
     {
         _cpu = cpu;
         _io = io;
@@ -55,9 +55,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
         _cartridge = cartridge;
         _memory = memory;
         _cpuLogger = cpuLogger;
-        _cpu.Initialize(_memory, _io);
-        _cpuInterruptManagement = _cpu.GetInterruptManagementInterface();
-        _io.Initialize(_vdp, _controllers, _sound, _debugConsole);
+        _cpuInterruptManagement = cpuInterruptManagement;
     }
 
     public async Task<bool> LoadCartridge(string filename, CancellationToken cancellationToken)

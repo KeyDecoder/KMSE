@@ -1,4 +1,6 @@
-﻿namespace Kmse.Core.Z80.Registers.SpecialPurpose;
+﻿using Kmse.Core.Z80.Logging;
+
+namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
 public interface IZ80StackManager : IZ8016BitSpecialRegister
 {

@@ -36,14 +36,10 @@ public class MasterSystemIoManager : IMasterSystemIoManager
     private byte _memoryControlRegister;
     private byte _ioControlRegister;
 
-    public MasterSystemIoManager(IIoPortLogger logger)
-    {
-        _logger = logger;
-    }
-
-    public void Initialize(IVdpPort vdpPort, IControllerPort controllerPort, ISoundPort soundPort,
+    public MasterSystemIoManager(IIoPortLogger logger, IVdpPort vdpPort, IControllerPort controllerPort, ISoundPort soundPort,
         IDebugConsolePort debugConsolePort)
     {
+        _logger = logger;
         _vdpPort = vdpPort;
         _controllerPort = controllerPort;
         _soundPort = soundPort;

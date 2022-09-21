@@ -1,42 +1,13 @@
 ﻿using FluentAssertions;
-using Kmse.Core.IO;
-using Kmse.Core.Memory;
-using Kmse.Core.Z80;
-using Kmse.Core.Z80.Interrupts;
-using Kmse.Core.Z80.Logging;
 using Kmse.Core.Z80.Support;
 using NSubstitute;
-using NSubstitute.ClearExtensions;
 using NUnit.Framework;
 
 namespace Kmse.Core.UnitTests.Z80CpuTests;
 
 [TestFixture]
-public class CpuInstructionsFixture
+public class CpuInstructionsFixture : CpuTestFixtureBase
 {
-    [SetUp]
-    public void Setup()
-    {
-        _cpuLogger = Substitute.For<ICpuLogger>();
-        _memory = Substitute.For<IMasterSystemMemory>();
-        _io = Substitute.For<IMasterSystemIoManager>();
-        _cpu = new Z80Cpu(_cpuLogger, new Z80InstructionLogger(_cpuLogger));
-        _cpu.Initialize(_memory, _io);
-    }
-
-    private void PrepareForTest()
-    {
-        _cpu.Reset();
-        _memory.ClearReceivedCalls();
-        _memory.ClearSubstitute();
-        _io.ClearReceivedCalls();
-    }
-
-    private Z80Cpu _cpu;
-    private ICpuLogger _cpuLogger;
-    private IMasterSystemMemory _memory;
-    private IMasterSystemIoManager _io;
-
     private static object[] _jrTestCases =
     {
         // This is 500 + 2 + offset (the 2 is for the instruction)
@@ -48,7 +19,7 @@ public class CpuInstructionsFixture
         // Since 130 is actually -126 here, we go backwards
         new object[] { (byte)130, (ushort)376 },
         // Since 255 is actually -1 here, we go backwards by 1
-        new object[] { (byte)255, (ushort) 501 },
+        new object[] { (byte)255, (ushort)501 }
     };
 
     [Test]
@@ -97,16 +68,16 @@ public class CpuInstructionsFixture
 
             var status = _cpu.GetStatus();
             status.Pc.Should().Be(0x03);
-            
+
             var expectedValue = (byte)(i + i);
             var result = originalValue + valueToAdd;
             var foundValue = _cpu.GetStatus().Af.High;
             foundValue.Should().Be(expectedValue);
 
-            var signFlagSet = (expectedValue >> 7) == 0x01;
+            var signFlagSet = expectedValue >> 7 == 0x01;
             var zeroFlagSet = expectedValue == 0;
-            var hFlagSet = (((originalValue ^ result ^ originalValue) & 0x10) != 0);
-            var pvFlagSet = (((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0);
+            var hFlagSet = ((originalValue ^ result ^ originalValue) & 0x10) != 0;
+            var pvFlagSet = ((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0;
             var carryFlagSet = result > 0xFF;
 
             IsFlagSet(signFlagSet, status.Af.Low, Z80StatusFlags.SignS);
@@ -128,7 +99,7 @@ public class CpuInstructionsFixture
             PrepareForTest();
 
             var originalValue = (byte)i;
-            var valueToAdd = i+1;
+            var valueToAdd = i + 1;
 
             // scf to set carry flag
             _memory[0].Returns((byte)0x37);
@@ -158,10 +129,10 @@ public class CpuInstructionsFixture
             var foundValue = _cpu.GetStatus().Af.High;
             foundValue.Should().Be(expectedValue);
 
-            var signFlagSet = (expectedValue >> 7) == 0x01;
+            var signFlagSet = expectedValue >> 7 == 0x01;
             var zeroFlagSet = expectedValue == 0;
-            var hFlagSet = (((originalValue ^ result ^ originalValue) & 0x10) != 0);
-            var pvFlagSet = (((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0);
+            var hFlagSet = ((originalValue ^ result ^ originalValue) & 0x10) != 0;
+            var pvFlagSet = ((originalValue ^ originalValue ^ 0x80) & (originalValue ^ result) & 0x80) != 0;
             var carryFlagSet = result > 0xFF;
 
             IsFlagSet(signFlagSet, status.Af.Low, Z80StatusFlags.SignS);

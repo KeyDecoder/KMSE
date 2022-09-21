@@ -1,9 +1,5 @@
 ﻿using System.Security.Cryptography;
 using Kmse.Core.IO;
-using Kmse.Core.IO.Controllers;
-using Kmse.Core.IO.DebugConsole;
-using Kmse.Core.IO.Sound;
-using Kmse.Core.IO.Vdp;
 
 namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionTests;
 
@@ -11,11 +7,13 @@ public class TestIo : IMasterSystemIoManager
 {
     private readonly Memory<byte> _portData = new(new byte[0xFF + 1]);
 
-    public void Initialize(IVdpPort vdpPort, IControllerPort controllerPort, ISoundPort soundPort,
-        IDebugConsolePort debugConsolePort)
+    public TestIo()
     {
         _portData.Span.Fill(0xBB);
     }
+
+    public bool NonMaskableInterrupt { get; private set; }
+    public bool MaskableInterrupt { get; private set; }
 
     public void Reset()
     {
@@ -24,8 +22,16 @@ public class TestIo : IMasterSystemIoManager
         ClearNonMaskableInterrupt();
     }
 
-    public bool NonMaskableInterrupt { get; private set; }
-    public bool MaskableInterrupt { get; private set; }
+    public byte ReadPort(ushort port)
+    {
+        return _portData.Span[port & 0xFF];
+    }
+
+    public void WritePort(ushort port, byte value)
+    {
+        _portData.Span[port & 0xFF] = value;
+    }
+
     public void SetMaskableInterrupt()
     {
         MaskableInterrupt = true;
@@ -44,16 +50,6 @@ public class TestIo : IMasterSystemIoManager
     public void ClearNonMaskableInterrupt()
     {
         NonMaskableInterrupt = false;
-    }
-
-    public byte ReadPort(ushort port)
-    {
-        return _portData.Span[port & 0xFF];
-    }
-
-    public void WritePort(ushort port, byte value)
-    {
-        _portData.Span[port & 0xFF] = value;
     }
 
     public string GetHash()

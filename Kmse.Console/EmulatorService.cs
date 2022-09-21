@@ -1,4 +1,5 @@
 using System.Text;
+using Autofac;
 using Kmse.Console.Logging;
 using Kmse.Core;
 using Kmse.Core.IO.Controllers;
@@ -14,19 +15,16 @@ internal class EmulatorService : BackgroundService
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly SerilogCpuLogger _cpuLogger;
     private readonly SerilogIoLogger _ioLogger;
+    private readonly ILifetimeScope _scope;
     private readonly ILogger _log;
-    private readonly IMasterSystemConsole _masterSystemConsole;
-    private readonly IControllerPort _controllers;
     private readonly SerilogMemoryLogger _memoryLogger;
     private readonly string _romFilename;
 
-    public EmulatorService(ILogger log, Options options, IMasterSystemConsole masterSystemConsole, IControllerPort controllers,
-        IHostApplicationLifetime applicationLifetime,
+    public EmulatorService(ILifetimeScope scope, ILogger log, Options options, IHostApplicationLifetime applicationLifetime,
         SerilogCpuLogger cpuLogger, SerilogMemoryLogger memoryLogger, SerilogIoLogger ioLogger)
     {
+        _scope = scope;
         _log = log;
-        _masterSystemConsole = masterSystemConsole;
-        _controllers = controllers;
         _applicationLifetime = applicationLifetime;
         _cpuLogger = cpuLogger;
         _memoryLogger = memoryLogger;
@@ -37,16 +35,25 @@ internal class EmulatorService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Yield();
-        stoppingToken.Register(() => _masterSystemConsole.PowerOff());
 
-        await _masterSystemConsole.LoadCartridge(_romFilename, stoppingToken);
-        _masterSystemConsole.PowerOn();
+        await using var emulationScope = _scope.BeginLifetimeScope();
+
+        var masterSystemConsole = emulationScope.Resolve<IMasterSystemConsole>();
+        var controllers = emulationScope.Resolve<IControllerPort>();
+        stoppingToken.Register(() => masterSystemConsole.PowerOff());
+
+        await masterSystemConsole.LoadCartridge(_romFilename, stoppingToken);
+        masterSystemConsole.PowerOn();
 
         // Run two tasks, one to run the main CPU loop and one to capture key inputs
         // Key inputs is temporary until we wire up proper inputs
 
-        var task = Task.Run(() => RunEmulation(stoppingToken), stoppingToken);
-        await Task.Run(() => HandleInputs(stoppingToken), stoppingToken);
+        var emulationCancellationTokenSource = new CancellationTokenSource();
+        var emulationRunTask = Task.Run(() => RunEmulation(masterSystemConsole, emulationCancellationTokenSource.Token, stoppingToken), stoppingToken);
+        await Task.Run(() => HandleInputs(masterSystemConsole, controllers, emulationCancellationTokenSource), stoppingToken);
+        await emulationRunTask.WaitAsync(stoppingToken);
+
+        emulationScope.Dispose();
 
         _log.Information("Emulation stopped");
         System.Console.WriteLine("Press any key to exit");
@@ -54,14 +61,14 @@ internal class EmulatorService : BackgroundService
         _applicationLifetime.StopApplication();
     }
 
-    private void RunEmulation(CancellationToken cancellationToken)
+    private void RunEmulation(IMasterSystemConsole masterSystemConsole, CancellationToken emulationCancellationToken, CancellationToken applicationCancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        while (!emulationCancellationToken.IsCancellationRequested && !applicationCancellationToken.IsCancellationRequested)
         {
             // This loop allows us to restart since if powered off then just stays here until we power it back on again
-            if (_masterSystemConsole.IsRunning())
+            if (masterSystemConsole.IsRunning())
             {
-                _masterSystemConsole.Run();
+                masterSystemConsole.Run();
             }
             else
             {
@@ -70,21 +77,21 @@ internal class EmulatorService : BackgroundService
         }
     }
 
-    private void UpdateControllerEmulationForKey(ConsoleKey key, bool inputA, ControllerInputStatus button)
+    private void UpdateControllerEmulationForKey(IControllerPort controllerPort, ConsoleKey key, bool inputA, ControllerInputStatus button)
     {
         // TODO: Not particularly efficient since we are setting this to be pressed or not pressed each time
         var pressed = Keyboard.IsKeyDown(key);
         if (inputA)
         {
-            _controllers.ChangeInputAControlState(button, pressed);
+            controllerPort.ChangeInputAControlState(button, pressed);
         }
         else
         {
-            _controllers.ChangeInputBControlState(button, pressed);
+            controllerPort.ChangeInputBControlState(button, pressed);
         }
     }
 
-    private void HandleInputs(CancellationToken cancellationToken)
+    private void HandleInputs(IMasterSystemConsole masterSystemConsole, IControllerPort controllerPort, CancellationTokenSource emulationCancellationTokenSource)
     {
         System.Console.WriteLine("Esc to exit console app");
         System.Console.WriteLine("TAB to stop/start emulation");
@@ -104,17 +111,17 @@ internal class EmulatorService : BackgroundService
         System.Console.WriteLine("Z to trigger controller A left button");
         System.Console.WriteLine("X to trigger controller A right button");
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!emulationCancellationTokenSource.IsCancellationRequested)
         {
             // Check the state of the input keys first and then handle regular commands like normal
             // This is so the controller emulation can get key up and down separately
-            UpdateControllerEmulationForKey(ConsoleKey.Z, true, ControllerInputStatus.LeftButton);
-            UpdateControllerEmulationForKey(ConsoleKey.X, true, ControllerInputStatus.RightButton);
-            UpdateControllerEmulationForKey(ConsoleKey.UpArrow, true, ControllerInputStatus.Up);
-            UpdateControllerEmulationForKey(ConsoleKey.DownArrow, true, ControllerInputStatus.Down);
-            UpdateControllerEmulationForKey(ConsoleKey.LeftArrow, true, ControllerInputStatus.Left);
-            UpdateControllerEmulationForKey(ConsoleKey.RightArrow, true, ControllerInputStatus.Right);
-            _controllers.ChangeResetButtonState(Keyboard.IsKeyDown(ConsoleKey.R));
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.Z, true, ControllerInputStatus.LeftButton);
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.X, true, ControllerInputStatus.RightButton);
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.UpArrow, true, ControllerInputStatus.Up);
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.DownArrow, true, ControllerInputStatus.Down);
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.LeftArrow, true, ControllerInputStatus.Left);
+            UpdateControllerEmulationForKey(controllerPort, ConsoleKey.RightArrow, true, ControllerInputStatus.Right);
+            controllerPort.ChangeResetButtonState(Keyboard.IsKeyDown(ConsoleKey.R));
 
             if (!System.Console.KeyAvailable)
             {
@@ -127,40 +134,42 @@ internal class EmulatorService : BackgroundService
             {
                 case ConsoleKey.Escape:
                 {
-                    _log.Information("Existing emulation console app");
+                    _log.Information("Exiting emulation console app");
+                    masterSystemConsole.PowerOff();
+                    emulationCancellationTokenSource.Cancel();
                     return;
                 }
                 case ConsoleKey.Tab:
                 {
-                    if (_masterSystemConsole.IsRunning())
+                    if (masterSystemConsole.IsRunning())
                     {
                         _log.Information("Stopping emulation");
-                        _masterSystemConsole.PowerOff();
+                        masterSystemConsole.PowerOff();
                     }
                     else
                     {
                         _log.Information("Starting emulation");
-                        _masterSystemConsole.PowerOn();
+                        masterSystemConsole.PowerOn();
                     }
                 }
                     break;
                 case ConsoleKey.P:
                 {
-                    if (_masterSystemConsole.IsPaused())
+                    if (masterSystemConsole.IsPaused())
                     {
                         _log.Information("Unpausing emulation");
-                        _masterSystemConsole.Unpause();
+                        masterSystemConsole.Unpause();
                     }
                     else
                     {
                         _log.Information("Pausing emulation");
-                        _masterSystemConsole.Pause();
+                        masterSystemConsole.Pause();
                     }
                 }
                     break;
                 case ConsoleKey.S:
                 {
-                    var status = _masterSystemConsole.GetCpuStatus();
+                    var status = masterSystemConsole.GetCpuStatus();
                     _log.Information($"Flags: {GetStatusFlagsAsString(status)}");
                     _log.Information($"Registers: {GetRegistersAsString(status)}");
                 }
@@ -186,13 +195,13 @@ internal class EmulatorService : BackgroundService
                 case ConsoleKey.O:
                 {
                     _log.Information("Hitting Console Pause Button");
-                    _masterSystemConsole.TriggerPauseButton();
+                    masterSystemConsole.TriggerPauseButton();
                 }
                     break;
             }
         }
 
-        _masterSystemConsole.PowerOff();
+        masterSystemConsole.PowerOff();
     }
 
 

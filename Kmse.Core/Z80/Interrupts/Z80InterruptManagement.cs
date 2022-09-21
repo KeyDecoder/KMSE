@@ -5,7 +5,7 @@ namespace Kmse.Core.Z80.Interrupts;
 
 public class Z80InterruptManagement : IZ80InterruptManagement
 {
-    private readonly ICpuLogger _cpuLogger;
+    private ICpuLogger _cpuLogger;
     private readonly IZ80ProgramCounter _programCounter;
 
     public Z80InterruptManagement(IZ80ProgramCounter programCounter, ICpuLogger cpuLogger)
@@ -41,11 +41,6 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     /// </summary>
     public bool MaskableInterrupt { get; private set; }
 
-    public bool InterruptWaiting()
-    {
-        return NonMaskableInterrupt || (InterruptEnableFlipFlopStatus && MaskableInterrupt);
-    }
-
     public void Reset()
     {
         ClearMaskableInterrupt();
@@ -54,6 +49,11 @@ public class Z80InterruptManagement : IZ80InterruptManagement
         InterruptEnableFlipFlopStatus = false;
         InterruptEnableFlipFlopTempStorageStatus = false;
         InterruptMode = 0;
+    }
+
+    public bool InterruptWaiting()
+    {
+        return NonMaskableInterrupt || (InterruptEnableFlipFlopStatus && MaskableInterrupt);
     }
 
     public void SetMaskableInterrupt()
