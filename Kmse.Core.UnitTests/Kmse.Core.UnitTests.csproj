@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Z80CpuTests\InstructionTests\Data\TestInstructions.json" />
+    <None Remove="Z80CpuTests\InstructionHashTests\Data\TestInstructions.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Z80CpuTests\InstructionTests\Data\TestInstructions.json" />
+    <EmbeddedResource Include="Z80CpuTests\InstructionHashTests\Data\TestInstructions.json" />
   </ItemGroup>
 
   <ItemGroup>

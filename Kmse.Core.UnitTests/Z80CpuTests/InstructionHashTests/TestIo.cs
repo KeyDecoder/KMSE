@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using Kmse.Core.IO;
 
-namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionTests;
+namespace Kmse.Core.UnitTests.Z80CpuTests.InstructionHashTests;
 
 public class TestIo : IMasterSystemIoManager
 {

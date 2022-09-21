@@ -1,5 +1,6 @@
 ﻿using Kmse.Core.IO;
 using Kmse.Core.Memory;
+using Kmse.Core.Z80.Instructions;
 using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
@@ -38,8 +39,8 @@ public partial class Z80Cpu : IZ80Cpu
     private readonly IZ80CpuInputOutput _ioManagement;
     private readonly IZ80CpuMemoryManagement _memoryManagement;
     private readonly IZ80InterruptManagement _interruptManagement;
+    private readonly IZ80CpuCycleCounter _cycleCounter;
 
-    private int _currentCycleCount;
     private bool _halted;
     private const int NopCycleCount = 4;
 
@@ -76,6 +77,7 @@ public partial class Z80Cpu : IZ80Cpu
         _ioManagement = cpuManagement.IoManagement;
         _memoryManagement = cpuManagement.MemoryManagement;
         _interruptManagement = cpuManagement.InterruptManagement;
+        _cycleCounter = cpuManagement.CycleCounter;
 
         PopulateInstructions();
     }
@@ -84,7 +86,7 @@ public partial class Z80Cpu : IZ80Cpu
     {
         return new CpuStatus
         {
-            CurrentCycleCount = _currentCycleCount,
+            CurrentCycleCount = _cycleCounter.CurrentCycleCount,
             Halted = _halted,
 
             Af = _af.AsRegister(),
@@ -114,7 +116,8 @@ public partial class Z80Cpu : IZ80Cpu
     public void Reset()
     {
         _cpuLogger.Debug("Resetting CPU");
-        _currentCycleCount = 0;
+
+        _cycleCounter.Reset();
 
         _pc.Reset();
         _stack.Reset();
@@ -136,15 +139,16 @@ public partial class Z80Cpu : IZ80Cpu
 
     public int ExecuteNextCycle()
     {
-        _currentCycleCount = 0;
+        _cycleCounter.Reset();
         _instructionLogger.StartNewInstruction(_pc.Value);
 
         if (_interruptManagement.InterruptWaiting())
         {
-            _currentCycleCount += _interruptManagement.ProcessInterrupts();
+            var cycles = _interruptManagement.ProcessInterrupts();
+            _cycleCounter.Increment(cycles);
             // If halted and an interrupt occurs, then resume
             ResumeIfHalted();
-            return _currentCycleCount;
+            return _cycleCounter.CurrentCycleCount;
         }
 
         if (_halted)
@@ -170,22 +174,22 @@ public partial class Z80Cpu : IZ80Cpu
                 .SetOpCode(opCode.ToString("X2"), "Unimplemented Instruction", "Unimplemented Instruction")
                 .Log();
 
-            _currentCycleCount += NopCycleCount;
-            return _currentCycleCount;
+            _cycleCounter.Increment(NopCycleCount);
+            return _cycleCounter.CurrentCycleCount;
         }
 
         instruction.Execute();
         // Note that -1 (DynamicCycleHandling) indicates the clock cycles change dynamically so handled inside the instruction handler
         if (instruction.ClockCycles > 0)
         {
-            _currentCycleCount += instruction.ClockCycles;
+            _cycleCounter.Increment(instruction.ClockCycles);
         }
 
         _instructionLogger
             .SetOpCode(instruction.GetOpCode(), instruction.Name, instruction.Description)
             .Log();
 
-        return _currentCycleCount;
+        return _cycleCounter.CurrentCycleCount;
     }
 
     private void Halt()

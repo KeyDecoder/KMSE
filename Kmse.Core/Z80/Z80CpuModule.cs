@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Kmse.Core.Z80.Instructions;
 using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
@@ -40,5 +41,6 @@ public class Z80CpuModule : Module
         builder.RegisterType<Z80CpuInputOutput>().As<IZ80CpuInputOutput>().InstancePerLifetimeScope();
         builder.RegisterType<Z80CpuMemoryManagement>().As<IZ80CpuMemoryManagement>().InstancePerLifetimeScope();
         builder.RegisterType<Z80InterruptManagement>().As<IZ80InterruptManagement>().InstancePerLifetimeScope();
+        builder.RegisterType<Z80CpuCycleCounter>().As<IZ80CpuCycleCounter>().InstancePerLifetimeScope();
     }
 }

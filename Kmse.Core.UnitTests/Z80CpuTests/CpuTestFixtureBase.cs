@@ -1,6 +1,7 @@
 ﻿using Kmse.Core.IO;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
+using Kmse.Core.Z80.Instructions;
 using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.IO;
 using Kmse.Core.Z80.Logging;
@@ -55,6 +56,7 @@ public abstract class CpuTestFixtureBase
         var ioManagement = new Z80CpuInputOutput(_io, af.Flags);
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
         _interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
+        var cycleCounter = new Z80CpuCycleCounter();
 
         var registers = new Z80CpuRegisters
         {
@@ -73,7 +75,8 @@ public abstract class CpuTestFixtureBase
         {
             IoManagement = ioManagement,
             InterruptManagement = _interruptManagement,
-            MemoryManagement = memoryManagement
+            MemoryManagement = memoryManagement,
+            CycleCounter = cycleCounter
         };
 
         _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, registers, cpuManagement);

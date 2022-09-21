@@ -135,10 +135,10 @@ public partial class Z80Cpu
         AddStandardInstruction(0xE2, 10, "JP PO,$NN", "Conditional Jump If Parity Odd", _ => { _pc.Jump16BitIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()); });
 
         AddStandardInstruction(0x18, 12, "JR $N+2", "Relative Jump By Offset", _ => { _pc.JumpByOffset(_pc.GetNextDataByte()); });
-        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7; });
-        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfNotFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7; });
-        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7; });
-        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { _currentCycleCount += _pc.JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7; });
+        AddStandardInstruction(0x38, DynamicCycleHandling, "JR C,$N+2", "Cond. Relative Jump", _ => { _cycleCounter.Increment(_pc.JumpByOffsetIfFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7); });
+        AddStandardInstruction(0x30, DynamicCycleHandling, "JR NC,$N+2", "Cond. Relative Jump", _ => { _cycleCounter.Increment(_pc.JumpByOffsetIfNotFlag(Z80StatusFlags.CarryC, _pc.GetNextDataByte()) ? 12 : 7); });
+        AddStandardInstruction(0x28, DynamicCycleHandling, "JR Z,$N+2", "Cond. Relative Jump", _ => { _cycleCounter.Increment(_pc.JumpByOffsetIfFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7); });
+        AddStandardInstruction(0x20, DynamicCycleHandling, "JR NZ,$N+2", "Cond. Relative Jump", _ => { _cycleCounter.Increment(_pc.JumpByOffsetIfNotFlag(Z80StatusFlags.ZeroZ, _pc.GetNextDataByte()) ? 12 : 7); });
 
         AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ =>
         {
@@ -147,32 +147,32 @@ public partial class Z80Cpu
             if (_b.Value != 0)
             {
                 _pc.JumpByOffset(offset);
-                _currentCycleCount += 13;
+                _cycleCounter.Increment(13);
             }
 
             // Not jumping, continue to next instruction
-            _currentCycleCount += 8;
+            _cycleCounter.Increment(8);
         });
 
         AddStandardInstruction(0xCD, 17, "CALL NN", "Unconditional Call", _ => { _pc.SetAndSaveExisting(_pc.GetNextTwoDataBytes()); });
-        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { _currentCycleCount += _pc.CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
-        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call If Parity Odd", _ => { _currentCycleCount += _pc.CallIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10; });
+        AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xE4, DynamicCycleHandling, "CALL PO,NN", "Conditional Call If Parity Odd", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
 
         AddStandardInstruction(0xC9, 10, "RET", "Return", _ => { _pc.SetFromStack(); });
-        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return If Carry Set", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.CarryC) ? 11 : 5; });
-        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "Conditional Return If Carry Not Set", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.CarryC) ? 11 : 5; });
-        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "Conditional Return If Negative", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.SignS) ? 11 : 5; });
-        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "Conditional Return If Positive", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.SignS) ? 11 : 5; });
-        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "Conditional Return If Zero", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.ZeroZ) ? 11 : 5; });
-        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "Conditional Return If Not Zero", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.ZeroZ) ? 11 : 5; });
-        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "Conditional Return If Parity Even", _ => { _currentCycleCount += _pc.ReturnIfFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5; });
-        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "Conditional Return If Parity Odd", _ => { _currentCycleCount += _pc.ReturnIfNotFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5; });
+        AddStandardInstruction(0xD8, DynamicCycleHandling, "RET C", "Conditional Return If Carry Set", _ => { _cycleCounter.Increment(_pc.ReturnIfFlag(Z80StatusFlags.CarryC) ? 11 : 5); });
+        AddStandardInstruction(0xD0, DynamicCycleHandling, "RET NC", "Conditional Return If Carry Not Set", _ => { _cycleCounter.Increment(_pc.ReturnIfNotFlag(Z80StatusFlags.CarryC) ? 11 : 5); });
+        AddStandardInstruction(0xF8, DynamicCycleHandling, "RET M", "Conditional Return If Negative", _ => { _cycleCounter.Increment(_pc.ReturnIfFlag(Z80StatusFlags.SignS) ? 11 : 5); });
+        AddStandardInstruction(0xF0, DynamicCycleHandling, "RET P", "Conditional Return If Positive", _ => { _cycleCounter.Increment(_pc.ReturnIfNotFlag(Z80StatusFlags.SignS) ? 11 : 5); });
+        AddStandardInstruction(0xC8, DynamicCycleHandling, "RET Z", "Conditional Return If Zero", _ => { _cycleCounter.Increment(_pc.ReturnIfFlag(Z80StatusFlags.ZeroZ) ? 11 : 5); });
+        AddStandardInstruction(0xC0, DynamicCycleHandling, "RET NZ", "Conditional Return If Not Zero", _ => { _cycleCounter.Increment(_pc.ReturnIfNotFlag(Z80StatusFlags.ZeroZ) ? 11 : 5); });
+        AddStandardInstruction(0xE8, DynamicCycleHandling, "RET PE", "Conditional Return If Parity Even", _ => { _cycleCounter.Increment(_pc.ReturnIfFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5); });
+        AddStandardInstruction(0xE0, DynamicCycleHandling, "RET PO", "Conditional Return If Parity Odd", _ => { _cycleCounter.Increment(_pc.ReturnIfNotFlag(Z80StatusFlags.ParityOverflowPV) ? 11 : 5); });
 
         AddStandardInstruction(0xC7, 11, "RST 0", "Restart at 0h", _ => { _pc.SetAndSaveExisting(0x00); });
         AddStandardInstruction(0xCF, 11, "RST 08H", "Restart at 08h", _ => {  _pc.SetAndSaveExisting(0x08); });
@@ -286,7 +286,7 @@ public partial class Z80Cpu
             //    // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
             //    //_bc.Word = 64 * 1024;
 
-            //    _currentCycleCount += 16;
+            //    _cycleCounter.Increment(16;
             //    return;
             //}
 
@@ -298,11 +298,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -314,7 +314,7 @@ public partial class Z80Cpu
             //    // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
             //    //_bc.Word = 64 * 1024;
 
-            //    _currentCycleCount += 16;
+            //    _cycleCounter.Increment(16;
             //    return;
             //}
 
@@ -326,11 +326,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -834,7 +834,7 @@ public partial class Z80Cpu
                 // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
                 //_bc.Word = 64 * 1024;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -852,11 +852,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
         AddDoubleByteInstruction(0xED, 0xA8, 16, "LDD", "Load and Decrement", _ =>
@@ -876,7 +876,7 @@ public partial class Z80Cpu
                 // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
                 //_bc.Word = 64 * 1024;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -895,11 +895,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -957,7 +957,7 @@ public partial class Z80Cpu
                 // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
                 //_bc.Word = 256;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -975,11 +975,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -1000,7 +1000,7 @@ public partial class Z80Cpu
                 // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
                 //_bc.Word = 256;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -1018,11 +1018,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -1054,7 +1054,7 @@ public partial class Z80Cpu
                 // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
                 //_bc.Word = 256;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -1073,11 +1073,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
 
@@ -1099,7 +1099,7 @@ public partial class Z80Cpu
                 // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
                 //_bc.Word = 256;
 
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
                 return;
             }
 
@@ -1118,11 +1118,11 @@ public partial class Z80Cpu
                 // Note that this is not a loop here since we still need to process interrupts
                 // hence running instruction again rather than doing a loop here
                 _pc.MoveProgramCounterBackward(2);
-                _currentCycleCount += 21;
+                _cycleCounter.Increment(21);
             }
             else
             {
-                _currentCycleCount += 16;
+                _cycleCounter.Increment(16);
             }
         });
     }
