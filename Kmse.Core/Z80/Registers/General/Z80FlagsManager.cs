@@ -1,6 +1,5 @@
-﻿using System.Reflection.PortableExecutable;
-using Kmse.Core.Utilities;
-using Kmse.Core.Z80.Support;
+﻿using Kmse.Core.Utilities;
+using Kmse.Core.Z80.Model;
 
 namespace Kmse.Core.Z80.Registers.General;
 

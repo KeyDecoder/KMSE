@@ -9,6 +9,7 @@ using Kmse.Core.Z80.Memory;
 using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
+using Kmse.Core.Z80.Running;
 using NSubstitute;
 using NSubstitute.ClearExtensions;
 using NUnit.Framework;
@@ -57,6 +58,7 @@ public abstract class CpuTestFixtureBase
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
         _interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
         var cycleCounter = new Z80CpuCycleCounter();
+        var runningStateManager = new Z80CpuRunningStateManager(_cpuLogger);
 
         var registers = new Z80CpuRegisters
         {
@@ -76,9 +78,10 @@ public abstract class CpuTestFixtureBase
             IoManagement = ioManagement,
             InterruptManagement = _interruptManagement,
             MemoryManagement = memoryManagement,
-            CycleCounter = cycleCounter
+            CycleCounter = cycleCounter,
+            RunningStateManager = runningStateManager,
         };
-
-        _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, registers, cpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(_memory, _io, _cpuLogger, registers, cpuManagement);
+        _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, cpuInstructions, registers, cpuManagement);
     }
 }

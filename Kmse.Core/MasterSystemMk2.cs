@@ -9,7 +9,7 @@ using Kmse.Core.Memory;
 using Kmse.Core.Z80;
 using Kmse.Core.Z80.Interrupts;
 using Kmse.Core.Z80.Logging;
-using Kmse.Core.Z80.Support;
+using Kmse.Core.Z80.Model;
 
 namespace Kmse.Core;
 

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Kmse.Core.Z80.Support;
+namespace Kmse.Core.Z80.Model;
 
 // TODO: Rename to Unsigned16BitValue
 [StructLayout(LayoutKind.Explicit)]

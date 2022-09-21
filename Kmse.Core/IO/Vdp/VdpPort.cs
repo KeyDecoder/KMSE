@@ -1,6 +1,4 @@
-﻿using Kmse.Core.Z80.Support;
-
-namespace Kmse.Core.IO.Vdp;
+﻿namespace Kmse.Core.IO.Vdp;
 
 /// <summary>
 ///     Emulate the video display processor

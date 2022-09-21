@@ -7,6 +7,7 @@ using Kmse.Core.Z80.Memory;
 using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
+using Kmse.Core.Z80.Running;
 
 namespace Kmse.Core.Z80;
 
@@ -42,5 +43,7 @@ public class Z80CpuModule : Module
         builder.RegisterType<Z80CpuMemoryManagement>().As<IZ80CpuMemoryManagement>().InstancePerLifetimeScope();
         builder.RegisterType<Z80InterruptManagement>().As<IZ80InterruptManagement>().InstancePerLifetimeScope();
         builder.RegisterType<Z80CpuCycleCounter>().As<IZ80CpuCycleCounter>().InstancePerLifetimeScope();
+        builder.RegisterType<Z80CpuRunningStateManager>().As<IZ80CpuRunningStateManager>().InstancePerLifetimeScope();
+        builder.RegisterType<Z80CpuInstructions>().As<IZ80CpuInstructions>().InstancePerLifetimeScope();
     }
 }
