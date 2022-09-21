@@ -134,14 +134,15 @@ namespace Kmse.Core.Z80
         {
             var value = _memory[_hl.Value];
             // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
-            var difference = _af.High - (sbyte)value;
+            var difference = _accumulator.Value - (sbyte)value;
 
             _hl.Increment();
             _bc.Decrement();
 
-            _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)difference, 7));
-            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (difference & 0xFF) == 0);
-            _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((_af.High ^ difference ^ value) & 0x10) != 0);
+            _flags.SetIfNegative((byte)difference);
+            _flags.SetIfZero((byte)(difference & 0xFF));
+
+            _flags.SetIfHalfCarry(_accumulator.Value, value, difference);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
             _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
         }
@@ -150,14 +151,14 @@ namespace Kmse.Core.Z80
         {
             var value = _memory[_hl.Value];
             // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
-            var difference = _af.High - (sbyte)value;
+            var difference = _accumulator.Value - (sbyte)value;
 
             _hl.Decrement();
             _bc.Decrement();
 
-            _flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((byte)difference, 7));
+            _flags.SetIfNegative((byte)difference);
             _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _af.High == value);
-            _flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((_af.High ^ difference ^ value) & 0x10) != 0);
+            _flags.SetIfHalfCarry(_accumulator.Value, value, difference);
             _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         }

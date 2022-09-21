@@ -71,11 +71,9 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
 
         if (withCarry)
         {
-            Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((ushort)newValue, 15));
-            Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFFFF) == 0);
-            Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
-                ((Value ^ valueWithCarry) & 0x8000) == 0 &&
-                ((Value ^ (newValue & 0xFFFF)) & 0x8000) != 0);
+            Flags.SetIfNegative((ushort)newValue);
+            Flags.SetIfZero((ushort)(newValue & 0xFFFF));
+            Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((Value ^ valueWithCarry) & 0x8000) == 0 && ((Value ^ (newValue & 0xFFFF)) & 0x8000) != 0);
         }
 
         Set((ushort)newValue);
@@ -96,13 +94,12 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
 
         var newValue = Value - valueWithCarry;
 
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet((ushort)newValue, 15));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, (newValue & 0xFFFF) == 0);
+        Flags.SetIfNegative((ushort)newValue);
+        Flags.SetIfZero((ushort)(newValue & 0xFFFF));
 
         // Half carry for 16 bit occurs if the result of adding the lower of the higher 8 bit value means it will set the next higher bit (13th bit and basically overflows)
         Flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (((Value ^ newValue ^ source) >> 8) & 0x10) != 0);
-        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
-            ((source ^ Value) & (Value ^ newValue) & 0x8000) != 0);
+        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((source ^ Value) & (Value ^ newValue) & 0x8000) != 0);
 
         Flags.SetFlag(Z80StatusFlags.AddSubtractN);
         // Carry occurs if the result of adding the higher nibbles means it will set the next higher bit (17th bit and basically overflows)

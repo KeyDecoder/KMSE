@@ -947,7 +947,7 @@ public partial class Z80Cpu
             _memoryManagement.WriteToMemory(_hl, data);
             _b.Decrement();
             _hl.Increment();
-            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _b.Value == 0);
+            _flags.SetIfZero(_b.Value);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
         AddDoubleByteInstruction(0xED, 0xB2, DynamicCycleHandling, "INIR", "Input, Increment, Repeat", _ =>
@@ -990,7 +990,7 @@ public partial class Z80Cpu
             _memoryManagement.WriteToMemory(_hl, data);
             _b.Decrement();
             _hl.Decrement();
-            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _b.Value == 0);
+            _flags.SetIfZero(_b.Value);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
         AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ =>
@@ -1044,7 +1044,7 @@ public partial class Z80Cpu
             _io.WritePort(portAddress, data);
 
             _hl.Increment();
-            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _b.Value == 0);
+            _flags.SetIfZero(_b.Value);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
         AddDoubleByteInstruction(0xED, 0xB3, DynamicCycleHandling, "OTIR", "Output, Increment, Repeat", _ =>
@@ -1089,7 +1089,7 @@ public partial class Z80Cpu
             _io.WritePort(portAddress, data);
 
              _hl.Decrement();
-            _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _b.Value == 0);
+             _flags.SetIfZero(_b.Value);
             _flags.SetFlag(Z80StatusFlags.AddSubtractN);
         });
         AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ =>
