@@ -66,7 +66,7 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
         Set(address);
     }
 
-    public void Set(Z80Register register)
+    public void Set(Unsigned16BitValue register)
     {
         // Update PC to execute from the value of the register
         Set(register.Word);

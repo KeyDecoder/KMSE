@@ -9,12 +9,12 @@ namespace Kmse.Core.Z80.Registers;
 /// </summary>
 public abstract class Z8016BitSpecialRegisterBase : Z8016BitRegisterBase, IZ8016BitRegister
 {
-    protected Z80Register Register;
+    protected Unsigned16BitValue Register;
 
     protected Z8016BitSpecialRegisterBase(IMasterSystemMemory memory, IZ80FlagsManager flags)
         : base(memory, flags)
     {
-        Register = new Z80Register();
+        Register = new Unsigned16BitValue();
     }
 
     public override ushort Value => Register.Word;
@@ -70,7 +70,7 @@ public abstract class Z8016BitSpecialRegisterBase : Z8016BitRegisterBase, IZ8016
         Memory[(ushort)(location + 1)] = Register.High;
     }
 
-    public Z80Register AsRegister()
+    public Unsigned16BitValue AsUnsigned16BitValue()
     {
         return Register;
     }

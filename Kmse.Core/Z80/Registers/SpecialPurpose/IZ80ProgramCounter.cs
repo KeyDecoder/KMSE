@@ -30,7 +30,7 @@ public interface IZ80ProgramCounter : IZ8016BitSpecialRegister
     ///     Set program counter value to register value
     /// </summary>
     /// <param name="register">Z80 register</param>
-    void Set(Z80Register register);
+    void Set(Unsigned16BitValue register);
 
     /// <summary>
     ///     Set the Program Counter by popping address from top of the stack

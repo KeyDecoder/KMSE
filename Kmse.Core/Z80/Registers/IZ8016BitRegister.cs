@@ -16,5 +16,5 @@ public interface IZ8016BitRegister
     void SetFromDataInMemory(ushort address, byte offset = 0);
     void SetFromDataInMemory(IZ8016BitRegister register, byte offset = 0);
     void SaveToMemory(ushort address, byte offset = 0);
-    Z80Register AsRegister();
+    Unsigned16BitValue AsUnsigned16BitValue();
 }

@@ -78,18 +78,18 @@ public abstract class Z8016BitGeneralPurposeRegisterBase : Z8016BitRegisterBase,
         HighRegister.SwapWithShadow();
     }
 
-    public Z80Register AsRegister()
+    public Unsigned16BitValue AsUnsigned16BitValue()
     {
-        return new Z80Register
+        return new Unsigned16BitValue
         {
             Low = LowRegister.Value,
             High = HighRegister.Value
         };
     }
 
-    public Z80Register ShadowAsRegister()
+    public Unsigned16BitValue ShadowAsUnsigned16BitValue()
     {
-        return new Z80Register
+        return new Unsigned16BitValue
         {
             Low = LowRegister.ShadowValue,
             High = HighRegister.ShadowValue

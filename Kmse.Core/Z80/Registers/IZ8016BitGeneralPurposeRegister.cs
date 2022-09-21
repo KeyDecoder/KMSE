@@ -6,7 +6,7 @@ public interface IZ8016BitGeneralPurposeRegister : IZ8016BitRegister
 {
     ushort ShadowValue { get; }
     void SwapWithShadow();
-    Z80Register ShadowAsRegister();
+    Unsigned16BitValue ShadowAsUnsigned16BitValue();
 
     void Increment();
     void Decrement();
