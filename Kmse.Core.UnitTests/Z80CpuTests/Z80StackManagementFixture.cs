@@ -22,7 +22,7 @@ public class Z80StackManagementFixture
         _memory = Substitute.For<IMasterSystemMemory>();
         _cpuLogger = Substitute.For<ICpuLogger>();
         _flags = Substitute.For<IZ80FlagsManager>();
-        _stackManager = new Z80StackManager(_memory, _cpuLogger, _flags);
+        _stackManager = new Z80StackManager(_memory, _flags, _cpuLogger);
 
         _memory.GetMinimumAvailableMemorySize().Returns(100);
         _memory.GetMaximumAvailableMemorySize().Returns(0x5000);

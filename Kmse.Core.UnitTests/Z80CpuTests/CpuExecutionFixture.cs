@@ -10,34 +10,8 @@ using NUnit.Framework;
 namespace Kmse.Core.UnitTests.Z80CpuTests;
 
 [TestFixture]
-public class CpuExecutionFixture
+public class CpuExecutionFixture : CpuTestFixtureBase
 {
-    [SetUp]
-    public void Setup()
-    {
-        _cpuLogger = Substitute.For<ICpuLogger>();
-        _memory = Substitute.For<IMasterSystemMemory>();
-        _io = Substitute.For<IMasterSystemIoManager>();
-        _cpu = new Z80Cpu(_cpuLogger, new Z80InstructionLogger(_cpuLogger));
-        _cpu.Initialize(_memory, _io);
-        _interruptManagement = _cpu.GetInterruptManagementInterface();
-    }
-
-    private void PrepareForTest()
-    {
-        _cpu.Reset();
-        _memory.ClearReceivedCalls();
-        _io.ClearReceivedCalls();
-        _interruptManagement.ClearMaskableInterrupt();
-        _interruptManagement.ClearNonMaskableInterrupt();
-    }
-
-    private Z80Cpu _cpu;
-    private ICpuLogger _cpuLogger;
-    private IMasterSystemMemory _memory;
-    private IMasterSystemIoManager _io;
-    private IZ80InterruptManagement _interruptManagement;
-
     [Test]
     public void WhenResettingCpu()
     {

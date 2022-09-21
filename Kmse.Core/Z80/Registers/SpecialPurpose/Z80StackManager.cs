@@ -7,11 +7,11 @@ namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 public class Z80StackManager : Z8016BitSpecialRegisterBase, IZ80StackManager
 {
     private const ushort DefaultStackAddress = 0xDFF0;
-    private readonly ICpuLogger _cpuLogger;
+    private ICpuLogger _cpuLogger;
     private readonly IMasterSystemMemory _memory;
     private int _maximumMemorySize;
 
-    public Z80StackManager(IMasterSystemMemory memory, ICpuLogger cpuLogger, IZ80FlagsManager flags)
+    public Z80StackManager(IMasterSystemMemory memory, IZ80FlagsManager flags, ICpuLogger cpuLogger)
         : base(memory, flags)
     {
         _memory = memory;

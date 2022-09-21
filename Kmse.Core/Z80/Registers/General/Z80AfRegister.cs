@@ -8,11 +8,11 @@ public class Z80AfRegister : IZ80AfRegister
 {
     private readonly IMasterSystemMemory _memory;
 
-    public Z80AfRegister(IMasterSystemMemory memory)
+    public Z80AfRegister(IMasterSystemMemory memory, IZ80FlagsManager flags, IZ80Accumulator accumulator)
     {
         _memory = memory;
-        Flags = new Z80FlagsManager();
-        Accumulator = new Z80Accumulator(Flags, memory);
+        Flags = flags;
+        Accumulator = accumulator;
     }
 
     public IZ80Accumulator Accumulator { get; }
@@ -28,8 +28,6 @@ public class Z80AfRegister : IZ80AfRegister
         Flags.Reset();
         Accumulator.Reset();
     }
-
-    // TODO: Remove any methods not used, since mixed with flags, very few operations act on AF as a 16 bit register
 
     public void Set(ushort value)
     {

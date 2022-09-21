@@ -15,58 +15,51 @@ public partial class Z80Cpu : IZ80Cpu
 {
     private readonly ICpuLogger _cpuLogger;
     private readonly IZ80InstructionLogger _instructionLogger;
+    private readonly IMasterSystemIoManager _io;
+    private readonly IMasterSystemMemory _memory;
+    private readonly IZ80ProgramCounter _pc;
+    private readonly IZ80StackManager _stack;
+    private readonly IZ80FlagsManager _flags;
+    private readonly IZ80Accumulator _accumulator;
+    private readonly IZ80AfRegister _af;
+    private readonly IZ80BcRegister _bc;
+    private readonly IZ80DeRegister _de;
+    private readonly IZ80HlRegister _hl;
+    private readonly IZ808BitGeneralPurposeRegister _b;
+    private readonly IZ808BitGeneralPurposeRegister _c;
+    private readonly IZ808BitGeneralPurposeRegister _d;
+    private readonly IZ808BitGeneralPurposeRegister _e;
+    private readonly IZ808BitGeneralPurposeRegister _h;
+    private readonly IZ808BitGeneralPurposeRegister _l;
+    private readonly IZ80IndexRegisterXy _ix;
+    private readonly IZ80IndexRegisterXy _iy;
+    private readonly IZ80MemoryRefreshRegister _rRegister;
+    private readonly IZ80InterruptPageAddressRegister _iRegister;
+    private readonly IZ80CpuInputOutput _ioManagement;
+    private readonly IZ80CpuMemoryManagement _memoryManagement;
+    private readonly IZ80InterruptManagement _interruptManagement;
 
     private int _currentCycleCount;
-    private IMasterSystemIoManager _io;
-    private IMasterSystemMemory _memory;
     private bool _halted;
-
     private const int NopCycleCount = 4;
 
-    private IZ80ProgramCounter _pc;
-    private IZ80StackManager _stack;
-    private IZ80FlagsManager _flags;
-    private IZ80Accumulator _accumulator;
-    private IZ80AfRegister _af;
-    private IZ80BcRegister _bc;
-    private IZ80DeRegister _de;
-    private IZ80HlRegister _hl;
-    private IZ808BitGeneralPurposeRegister _b;
-    private IZ808BitGeneralPurposeRegister _c;
-    private IZ808BitGeneralPurposeRegister _d;
-    private IZ808BitGeneralPurposeRegister _e;
-    private IZ808BitGeneralPurposeRegister _h;
-    private IZ808BitGeneralPurposeRegister _l;
-    private IZ80IndexRegisterXy _ix;
-    private IZ80IndexRegisterXy _iy;
-    private IZ80MemoryRefreshRegister _rRegister;
-    private IZ80InterruptPageAddressRegister _iRegister;
-    private IZ80CpuInputOutput _ioManagement;
-    private IZ80CpuMemoryManagement _memoryManagement;
-    private IZ80InterruptManagement _interruptManagement;
-
-    public Z80Cpu(ICpuLogger cpuLogger, IZ80InstructionLogger instructionLogger)
+    public Z80Cpu(IMasterSystemMemory memory, IMasterSystemIoManager io, ICpuLogger cpuLogger, IZ80InstructionLogger instructionLogger, Z80CpuRegisters registers, Z80CpuManagement cpuManagement)
     {
         _cpuLogger = cpuLogger;
         _instructionLogger = instructionLogger;
-        PopulateInstructions();
-    }
 
-    public void Initialize(IMasterSystemMemory memory, IMasterSystemIoManager io)
-    {
         _cpuLogger.Debug("Initializing CPU");
         _memory = memory;
         _io = io;
 
-        // TODO: Need to create these indirectly to allow mock interfaces to be injected for testing
-        _af = new Z80AfRegister(memory);
-        _bc = new Z80BcRegister(memory, _af.Flags);
-        _de = new Z80DeRegister(memory, _af.Flags);
-        _hl = new Z80HlRegister(memory, _af.Flags);
-        _ix = new Z80IndexRegisterXy(memory, _af.Flags);
-        _iy = new Z80IndexRegisterXy(memory, _af.Flags);
-        _rRegister = new Z80MemoryRefreshRegister(memory, _af.Flags);
-        _iRegister = new Z80InterruptPageAddressRegister(memory, _af.Flags);
+        _af = registers.Af;
+        _bc = registers.Bc;
+        _de = registers.De;
+        _hl = registers.Hl;
+        _ix = registers.IX;
+        _iy = registers.IY;
+        _rRegister = registers.R;
+        _iRegister = registers.I;
 
         _accumulator = _af.Accumulator;
         _flags = _af.Flags;
@@ -77,17 +70,14 @@ public partial class Z80Cpu : IZ80Cpu
         _h = _hl.H;
         _l = _hl.L;
 
-        _stack = new Z80StackManager(memory, _cpuLogger, _af.Flags);
-        _pc = new Z80ProgramCounter(memory, _instructionLogger, _flags, _stack);
+        _stack = registers.Stack;
+        _pc = registers.Pc;
 
-        _ioManagement = new Z80CpuInputOutput(_io, _flags);
-        _memoryManagement = new Z80CpuMemoryManagement(_memory, _flags);
-        _interruptManagement = new Z80InterruptManagement(_pc, _cpuLogger);
-    }
+        _ioManagement = cpuManagement.IoManagement;
+        _memoryManagement = cpuManagement.MemoryManagement;
+        _interruptManagement = cpuManagement.InterruptManagement;
 
-    public IZ80InterruptManagement GetInterruptManagementInterface()
-    {
-        return _interruptManagement;
+        PopulateInstructions();
     }
 
     public CpuStatus GetStatus()
