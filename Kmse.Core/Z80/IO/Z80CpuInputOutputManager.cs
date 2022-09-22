@@ -6,12 +6,12 @@ using Kmse.Core.Z80.Registers.General;
 
 namespace Kmse.Core.Z80.IO;
 
-public class Z80CpuInputOutput : IZ80CpuInputOutput
+public class Z80CpuInputOutputManager : IZ80CpuInputOutputManager
 {
     private readonly IZ80FlagsManager _flags;
     private readonly IMasterSystemIoManager _io;
 
-    public Z80CpuInputOutput(IMasterSystemIoManager io, IZ80FlagsManager flags)
+    public Z80CpuInputOutputManager(IMasterSystemIoManager io, IZ80FlagsManager flags)
     {
         _io = io;
         _flags = flags;
@@ -27,7 +27,6 @@ public class Z80CpuInputOutput : IZ80CpuInputOutput
             return data;
         }
 
-        // If high bit set, then negative so set sign flag
         _flags.SetIfNegative(data);
         _flags.SetIfZero(data);
 

@@ -8,7 +8,7 @@ namespace Kmse.Core.Z80;
 
 public class Z80CpuManagement
 {
-    public IZ80CpuInputOutput IoManagement { get; set; }
+    public IZ80CpuInputOutputManager IoManagement { get; set; }
     public IZ80CpuMemoryManagement MemoryManagement { get; set; }
     public IZ80InterruptManagement InterruptManagement { get; set; }
     public IZ80CpuCycleCounter CycleCounter { get; set; }

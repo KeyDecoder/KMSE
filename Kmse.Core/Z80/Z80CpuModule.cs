@@ -39,7 +39,7 @@ public class Z80CpuModule : Module
         builder.RegisterType<Z80ProgramCounter>().As<IZ80ProgramCounter>().InstancePerLifetimeScope();
         builder.RegisterType<Z80StackManager>().As<IZ80StackManager>().InstancePerLifetimeScope();
 
-        builder.RegisterType<Z80CpuInputOutput>().As<IZ80CpuInputOutput>().InstancePerLifetimeScope();
+        builder.RegisterType<Z80CpuInputOutputManager>().As<IZ80CpuInputOutputManager>().InstancePerLifetimeScope();
         builder.RegisterType<Z80CpuMemoryManagement>().As<IZ80CpuMemoryManagement>().InstancePerLifetimeScope();
         builder.RegisterType<Z80InterruptManagement>().As<IZ80InterruptManagement>().InstancePerLifetimeScope();
         builder.RegisterType<Z80CpuCycleCounter>().As<IZ80CpuCycleCounter>().InstancePerLifetimeScope();

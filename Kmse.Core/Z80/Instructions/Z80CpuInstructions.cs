@@ -36,7 +36,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
     private readonly IZ80IndexRegisterXy _iy;
     private readonly IZ80MemoryRefreshRegister _rRegister;
     private readonly IZ80InterruptPageAddressRegister _iRegister;
-    private readonly IZ80CpuInputOutput _ioManagement;
+    private readonly IZ80CpuInputOutputManager _ioManagement;
     private readonly IZ80CpuMemoryManagement _memoryManagement;
     private readonly IZ80InterruptManagement _interruptManagement;
     private readonly IZ80CpuCycleCounter _cycleCounter;

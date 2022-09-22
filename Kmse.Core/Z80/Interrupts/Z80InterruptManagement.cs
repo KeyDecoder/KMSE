@@ -58,6 +58,11 @@ public class Z80InterruptManagement : IZ80InterruptManagement
 
     public void SetMaskableInterrupt()
     {
+        if (!InterruptEnableFlipFlopStatus)
+        {
+            // Can only set if interrupts are enabled
+            return;
+        }
         MaskableInterrupt = true;
         _cpuLogger.SetMaskableInterruptStatus(MaskableInterrupt);
     }
@@ -84,12 +89,14 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     {
         InterruptEnableFlipFlopStatus = true;
         InterruptEnableFlipFlopTempStorageStatus = true;
+        ClearMaskableInterrupt();
     }
 
     public void DisableMaskableInterrupts()
     {
         InterruptEnableFlipFlopStatus = false;
         InterruptEnableFlipFlopTempStorageStatus = false;
+        ClearMaskableInterrupt();
     }
 
     public void SetInterruptMode(byte mode)
@@ -147,8 +154,7 @@ public class Z80InterruptManagement : IZ80InterruptManagement
         _cpuLogger.LogInstruction(_programCounter.Value, "MI", "Maskable Interrupt", "Maskable Interrupt",
             $"Mode {InterruptMode}");
 
-        InterruptEnableFlipFlopStatus = false;
-        InterruptEnableFlipFlopTempStorageStatus = false;
+        DisableMaskableInterrupts();
 
         if (InterruptMode is 0 or 1)
         {
@@ -172,7 +178,6 @@ public class Z80InterruptManagement : IZ80InterruptManagement
         // Maybe it is used but with random values returned?
         //https://www.smspower.org/uploads/Development/smstech-20021112.txt
         _cpuLogger.Error("Maskable Interrupt while in mode 2 which is not supported");
-        ClearMaskableInterrupt();
 
         // Treat this as a NOP which is 4 cycles
         return 4;
