@@ -61,7 +61,7 @@ public class TestInstructionsFixture
         var stack = new Z80StackManager(_memory, af.Flags, _cpuLogger);
         var pc = new Z80ProgramCounter(_memory, af.Flags, stack, instructionLogger);
 
-        var ioManagement = new Z80CpuInputOutput(_io, af.Flags);
+        var ioManagement = new Z80CpuInputOutputManager(_io, af.Flags);
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
         var interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
         var cycleCounter = new Z80CpuCycleCounter();

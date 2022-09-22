@@ -132,9 +132,4 @@ public class Z80FlagsManager : IZ80FlagsManager
         //https://retrocomputing.stackexchange.com/questions/4693/why-does-the-z80-have-a-half-carry-bit
         SetClearFlagConditional(Z80StatusFlags.HalfCarryH, ((currentValue ^ changedValue ^ operand) & 0x10) != 0);
     }
-
-    public void SetIfHalfCarry(ushort currentValue, ushort operand)
-    {
-        SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (currentValue & 0x0FFF) + (operand & 0x0FFF) > 0x0FFF);
-    }
 }

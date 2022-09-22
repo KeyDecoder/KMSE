@@ -31,15 +31,15 @@ public class CpuInstructionsFixture : CpuTestFixtureBase
         // Execute at least 500 instructions
         for (var i = 0; i < 500; i++)
         {
-            _memory[(ushort)i].Returns((byte)0x00);
-            _cpu.ExecuteNextCycle().Should().Be(4);
+            Memory[(ushort)i].Returns((byte)0x00);
+            Cpu.ExecuteNextCycle().Should().Be(4);
         }
 
-        _memory[500].Returns((byte)0x18);
-        _memory[501].Returns(offset);
-        _cpu.ExecuteNextCycle().Should().Be(12);
+        Memory[500].Returns((byte)0x18);
+        Memory[501].Returns(offset);
+        Cpu.ExecuteNextCycle().Should().Be(12);
 
-        var status = _cpu.GetStatus();
+        var status = Cpu.GetStatus();
         status.Pc.Should().Be(expectedPc);
     }
 
@@ -54,24 +54,24 @@ public class CpuInstructionsFixture : CpuTestFixtureBase
             var valueToAdd = i + 1;
 
             //ld a, 127
-            _memory[0].Returns((byte)0x3E);
-            _memory[1].Returns((byte)i);
+            Memory[0].Returns((byte)0x3E);
+            Memory[1].Returns((byte)i);
             //adc a, a
-            _memory[2].Returns((byte)0x8F);
+            Memory[2].Returns((byte)0x8F);
 
             // Execute ld
-            _cpu.ExecuteNextCycle().Should().Be(7);
-            _cpu.GetStatus().Af.High.Should().Be((byte)i);
+            Cpu.ExecuteNextCycle().Should().Be(7);
+            Cpu.GetStatus().Af.High.Should().Be((byte)i);
 
             // Execute adc
-            _cpu.ExecuteNextCycle().Should().Be(4);
+            Cpu.ExecuteNextCycle().Should().Be(4);
 
-            var status = _cpu.GetStatus();
+            var status = Cpu.GetStatus();
             status.Pc.Should().Be(0x03);
 
             var expectedValue = (byte)(i + i);
             var result = originalValue + valueToAdd;
-            var foundValue = _cpu.GetStatus().Af.High;
+            var foundValue = Cpu.GetStatus().Af.High;
             foundValue.Should().Be(expectedValue);
 
             var signFlagSet = expectedValue >> 7 == 0x01;
@@ -102,31 +102,31 @@ public class CpuInstructionsFixture : CpuTestFixtureBase
             var valueToAdd = i + 1;
 
             // scf to set carry flag
-            _memory[0].Returns((byte)0x37);
+            Memory[0].Returns((byte)0x37);
 
             //ld a, i
-            _memory[1].Returns((byte)0x3E);
-            _memory[2].Returns((byte)i);
+            Memory[1].Returns((byte)0x3E);
+            Memory[2].Returns((byte)i);
 
             //adc a, a
-            _memory[3].Returns((byte)0x8F);
+            Memory[3].Returns((byte)0x8F);
 
             // execute scf
-            _cpu.ExecuteNextCycle().Should().Be(4);
+            Cpu.ExecuteNextCycle().Should().Be(4);
 
             // Execute ld
-            _cpu.ExecuteNextCycle().Should().Be(7);
-            _cpu.GetStatus().Af.High.Should().Be((byte)i);
+            Cpu.ExecuteNextCycle().Should().Be(7);
+            Cpu.GetStatus().Af.High.Should().Be((byte)i);
 
             // Execute adc
-            _cpu.ExecuteNextCycle().Should().Be(4);
+            Cpu.ExecuteNextCycle().Should().Be(4);
 
-            var status = _cpu.GetStatus();
+            var status = Cpu.GetStatus();
             status.Pc.Should().Be(0x04);
 
             var expectedValue = (byte)(originalValue + valueToAdd);
             var result = originalValue + valueToAdd;
-            var foundValue = _cpu.GetStatus().Af.High;
+            var foundValue = Cpu.GetStatus().Af.High;
             foundValue.Should().Be(expectedValue);
 
             var signFlagSet = expectedValue >> 7 == 0x01;

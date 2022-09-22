@@ -7,7 +7,7 @@ using Kmse.Core.Z80.Registers.SpecialPurpose;
 using NSubstitute;
 using NUnit.Framework;
 
-namespace Kmse.Core.UnitTests.Z80CpuTests;
+namespace Kmse.Core.UnitTests.Z80CpuTests.RegisterTests.SpecialPurpose;
 
 public class Z80StackManagementFixture
 {

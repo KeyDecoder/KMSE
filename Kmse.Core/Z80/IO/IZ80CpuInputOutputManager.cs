@@ -2,7 +2,7 @@
 
 namespace Kmse.Core.Z80.IO;
 
-public interface IZ80CpuInputOutput
+public interface IZ80CpuInputOutputManager
 {
     byte Read(byte high, byte low, bool setFlags);
     void ReadAndSetRegister(byte high, byte low, IZ808BitRegister register);
