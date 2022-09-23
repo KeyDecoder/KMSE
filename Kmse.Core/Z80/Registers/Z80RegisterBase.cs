@@ -117,13 +117,12 @@ public abstract class Z80RegisterBase
     protected void ShiftRightArithmetic(ref byte register)
     {
         // Rotate register right by 1 bit, bit 0 is copied to carry flag
-        // This is special method since RRA flags are set differently to RR r instruction
         var newValue = (byte)(register >> 1);
         var bit7Set = Bitwise.IsSet(register, 7);
 
+        // If bit 7 is set in original then leave as set even as we shift right
         if (bit7Set)
         {
-            // If bit 7 is set in original then leave as set even as we shift right
             Bitwise.Set(ref newValue, 7);
         }
 
@@ -161,7 +160,7 @@ public abstract class Z80RegisterBase
         // This is special method since RRA flags are set differently to RR r instruction
         var newValue = (byte)(register >> 1);
 
-        // The difference between shift right logical and shift right arithmetic is this does maintain bit 7 when shifting and just clears it
+        // The difference between shift right logical and shift right arithmetic is arithmetic always maintains bit 7 when shifting and logical shifting always clears bit 7
         Bitwise.Clear(ref newValue, 7);
 
         Flags.SetIfNegative(newValue);
