@@ -27,8 +27,4 @@
     <ProjectReference Include="..\Kmse.Core\Kmse.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Z80CpuTests\RegisterTests\GeneralPurpose\" />
-  </ItemGroup>
-
 </Project>
