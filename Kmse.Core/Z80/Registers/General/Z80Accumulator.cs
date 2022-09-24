@@ -7,7 +7,7 @@ namespace Kmse.Core.Z80.Registers.General;
 
 public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
 {
-    public Z80Accumulator(IZ80FlagsManager flags, IMasterSystemMemory memory)
+    public Z80Accumulator(IMasterSystemMemory memory, IZ80FlagsManager flags)
         : base(memory, flags) { }
 
     public void SetFromInterruptRegister(IZ80InterruptPageAddressRegister register, bool interruptFlipFlop2Status)
@@ -161,7 +161,7 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Flags.SetIfZero(twosComplementValue);
 
         Flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (Value & 0x0F) > 0);
-        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, Value == 0x80);
+        Flags.SetIfDecrementOverflow(Value);
         Flags.SetFlag(Z80StatusFlags.AddSubtractN);
         Flags.SetClearFlagConditional(Z80StatusFlags.CarryC, Value != 0x00);
 
@@ -387,8 +387,9 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Value = sourceData;
 
         // Check flags since copying from special register into accumulator
-        Flags.SetClearFlagConditional(Z80StatusFlags.SignS, !Bitwise.IsSet(sourceData, 7));
-        Flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, sourceData == 0);
+        Flags.SetIfNegative(sourceData);
+        Flags.SetIfZero(sourceData);
+
         Flags.ClearFlag(Z80StatusFlags.HalfCarryH);
         Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, interruptFlipFlop2Status);
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
