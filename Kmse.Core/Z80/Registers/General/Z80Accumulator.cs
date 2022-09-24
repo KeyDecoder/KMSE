@@ -157,7 +157,7 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
     {
         var twosComplementValue = (0 - Value) & 0xFF;
 
-        Flags.SetIfNegative(twosComplementValue);
+        Flags.SetIfTwosComplementNegative(twosComplementValue);
         Flags.SetIfZero(twosComplementValue);
 
         Flags.SetClearFlagConditional(Z80StatusFlags.HalfCarryH, (Value & 0x0F) > 0);

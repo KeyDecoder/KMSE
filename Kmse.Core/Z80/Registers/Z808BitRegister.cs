@@ -30,6 +30,7 @@ public abstract class Z808BitRegister : Z80RegisterBase, IZ808BitRegister
     public void Reset()
     {
         Value = 0;
+        ShadowValue = 0;
     }
 
     public void Set(byte value)

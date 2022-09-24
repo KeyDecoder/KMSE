@@ -12,8 +12,8 @@ namespace Kmse.Core.UnitTests.Z80CpuTests.RegisterTests.SpecialPurpose;
 public class Z80StackManagementFixture
 {
     private ICpuLogger _cpuLogger;
-    private IMasterSystemMemory _memory;
     private IZ80FlagsManager _flags;
+    private IMasterSystemMemory _memory;
     private Z80StackManager _stackManager;
 
     [SetUp]
@@ -82,7 +82,8 @@ public class Z80StackManagementFixture
         _stackManager.Set(1000);
         _stackManager.IncrementStackPointer();
         _stackManager.Value.Should().Be(0);
-        _cpuLogger.Received(1).Error(Arg.Is<string>(x => x.Contains("Stack Pointer has been incremented", StringComparison.InvariantCultureIgnoreCase)));
+        _cpuLogger.Received(1).Error(Arg.Is<string>(x =>
+            x.Contains("Stack Pointer has been incremented", StringComparison.InvariantCultureIgnoreCase)));
     }
 
     [Test]
@@ -93,7 +94,8 @@ public class Z80StackManagementFixture
         _stackManager.Set(100);
         _stackManager.DecrementStackPointer();
         _stackManager.Value.Should().Be(99);
-        _cpuLogger.Received(1).Error(Arg.Is<string>(x => x.Contains("Stack Pointer has been decremented", StringComparison.InvariantCultureIgnoreCase)));
+        _cpuLogger.Received(1).Error(Arg.Is<string>(x =>
+            x.Contains("Stack Pointer has been decremented", StringComparison.InvariantCultureIgnoreCase)));
     }
 
     [Test]

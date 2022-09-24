@@ -23,6 +23,7 @@ public class Z80FlagsManager : IZ80FlagsManager
     public void Reset()
     {
         Value = 0;
+        ShadowValue = 0;
     }
 
     public void Set(byte value)
@@ -70,8 +71,11 @@ public class Z80FlagsManager : IZ80FlagsManager
 
     public void SetParityFromValue(byte value)
     {
+        // If required, can implement a faster implementation from here http://www.graphics.stanford.edu/~seander/bithacks.html
+
         // Count the number of 1 bits in the value
         // If odd, then clear flag and if even, then set flag
+        // No bits set counts as even parity
         var bitsSet = 0;
         for (var i = 0; i < 8; i++)
         {
@@ -109,7 +113,7 @@ public class Z80FlagsManager : IZ80FlagsManager
         SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(value, 15));
     }
 
-    public void SetIfNegative(int twosComplementValue)
+    public void SetIfTwosComplementNegative(int twosComplementValue)
     {
         SetClearFlagConditional(Z80StatusFlags.SignS, Bitwise.IsSet(twosComplementValue, 7));
     }

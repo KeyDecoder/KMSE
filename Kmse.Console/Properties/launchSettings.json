@@ -3,6 +3,8 @@
     "Kmse.Console": {
       "commandName": "Project",
       "commandLineArgs": "-f ..\\..\\..\\Validation\\zexdoc.sms"
+      //"commandLineArgs": "-f ..\\..\\..\\..\\..\\zexall-sms\\source\\zexdoc.sms"
+      //"commandLineArgs": "-f ..\\..\\..\\..\\..\\sonic.sms"
     }
   }
 }

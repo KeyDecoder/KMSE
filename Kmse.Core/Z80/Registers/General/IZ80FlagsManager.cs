@@ -32,7 +32,7 @@ public interface IZ80FlagsManager
     void SetIfZero(ushort value);
     void SetIfNegative(byte value);
     void SetIfNegative(ushort value);
-    void SetIfNegative(int twosComplementValue);
+    void SetIfTwosComplementNegative(int twosComplementValue);
     void SetIfZero(int value);
 
     void SetIfIncrementOverflow(byte value);
