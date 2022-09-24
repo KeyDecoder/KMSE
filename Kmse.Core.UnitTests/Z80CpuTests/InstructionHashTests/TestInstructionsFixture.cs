@@ -48,7 +48,7 @@ public class TestInstructionsFixture
         var instructionLogger = new Z80InstructionLogger(_cpuLogger);
 
         var flags = new Z80FlagsManager();
-        var accumulator = new Z80Accumulator(flags, _memory);
+        var accumulator = new Z80Accumulator(_memory, flags);
         var af = new Z80AfRegister(_memory, flags, accumulator);
         var bc = new Z80BcRegister(_memory, af.Flags, () => new Z808BitGeneralPurposeRegister(_memory, flags));
         var de = new Z80DeRegister(_memory, af.Flags, () => new Z808BitGeneralPurposeRegister(_memory, flags));
