@@ -187,7 +187,8 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Flags.SetIfNegative((byte)newValue);
         Flags.SetIfZero((byte)(newValue & 0xFF));
         Flags.SetIfHalfCarry(Value, value, newValue);
-        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ Value ^ 0x80) & (Value ^ newValue) & 0x80) != 0);
+        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
+            ((value ^ Value ^ 0x80) & (Value ^ newValue) & 0x80) != 0);
 
         Flags.ClearFlag(Z80StatusFlags.AddSubtractN);
         // A carry is same as half carry just on the overall value
@@ -216,7 +217,8 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Flags.SetIfNegative((byte)newValue);
         Flags.SetIfZero((byte)(newValue & 0xFF));
         Flags.SetIfHalfCarry(Value, value, newValue);
-        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ Value) & (Value ^ newValue) & 0x80) != 0);
+        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
+            ((value ^ Value) & (Value ^ newValue) & 0x80) != 0);
         Flags.SetFlag(Z80StatusFlags.AddSubtractN);
 
         // Subtraction went negative, so carried over into next bit
@@ -233,7 +235,8 @@ public class Z80Accumulator : Z808BitGeneralPurposeRegister, IZ80Accumulator
         Flags.SetIfNegative((byte)difference);
         Flags.SetIfZero((byte)(difference & 0xFF));
         Flags.SetIfHalfCarry(Value, value, difference);
-        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, ((value ^ Value) & (Value ^ difference) & 0x80) != 0);
+        Flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV,
+            ((value ^ Value) & (Value ^ difference) & 0x80) != 0);
         Flags.SetFlag(Z80StatusFlags.AddSubtractN);
 
         // Subtraction went negative, so carried over into next bit
