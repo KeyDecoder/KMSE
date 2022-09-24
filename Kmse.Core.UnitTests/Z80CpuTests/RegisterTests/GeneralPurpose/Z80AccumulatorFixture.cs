@@ -1,11 +1,8 @@
 ﻿using FluentAssertions;
 using Kmse.Core.Memory;
-using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Model;
-using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
 using Kmse.Core.Z80.Registers.SpecialPurpose;
-using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -109,12 +106,11 @@ public class Z80AccumulatorFixture
     [TestCase(1, 1, false, false, false, false)]
     [TestCase(0xA0, 0x00, false, false, false, true)]
     [TestCase(0xAA, 0x10, false, false, true, true)]
-
     [TestCase(0x11, 0x17, true, false, false, false)]
     [TestCase(0x01, 0x61, false, true, false, true)]
-
     [TestCase(0xFF, 0x65, false, false, true, true)]
-    public void WhenDoingDecAdjustAccumulatorAfterAdd(byte currentValue, byte expectedValue, bool halfCarrySet, bool carrySet, bool expectedHalfCarryStatus, bool expectedCarryStatus)
+    public void WhenDoingDecAdjustAccumulatorAfterAdd(byte currentValue, byte expectedValue, bool halfCarrySet,
+        bool carrySet, bool expectedHalfCarryStatus, bool expectedCarryStatus)
     {
         _flags.IsFlagSet(Z80StatusFlags.CarryC).Returns(carrySet);
         _flags.IsFlagSet(Z80StatusFlags.HalfCarryH).Returns(halfCarrySet);
@@ -156,7 +152,8 @@ public class Z80AccumulatorFixture
     [TestCase(0x12, 0xEE, true, true)]
     [TestCase(0xFF, 0x01, true, true)]
     [TestCase(0x10, 0xF0, false, true)]
-    public void WhenNegateAccumulatorRegisterThenValueIsInverted(byte currentValue, byte expectedValue, bool expectedHalfCarryStatus, bool expectedCarryStatus)
+    public void WhenNegateAccumulatorRegisterThenValueIsInverted(byte currentValue, byte expectedValue,
+        bool expectedHalfCarryStatus, bool expectedCarryStatus)
     {
         _register.Set(currentValue);
         _register.NegateAccumulatorRegister();
@@ -176,7 +173,7 @@ public class Z80AccumulatorFixture
     [TestCase((byte)0xFF, (byte)0x01, (byte)0x00, true, true)]
     [TestCase((byte)0x80, (byte)0x80, (byte)0x00, false, true)]
     public void WhenAddWithoutCarry(byte value, byte operand, byte newValue, bool expectedHalfCarryFlagStatus,
-    bool expectedCarryFlagStatus)
+        bool expectedCarryFlagStatus)
     {
         _register.Set(value);
         _register.Add(operand);
