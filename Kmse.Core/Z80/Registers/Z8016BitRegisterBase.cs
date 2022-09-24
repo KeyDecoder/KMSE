@@ -84,10 +84,10 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
         Add(register.Value, withCarry);
     }
 
-    public void Subtract(ushort source, bool withCarry = false)
+    public void Subtract(ushort source)
     {
         int valueWithCarry = source;
-        if (withCarry && Flags.IsFlagSet(Z80StatusFlags.CarryC))
+        if (Flags.IsFlagSet(Z80StatusFlags.CarryC))
         {
             valueWithCarry += 0x01;
         }
@@ -108,9 +108,9 @@ public abstract class Z8016BitRegisterBase : Z80RegisterBase
         Set((ushort)newValue);
     }
 
-    public void Subtract(IZ8016BitRegister register, bool withCarry = false)
+    public void Subtract(IZ8016BitRegister register)
     {
-        Subtract(register.Value, withCarry);
+        Subtract(register.Value);
     }
 
     public void RotateLeftCircular(int offset)

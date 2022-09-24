@@ -436,10 +436,10 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddDoubleByteInstruction(0xDD, 0x9E, 19, "SBC A,(IX+d)", "Subtract (IX+d) from A with Carry", _ => { _accumulator.SubtractFromMemory(_ix, _pc.GetNextDataByte(), true); });
         AddDoubleByteInstruction(0xFD, 0x9E, 19, "SBC A,(IY+d)", "Subtract (Iy+d) from A with Carry", _ => { _accumulator.SubtractFromMemory(_iy, _pc.GetNextDataByte(), true); });
 
-        AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { _hl.Subtract(_bc, true); });
-        AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { _hl.Subtract(_de, true); });
-        AddDoubleByteInstruction(0xED, 0x62, 15, "SBC HL,HL", "Subtract with Carry", _ => { _hl.Subtract(_hl, true); });
-        AddDoubleByteInstruction(0xED, 0x72, 15, "SBC HL,SP", "Subtract with Carry", _ => { _hl.Subtract(_stack, true); });
+        AddDoubleByteInstruction(0xED, 0x42, 15, "SBC HL,BC", "Subtract with Carry", _ => { _hl.Subtract(_bc); });
+        AddDoubleByteInstruction(0xED, 0x52, 15, "SBC HL,DE", "Subtract with Carry", _ => { _hl.Subtract(_de); });
+        AddDoubleByteInstruction(0xED, 0x62, 15, "SBC HL,HL", "Subtract with Carry", _ => { _hl.Subtract(_hl); });
+        AddDoubleByteInstruction(0xED, 0x72, 15, "SBC HL,SP", "Subtract with Carry", _ => { _hl.Subtract(_stack); });
 
         AddStandardInstruction(0xBF, 4, "CP A", "Compare A to A", _ => { _accumulator.Compare(_accumulator.Value); });
         AddStandardInstruction(0xB8, 4, "CP B", "Compare B to A", _ => { _accumulator.Compare(_b.Value); });

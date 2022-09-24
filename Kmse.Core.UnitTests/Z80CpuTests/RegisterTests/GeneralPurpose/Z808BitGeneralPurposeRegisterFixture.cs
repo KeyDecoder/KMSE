@@ -185,7 +185,6 @@ public class Z808BitGeneralPurposeRegisterFixture
         CheckFlagsForBitShifting(expectedValue, expectedCarryFlagStatus);
     }
 
-
     [Test]
     [TestCase(0, 0, false)]
     [TestCase(0x55, (byte)((0x55 << 1) & 0xFF), false)]

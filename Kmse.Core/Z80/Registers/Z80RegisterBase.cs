@@ -156,8 +156,7 @@ public abstract class Z80RegisterBase
 
     protected void ShiftRightLogical(ref byte register)
     {
-        // Rotate register right by 1 bit, bit 0 is copied to carry flag
-        // This is special method since RRA flags are set differently to RR r instruction
+        // Shift register right by 1 bit, bit 0 is copied to carry flag
         var newValue = (byte)(register >> 1);
 
         // The difference between shift right logical and shift right arithmetic is arithmetic always maintains bit 7 when shifting and logical shifting always clears bit 7

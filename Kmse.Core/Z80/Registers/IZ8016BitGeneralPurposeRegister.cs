@@ -16,8 +16,8 @@ public interface IZ8016BitGeneralPurposeRegister : IZ8016BitRegister
     void TestBitByRegisterLocation(int bit, int offset);
     void Add(ushort source, bool withCarry = false);
     void Add(IZ8016BitRegister register, bool withCarry = false);
-    void Subtract(ushort source, bool withCarry = false);
-    void Subtract(IZ8016BitRegister register, bool withCarry = false);
+    void Subtract(ushort source);
+    void Subtract(IZ8016BitRegister register);
     void RotateLeftCircular(int offset);
     void RotateLeft(int offset);
     void RotateRightCircular(int offset);
