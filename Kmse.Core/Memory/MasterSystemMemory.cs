@@ -118,7 +118,10 @@ public class MasterSystemMemory : IMasterSystemMemory
         _firstBankPage = 0;
         _secondBankPage = 1;
         _thirdBankPage = 2;
-    }
+        _internalRAM.Span.Fill(0x00);
+        _ramBank0.Span.Fill(0x00);
+        _ramBank1.Span.Fill(0x00);
+}
 
     private bool IsPagingEnabled()
     {
@@ -191,6 +194,7 @@ public class MasterSystemMemory : IMasterSystemMemory
                 return;
             // Cannot write to slot 3 since RAM banking not enabled so this is used for ROM pages only
             case < MemorySlot3 + MemoryPageSize:
+                _memoryLogger.Error("Attempted to write to ROM Memory Slot 3 with RAM banking disabled");
                 return;
         }
 
@@ -239,7 +243,8 @@ public class MasterSystemMemory : IMasterSystemMemory
             // 0 - 0x4000
             // Reading data from slot 1, use page to lookup ROM data
             // We just add since accessing inside the first slot
-            var bankAddress = (ushort)((readAddress & 0x3FFF) + MemoryPageSize * _firstBankPage);
+            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _firstBankPage);
             return ReadRom(bankAddress);
         }
 
@@ -247,7 +252,8 @@ public class MasterSystemMemory : IMasterSystemMemory
         {
             // 0x4000 - 0x8000
             // Reading data from slot 2, use page to lookup ROM data
-            var bankAddress = (ushort)((readAddress & 0x3FFF) + MemoryPageSize * _secondBankPage);
+            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _secondBankPage);
             return ReadRom(bankAddress);
         }
 
@@ -268,7 +274,8 @@ public class MasterSystemMemory : IMasterSystemMemory
 
             // Reading data from slot 2, use page to lookup ROM data
             // Adjust address to offset page * 2 since slot 3
-            var bankAddress = (ushort)((readAddress & 0x3FFF) + MemoryPageSize * _thirdBankPage);
+            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _thirdBankPage);
             return ReadRom(bankAddress);
         }
 
