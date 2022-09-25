@@ -1,4 +1,4 @@
-name: dotnet package
+name: KMSE Build and Test
 
 on: [push]
 

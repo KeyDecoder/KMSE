@@ -1,6 +1,6 @@
 # KMSE
 
-[![dotnet package](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml)
+[![KMSE Build & Test](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/KeyDecoder/KMSE/actions/workflows/build-and-test.yml)
 
 KMSE (KeyDecoder's Master System Emulator) is an emulator for Sega Master System console, written in C#, focused on the Mark II.  This is just a fun research project emulating my favorite console.
 
