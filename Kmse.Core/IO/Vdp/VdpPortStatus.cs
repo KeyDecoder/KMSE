@@ -2,7 +2,7 @@
 
 public class VdpPortStatus
 {
-    public byte HCounter { get; init; }
+    public int HCounter { get; init; }
     public byte VCounter { get; init; }
     public ushort CommandWord { get; init; }
     public VdpStatusFlags StatusFlags { get; init; }

@@ -15,5 +15,6 @@ public class IoPortsModule : Module
         builder.RegisterType<VdpPort>().As<IVdpPort>().InstancePerLifetimeScope();
         builder.RegisterType<SoundPort>().As<ISoundPort>().InstancePerLifetimeScope();
         builder.RegisterType<DebugConsolePort>().As<IDebugConsolePort>().InstancePerLifetimeScope();
+        builder.RegisterType<VdpRegisters>().As<IVdpRegisters>().InstancePerLifetimeScope();
     }
 }

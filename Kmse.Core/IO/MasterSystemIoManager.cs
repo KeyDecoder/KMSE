@@ -127,6 +127,7 @@ public class MasterSystemIoManager : IMasterSystemIoManager
             {
                 _ioControlRegister = value;
                 _controllerPort.SetIoPortControl(value);
+                _vdpPort.SetIoPortControl(value);
             }
 
             return;

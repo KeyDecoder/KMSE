@@ -48,8 +48,8 @@ public class VdpRegistersFixture
             _registers.SetRegister(i, 0xFF);
         }
 
-        _registers.IsVerticalScrollingEnabledForColumns24to31().Should().BeFalse();
-        _registers.IsHorizontalScrollingEnabledForRows0to1().Should().BeFalse();
+        _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeFalse();
+        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeFalse();
         _registers.MaskColumn0WithOverscanColor().Should().BeTrue();
         _registers.IsLineInterruptEnabled().Should().BeTrue();
         _registers.ShiftSpritesLeftBy8Pixels().Should().BeTrue();
@@ -66,9 +66,27 @@ public class VdpRegistersFixture
         _registers.GetSpriteAttributeTableBaseAddressOffset().Should().Be(0x3F00);
         _registers.GetSpritePatternGeneratorBaseAddressOffset().Should().Be(0x2000);
         _registers.GetOverscanBackdropColour().Should().Be(0x0F);
-        _registers.GetBackgroundXScroll().Should().Be(0xFF);
-        _registers.GetBackgroundYScroll().Should().Be(0xFF);
-        _registers.GetLineCounterValue().Should().Be(0xFF);
+    }
+
+    [Test]
+    public void WhenSettingRegister8ThenBackgroundXScrollValueIsUpdated()
+    {
+        _registers.SetRegister(8, 0x04);
+        _registers.GetBackgroundXScroll().Should().Be(0x04);
+    }
+
+    [Test]
+    public void WhenSettingRegister9ThenBackgroundXScrollValueIsUpdated()
+    {
+        _registers.SetRegister(9, 0x03);
+        _registers.GetBackgroundYScroll().Should().Be(0x03);
+    }
+
+    [Test]
+    public void WhenSettingRegister10ThenLineCounterValueIsUpdated()
+    {
+        _registers.SetRegister(10, 0x05);
+        _registers.GetLineCounterValue().Should().Be(0x05);
     }
 
     [Test]
@@ -76,11 +94,16 @@ public class VdpRegistersFixture
     {
         for (var i = 0; i < 11; i++)
         {
+            _registers.SetRegister(i, 0xFF);
+        }
+
+        for (var i = 0; i < 11; i++)
+        {
             _registers.SetRegister(i, 0x00);
         }
 
-        _registers.IsVerticalScrollingEnabledForColumns24to31().Should().BeTrue();
-        _registers.IsHorizontalScrollingEnabledForRows0to1().Should().BeTrue();
+        _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeTrue();
+        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeTrue();
         _registers.MaskColumn0WithOverscanColor().Should().BeFalse();
         _registers.IsLineInterruptEnabled().Should().BeFalse();
         _registers.ShiftSpritesLeftBy8Pixels().Should().BeFalse();

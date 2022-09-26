@@ -34,7 +34,7 @@ public class MasterSystemMk2 : IMasterSystemConsole
     private readonly IZ80Cpu _cpu;
     private readonly IDebugConsolePort _debugConsole;
 
-    private readonly DisplayType _displayType = DisplayType.Pal;
+    private readonly VdpDisplayType _displayType = VdpDisplayType.Pal;
     private readonly IMasterSystemIoManager _io;
     private readonly ISoundPort _sound;
     private readonly IVdpPort _vdp;
@@ -174,13 +174,13 @@ public class MasterSystemMk2 : IMasterSystemConsole
 
     private double GetDisplayFrameRate()
     {
-        return _displayType == DisplayType.Ntsc ? FrameRateNtsc : FrameRatePal;
+        return _displayType == VdpDisplayType.Ntsc ? FrameRateNtsc : FrameRatePal;
     }
 
     private double GetClockCyclesPerFrame()
     {
         var frameRate = GetDisplayFrameRate();
-        var clockRate = _displayType == DisplayType.Ntsc ? MasterClockCrystalRateNtsc : MasterClockCrystalRatePal;
+        var clockRate = _displayType == VdpDisplayType.Ntsc ? MasterClockCrystalRateNtsc : MasterClockCrystalRatePal;
         return clockRate / frameRate;
     }
 
@@ -191,11 +191,5 @@ public class MasterSystemMk2 : IMasterSystemConsole
         _vdp.Reset();
         _controllers.Reset();
         _debugConsole.Reset();
-    }
-
-    private enum DisplayType
-    {
-        Ntsc,
-        Pal
     }
 }

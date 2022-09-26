@@ -1,4 +1,7 @@
-﻿namespace Kmse.Core.IO.Vdp;
+﻿using Kmse.Core.Utilities;
+using Kmse.Core.Z80.Interrupts;
+
+namespace Kmse.Core.IO.Vdp;
 
 /// <summary>
 ///     Emulate the video display processor
@@ -9,26 +12,42 @@
 /// </remarks>
 public class VdpPort : IVdpPort
 {
+    private readonly IZ80InterruptManagement _interruptManagement;
     private ushort _addressRegister;
     private byte _codeRegister;
     private bool _commandWordSecondByte;
     private byte[] _cRam;
-    private byte _hCounter;
+    private int _hCounter;
+    private int _latchedHCounter;
 
     private byte _readBuffer;
     private byte _vCounter;
+    private bool _secondVCount;
     private ushort _vdpCommandWord;
 
     private VdpStatusFlags _vdpStatus;
     private byte[] _vRam;
     private DataPortWriteMode _writeMode;
 
-    private VdpRegisters _registers;
+    private VdpDisplayType _displayType;
+
+    private byte _lineCounter;
+    private bool _isLineInterruptPending;
+
+    private readonly IVdpRegisters _registers;
+
+    public VdpPort(IVdpRegisters registers, IZ80InterruptManagement interruptManagement)
+    {
+        _interruptManagement = interruptManagement;
+        _registers = registers;
+    }
 
     public void Reset()
     {
         _hCounter = 0;
+        _latchedHCounter = 0;
         _vCounter = 0;
+        _secondVCount = false;
         _vdpCommandWord = 0x00;
         _commandWordSecondByte = false;
         _codeRegister = 0x00;
@@ -40,7 +59,7 @@ public class VdpPort : IVdpPort
         _vRam = new byte[100000];
         _cRam = new byte[32];
         _writeMode = DataPortWriteMode.VideoRam;
-        _registers = new VdpRegisters();
+        _registers.Reset();
     }
 
     public byte ReadPort(byte port)
@@ -50,7 +69,7 @@ public class VdpPort : IVdpPort
             < 0x40 => throw new InvalidOperationException(
                 $"Invalid operation reading from port at address {port} which is not a valid VDP port"),
             < 0x80 => HandleHvCounterReads(port),
-            < 0xBF => HandleVdpRead(port),
+            < 0xC0 => HandleVdpRead(port),
             _ => throw new InvalidOperationException(
                 $"Invalid operation reading from port at address {port} which is not a valid VDP port")
         };
@@ -78,12 +97,64 @@ public class VdpPort : IVdpPort
         }
     }
 
+    public void SetIoPortControl(byte value)
+    {
+        /*
+          Port $3F : I/O port control
+          D3 : Port B TH pin direction (1=input, 0=output)
+          D1 : Port A TH pin direction (1=input, 0=output)
+         */
+
+        if (Bitwise.IsSet(value, 1) || Bitwise.IsSet(value, 3))
+        {
+            // If TH of either port is set, then update the latched H counter 
+            _latchedHCounter = _hCounter;
+        }
+    }
+
     /// <summary>
     ///     Execute update of VDP based on the number of cycles that have been executed by the CPU
     /// </summary>
     /// <param name="cycles">Number of cycles executed since last update</param>
     public void Execute(int cycles)
     {
+        IncrementHCounter();
+
+        if (EndOfScanline())
+        {
+            ResetHCounter();
+            IncrementVCounter();
+
+            if (EndOfActiveFrame())
+            {
+                SetFlag(VdpStatusFlags.FrameInterruptPending);
+            }
+
+            if (EndOfFrame())
+            {
+                ResetVCounter();
+            }
+
+            UpdateLineCounter();
+        }
+
+
+        if (_registers.IsFrameInterruptEnabled() && IsFlagSet(VdpStatusFlags.FrameInterruptPending))
+        {
+            // Frame interrupt, so trigger maskable interrupt
+            _interruptManagement.SetMaskableInterrupt();
+        }
+
+        if (_registers.IsLineInterruptEnabled() && _isLineInterruptPending)
+        {
+            // Line interrupt, so trigger maskable interrupt
+            _interruptManagement.SetMaskableInterrupt();
+        }
+    }
+
+    public void SetDisplayType(VdpDisplayType displayType)
+    {
+        _displayType = displayType;
     }
 
     public VdpPortStatus GetStatus()
@@ -116,8 +187,8 @@ public class VdpPort : IVdpPort
     {
         // $40 -$7F : 
         // Reads from even addresses return the V counter.
-        // Reads from odd address return the H counter.
-        return port % 2 == 0 ? _vCounter : _hCounter;
+        // Reads from odd address return the latched H counter.
+        return port % 2 == 0 ? _vCounter : (byte)((_latchedHCounter >> 1) & 0xFF);
     }
 
     private byte HandleVdpRead(byte port)
@@ -139,6 +210,8 @@ public class VdpPort : IVdpPort
         ClearFlag(VdpStatusFlags.FrameInterruptPending);
         ClearFlag(VdpStatusFlags.SpriteCollision);
         ClearFlag(VdpStatusFlags.SpriteOverflow);
+
+        _isLineInterruptPending = false;
 
         return status;
     }
@@ -334,5 +407,105 @@ public class VdpPort : IVdpPort
     {
         var currentSetFlags = _vdpStatus & flags;
         return currentSetFlags == flags;
+    }
+
+    private void IncrementHCounter()
+    {
+        _hCounter++;
+    }
+
+    private void IncrementVCounter()
+    {
+        // These jumps change depending on mode and display type
+        _vCounter++;
+        if (_secondVCount)
+        {
+            return;
+        }
+
+        // Quick implementation, but this needs to be mapped using a better data structure to make this easier
+        // TODO: Support the other modes, this only works with PAL 192 lines for now
+        if (_vCounter == 0xF3)
+        {
+            _vCounter = 0xBA;
+            _secondVCount = true;
+        }
+    }
+
+    private void ResetHCounter()
+    {
+        _hCounter = 0;
+    }
+
+    private void ResetVCounter()
+    {
+        _vCounter = 0;
+        _secondVCount = false;
+    }
+
+    private bool EndOfScanline()
+    {
+        return _hCounter >= GetHorizontalLineCount();
+    }
+
+    private bool EndOfFrame()
+    {
+        // The increment will adjust to always make this end up at 0xFF as the last line in a complete frame (active and inactive)
+        return _vCounter == 0xFF;
+    }
+
+    private bool EndOfActiveFrame()
+    {
+        return _vCounter == GetActiveFrameSize();
+    }
+
+    private void UpdateLineCounter()
+    {
+        // Apply line counter when drawing active display
+        // Otherwise simply load from VDP Register 10 ready for the next active display screen
+
+        if (_vCounter < GetVerticalLineCount() + 1)
+        {
+            // Decrement the line counter and when zero, trigger a line interrupt
+            // This is used to notify applications when reach specific line in rendering
+            var underflow = _lineCounter == 0;
+
+            _lineCounter--;
+            if (!underflow)
+            {
+                return;
+            }
+
+            _isLineInterruptPending = true;
+        }
+
+        _lineCounter = _registers.GetLineCounterValue();
+    }
+
+    private int GetVerticalLineCount()
+    {
+        return _displayType switch
+        {
+            VdpDisplayType.Ntsc => 262,
+            VdpDisplayType.Pal => 313,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+    private int GetActiveFrameSize()
+    {
+        var currentMode = _registers.GetVideoMode();
+        return currentMode switch
+        {
+            VdpVideoMode.Mode4With224Lines => 224,
+            VdpVideoMode.Mode4With240Lines => 240,
+            _ => 192
+        };
+    }
+
+    private int GetHorizontalLineCount()
+    {
+        return 342;
+
     }
 }

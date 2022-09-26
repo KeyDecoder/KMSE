@@ -8,15 +8,20 @@ namespace Kmse.Core.IO.Vdp;
 /// <remarks>
 ///     https://www.smspower.org/uploads/Development/msvdp-20021112.txt - Registers section
 /// </remarks>
-public class VdpRegisters
+public class VdpRegisters : IVdpRegisters
 {
     // We store the VDP registers in byte form here since they all do slightly different things
     // Also some data is spread across multiple registers, so easier to store this in raw form and add methods 
     // to allow easier access to the data
     // Easier to test as well
-    private readonly byte[] _vdpRegisters;
+    private byte[] _vdpRegisters;
 
     public VdpRegisters()
+    {
+        _vdpRegisters = new byte[11];
+    }
+
+    public void Reset()
     {
         _vdpRegisters = new byte[11];
     }
@@ -36,12 +41,12 @@ public class VdpRegisters
         return _vdpRegisters.ToArray();
     }
 
-    public bool IsVerticalScrollingEnabledForColumns24to31()
+    public bool IsVerticalScrollingEnabledForColumns24To31()
     {
         return !Bitwise.IsSet(_vdpRegisters[0], 7);
     }
 
-    public bool IsHorizontalScrollingEnabledForRows0to1()
+    public bool IsHorizontalScrollingEnabledForRows0To1()
     {
         return !Bitwise.IsSet(_vdpRegisters[0], 6);
     }
@@ -169,6 +174,6 @@ public class VdpRegisters
 
     public byte GetLineCounterValue()
     {
-        return _vdpRegisters[9];
+        return _vdpRegisters[10];
     }
 }

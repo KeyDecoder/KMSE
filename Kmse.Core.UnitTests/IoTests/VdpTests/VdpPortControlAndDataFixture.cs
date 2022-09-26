@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.Z80.Interrupts;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace Kmse.Core.UnitTests.IoTests.VdpTests;
@@ -10,10 +12,14 @@ public class VdpPortControlAndDataFixture
     [SetUp]
     public void Setup()
     {
-        _vdpPort = new VdpPort();
+        _interruptManagement = Substitute.For<IZ80InterruptManagement>();
+        _vdpRegisters = Substitute.For<IVdpRegisters>();
+        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement);
         _vdpPort.Reset();
     }
 
+    private IZ80InterruptManagement _interruptManagement;
+    private IVdpRegisters _vdpRegisters;
     private VdpPort _vdpPort;
 
     [Test]
@@ -186,6 +192,31 @@ public class VdpPortControlAndDataFixture
         _vdpPort.WritePort(0xBF, 0x82);
 
         _vdpPort.GetStatus().WriteMode.Should().Be(DataPortWriteMode.VideoRam);
-        _vdpPort.GetStatus().VdpRegisters[2].Should().Be(0x3C);
+        _vdpRegisters.Received(1).SetRegister(2, 0x3C);
+    }
+
+    [Test]
+    [TestCase(0x08)]
+    [TestCase(0x02)]
+    [TestCase(0x0A)]
+    public void WhenReadingHCounterAndLatchedThenReturnsLastLatchedValue(byte controlValue)
+    {
+        _vdpPort.Reset();
+
+        // H Counter is 9 bits and since only returns top 8 bits, every two h counts appears to only increment the h counter by 1 when read via port
+
+        _vdpPort.Execute(1);
+        _vdpPort.Execute(1);
+
+        _vdpPort.SetIoPortControl(controlValue);
+        var currentCounter = _vdpPort.ReadPort(0x7F);
+
+        _vdpPort.Execute(1);
+        _vdpPort.Execute(1);
+        var status = _vdpPort.GetStatus();
+
+        // Last latch was after first execute, so current counter is 1 and internally h counter is 4
+        currentCounter.Should().Be(1);
+        status.HCounter.Should().Be(4);
     }
 }
