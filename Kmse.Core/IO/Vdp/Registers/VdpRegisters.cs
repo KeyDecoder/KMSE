@@ -1,6 +1,7 @@
-﻿using Kmse.Core.Utilities;
+﻿using Kmse.Core.IO.Vdp.Model;
+using Kmse.Core.Utilities;
 
-namespace Kmse.Core.IO.Vdp;
+namespace Kmse.Core.IO.Vdp.Registers;
 
 /// <summary>
 ///     Helper class for handling VDP registers

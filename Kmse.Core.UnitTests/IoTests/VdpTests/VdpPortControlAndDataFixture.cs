@@ -1,5 +1,9 @@
 ﻿using FluentAssertions;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Counters;
+using Kmse.Core.IO.Vdp.Model;
+using Kmse.Core.IO.Vdp.Ram;
+using Kmse.Core.IO.Vdp.Registers;
 using Kmse.Core.Z80.Interrupts;
 using NSubstitute;
 using NUnit.Framework;
@@ -14,12 +18,18 @@ public class VdpPortControlAndDataFixture
     {
         _interruptManagement = Substitute.For<IZ80InterruptManagement>();
         _vdpRegisters = Substitute.For<IVdpRegisters>();
-        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement);
+        _ram = new VdpRam();
+        _verticalCounter = new VdpVerticalCounter(_vdpRegisters);
+        _horizontalCounter = new VdpHorizontalCounter();
+        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter);
         _vdpPort.Reset();
     }
 
     private IZ80InterruptManagement _interruptManagement;
     private IVdpRegisters _vdpRegisters;
+    private IVdpRam _ram;
+    private IVdpVerticalCounter _verticalCounter;
+    private IVdpHorizontalCounter _horizontalCounter;
     private VdpPort _vdpPort;
 
     [Test]

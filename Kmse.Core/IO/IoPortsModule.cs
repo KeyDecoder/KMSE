@@ -3,6 +3,9 @@ using Kmse.Core.IO.Controllers;
 using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Counters;
+using Kmse.Core.IO.Vdp.Ram;
+using Kmse.Core.IO.Vdp.Registers;
 
 namespace Kmse.Core.IO;
 
@@ -16,5 +19,8 @@ public class IoPortsModule : Module
         builder.RegisterType<SoundPort>().As<ISoundPort>().InstancePerLifetimeScope();
         builder.RegisterType<DebugConsolePort>().As<IDebugConsolePort>().InstancePerLifetimeScope();
         builder.RegisterType<VdpRegisters>().As<IVdpRegisters>().InstancePerLifetimeScope();
+        builder.RegisterType<VdpRam>().As<IVdpRam>().InstancePerLifetimeScope();
+        builder.RegisterType<VdpVerticalCounter>().As<IVdpVerticalCounter>().InstancePerLifetimeScope();
+        builder.RegisterType<VdpHorizontalCounter>().As<IVdpHorizontalCounter>().InstancePerLifetimeScope();
     }
 }

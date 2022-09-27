@@ -1,4 +1,6 @@
-﻿namespace Kmse.Core.IO.Vdp;
+﻿using Kmse.Core.IO.Vdp.Model;
+
+namespace Kmse.Core.IO.Vdp;
 
 public interface IVdpPort
 {

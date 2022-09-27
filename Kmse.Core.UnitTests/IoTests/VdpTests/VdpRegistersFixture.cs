@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Model;
+using Kmse.Core.IO.Vdp.Registers;
 using NUnit.Framework;
 
 namespace Kmse.Core.UnitTests.IoTests.VdpTests;

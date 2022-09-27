@@ -5,6 +5,7 @@ using Kmse.Core.IO.Controllers;
 using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
 using Kmse.Core.Z80.Interrupts;

@@ -1,4 +1,4 @@
-﻿namespace Kmse.Core.IO.Vdp;
+﻿namespace Kmse.Core.IO.Vdp.Model;
 
 public enum VdpDisplayType
 {
