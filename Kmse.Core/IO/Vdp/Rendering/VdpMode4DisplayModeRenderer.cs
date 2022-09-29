@@ -1,10 +1,4 @@
 ﻿using Kmse.Core.IO.Vdp.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using Kmse.Core.IO.Vdp.Counters;
 using Kmse.Core.IO.Vdp.Flags;
 using Kmse.Core.IO.Vdp.Ram;
@@ -40,8 +34,14 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
         public void ResetBuffer()
         {
-            // TODO: Reset with backdrop color
-            _pixels.Span.Fill(0xFF);
+            var colours = GetColor(_registers.GetOverscanBackdropColour());
+            for (var i = 0; i < _pixels.Span.Length; i += 4)
+            {
+                _pixels.Span[i] = colours.blue;
+                _pixels.Span[i + 1] = colours.green;
+                _pixels.Span[i + 2] = colours.red;
+                _pixels.Span[i + 3] = colours.alpha;
+            }
         }
 
         public void RenderLine()
@@ -51,8 +51,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
         }
 
         public void UpdateDisplay()
-        {
-            // TODO: If mode changes, pass this in so display can change resolution
+        {            
             _displayUpdater.UpdateDisplay(_pixels.Span);
         }
 
@@ -169,15 +168,52 @@ namespace Kmse.Core.IO.Vdp.Rendering
             {
                 var sprite = sprites[spriteNumber];
 
-                // TODO: Get sprite pattern and draw it properly
-                // Just draw a blob for now
+                var patternAddress = _registers.GetSpritePatternGeneratorBaseAddressOffset() +
+                                     (sprite.PatternIndex * 32);
+
+                //Each pattern uses 32 bytes.The first four bytes are bitplanes 0 through 3
+                //for line 0, the next four bytes are bitplanes 0 through 3 for line 1, etc.,
+                //up to line 7.
+
+                // Get offset of 4 bytes for this line
+                var patternLineAddress = (ushort)(patternAddress + ((_verticalCounter.Counter - sprite.Y) * 4));
+                var colourAddresses = new byte[spriteWidth];
+
+                // This is not correct
+                for (var i = 0; i < spriteWidth; i+=2)
+                {
+                    // Each byte is data for 2 pixels which can select up to 15 colours from palette
+                    var data = _ram.ReadRawVideoRam(patternLineAddress);
+                    colourAddresses[i] = (byte)(data & 0x0F);
+                    colourAddresses[i+1] = (byte)((data & 0xF0) >> 4);
+
+                    patternLineAddress++;
+                }
+
                 for (var i = 0; i < spriteWidth; i++)
                 {
+                    var xCoordinate = sprite.X + i;
+                    if (xCoordinate >= 256)
+                    {
+                        // Sprite is partially off screen, so don't draw the rest of the line
+                        break;
+                    }
+
+                    // Sprites always use the second palette only so we skip the first 16
+                    if (colourAddresses[i] == 0)
+                    {
+                        // Address is 0 which means it is transparent, so don't write anything
+                        continue;
+                    }
+
+                    var colourAddress = (ushort)(colourAddresses[i] + 16);
+                    var colours = GetColor(colourAddress);
+
                     var index = GetPixelIndex(sprite.X + i, _verticalCounter.Counter);
-                    _pixels.Span[index + 0] = 0x00;
-                    _pixels.Span[index + 1] = 0x00;
-                    _pixels.Span[index + 2] = 0x00;
-                    _pixels.Span[index + 3] = 0xFF;
+                    _pixels.Span[index + 0] = colours.blue;
+                    _pixels.Span[index + 1] = colours.green;
+                    _pixels.Span[index + 2] = colours.red;
+                    _pixels.Span[index + 3] = colours.alpha;
                 }
             }
         }
@@ -185,6 +221,32 @@ namespace Kmse.Core.IO.Vdp.Rendering
         private void RenderBackground()
         {
 
+        }
+
+        private (byte blue, byte green, byte red, byte alpha) GetColor(ushort colourAddress)
+        {
+            var color = _ram.ReadRawColourRam(colourAddress);
+            var alpha = (byte)0xFF;
+
+            // --BBGGRR
+            var red = (byte)(color & 0x03);
+            var green = (byte)((color >> 2) & 0x03);
+            var blue = (byte)((color >> 4) & 0x03);
+
+            return (ConvertPaletteToColourByte(blue), ConvertPaletteToColourByte(green),
+                ConvertPaletteToColourByte(red), alpha);
+        }
+
+        private byte ConvertPaletteToColourByte(byte value)
+        {
+            return value switch
+            {
+                0 => 0,
+                1 => 85,
+                2 => 170,
+                3 => 255,
+                _ => throw new InvalidOperationException($"Colour value {value:X2} is not supported")
+            };
         }
     }
 }
