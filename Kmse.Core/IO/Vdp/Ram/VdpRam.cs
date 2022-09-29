@@ -17,7 +17,7 @@ public class VdpRam : IVdpRam
 
         // Assume 16K of video RAM and 32 bytes of color RAM 
         // https://segaretro.org/Sega_Master_System/Technical_specifications
-        _vRam = new byte[100000];
+        _vRam = new byte[0x4000];
         _cRam = new byte[32];
 
         WriteMode = DataPortWriteMode.VideoRam;
@@ -137,5 +137,15 @@ public class VdpRam : IVdpRam
     {
         // Only 32 bytes in size, so ignore any higher bits which essentially makes this wrap at 31
         _cRam[address & 0x1F] = value;
+    }
+
+    public byte ReadRawVideoRam(ushort address)
+    {
+        return _vRam[address];
+    }
+
+    public byte ReadRawColourRam(ushort address)
+    {
+        return _cRam[address];
     }
 }

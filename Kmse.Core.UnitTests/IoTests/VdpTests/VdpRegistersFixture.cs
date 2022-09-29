@@ -71,6 +71,41 @@ public class VdpRegistersFixture
     }
 
     [Test]
+    public void WhenSettingDefault()
+    {
+        _registers.SetRegister(0x00, 0x36);
+        _registers.SetRegister(0x01, 0x80);
+        _registers.SetRegister(0x02, 0xFF);
+        _registers.SetRegister(0x03, 0xFF);
+        _registers.SetRegister(0x04, 0xFF);
+        _registers.SetRegister(0x05, 0xFF);
+        _registers.SetRegister(0x06, 0xFB);
+        _registers.SetRegister(0x07, 0x00);
+        _registers.SetRegister(0x08, 0x00);
+        _registers.SetRegister(0x09, 0x00);
+        _registers.SetRegister(0x0A, 0xFF);
+
+        _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeTrue();
+        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeTrue();
+        _registers.MaskColumn0WithOverscanColor().Should().BeTrue();
+        _registers.IsLineInterruptEnabled().Should().BeTrue();
+        _registers.ShiftSpritesLeftBy8Pixels().Should().BeFalse();
+        _registers.GetVideoMode().Should().Be(VdpVideoMode.Mode4);
+        _registers.IsNoSyncAndMonochrome().Should().BeFalse();
+
+        _registers.IsDisplayVisible().Should().BeFalse();
+        _registers.IsFrameInterruptEnabled().Should().BeFalse();
+        _registers.IsSprites16By16().Should().BeFalse();
+        _registers.IsSprites8By16().Should().BeFalse();
+        _registers.IsSpritePixelsDoubledInSize().Should().BeFalse();
+
+        _registers.GetNameTableBaseAddressOffset().Should().Be(0x3800);
+        _registers.GetSpriteAttributeTableBaseAddressOffset().Should().Be(0x3F00);
+        _registers.GetSpritePatternGeneratorBaseAddressOffset().Should().Be(0x000);
+        _registers.GetOverscanBackdropColour().Should().Be(0x00);
+    }
+
+    [Test]
     public void WhenSettingRegister8ThenBackgroundXScrollValueIsUpdated()
     {
         _registers.SetRegister(8, 0x04);

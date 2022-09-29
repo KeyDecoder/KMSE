@@ -6,9 +6,8 @@ public interface IVdpHorizontalCounter
     int LatchedCounter { get; }
     void UpdateLatchedCounter();
     byte LatchedCounterAsByte();
-    void Increment();
+    void Increment(int cycles);
     void Reset();
     void ResetLine();
     bool EndOfScanline();
-    int GetHorizontalLineCount();
 }

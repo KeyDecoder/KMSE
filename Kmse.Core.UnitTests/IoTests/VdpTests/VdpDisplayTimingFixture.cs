@@ -1,9 +1,13 @@
 ﻿using FluentAssertions;
+using Kmse.Core.IO.Logging;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Control;
 using Kmse.Core.IO.Vdp.Counters;
+using Kmse.Core.IO.Vdp.Flags;
 using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
+using Kmse.Core.IO.Vdp.Rendering;
 using Kmse.Core.Z80.Interrupts;
 using NSubstitute;
 using NUnit.Framework;
@@ -18,10 +22,15 @@ public class VdpDisplayTimingFixture
     {
         _interruptManagement = Substitute.For<IZ80InterruptManagement>();
         _vdpRegisters = Substitute.For<IVdpRegisters>();
+        _vdpRegisters.GetVideoMode().Returns(VdpVideoMode.Mode4);
         _ram = new VdpRam();
         _verticalCounter = new VdpVerticalCounter(_vdpRegisters);
         _horizontalCounter = new VdpHorizontalCounter();
-        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter);
+        _controlPortManager = new VdpControlPortManager(_ram, _vdpRegisters);
+        _flags = new VdpFlags();
+        _displayUpdater = new TestDisplayUpdater();
+        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags);
+        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter, _renderer, Substitute.For<IIoPortLogger>(), _flags, _controlPortManager);
         _vdpPort.Reset();
     }
 
@@ -30,6 +39,10 @@ public class VdpDisplayTimingFixture
     private IVdpRam _ram;
     private IVdpVerticalCounter _verticalCounter;
     private IVdpHorizontalCounter _horizontalCounter;
+    private IVdpControlPortManager _controlPortManager;
+    private IVdpFlags _flags;
+    private IVdpDisplayModeRenderer _renderer;
+    private TestDisplayUpdater _displayUpdater;
     private VdpPort _vdpPort;
 
     [Test]
@@ -43,7 +56,7 @@ public class VdpDisplayTimingFixture
     [Test]
     public void WhenExecutingAFullLineVCounterIsUpdated()
     {
-        for (var i = 0; i < 342; i++)
+        for (var i = 0; i < 228; i++)
         {
             _vdpPort.Execute(1);
         }
@@ -60,7 +73,7 @@ public class VdpDisplayTimingFixture
         _vdpPort.SetDisplayType(VdpDisplayType.Pal);
         for (var y = 0; y < 312; y++)
         {
-            for (var i = 0; i < 342; i++)
+            for (var i = 0; i < 228; i++)
             {
                 _vdpPort.Execute(1);
             }
@@ -80,12 +93,21 @@ public class VdpDisplayTimingFixture
         _vdpPort.SetDisplayType(VdpDisplayType.Pal);
         for (var y = 0; y < 192; y++)
         {
-            for (var i = 0; i < 342; i++)
+            for (var i = 0; i < 228; i++)
             {
                 _vdpPort.Execute(1);
             }
         }
 
         _interruptManagement.Received(1).SetMaskableInterrupt();
+    }
+
+    private class TestDisplayUpdater : IVdpDisplayUpdater
+    {
+        public bool GotRenderCall { get; private set; }
+        public void UpdateDisplay(Span<byte> frame)
+        {
+            GotRenderCall = true;
+        }
     }
 }

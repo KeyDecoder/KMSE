@@ -20,4 +20,6 @@ public interface IVdpRam
     void ReadFromVideoRamIntoBuffer();
     void WriteToVideoRam(ushort address, byte value);
     void WriteToColourRam(ushort address, byte value);
+    byte ReadRawVideoRam(ushort address);
+    byte ReadRawColourRam(ushort address);
 }

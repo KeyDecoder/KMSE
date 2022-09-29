@@ -1,9 +1,13 @@
 ﻿using FluentAssertions;
+using Kmse.Core.IO.Logging;
 using Kmse.Core.IO.Vdp;
+using Kmse.Core.IO.Vdp.Control;
 using Kmse.Core.IO.Vdp.Counters;
+using Kmse.Core.IO.Vdp.Flags;
 using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
+using Kmse.Core.IO.Vdp.Rendering;
 using Kmse.Core.Z80.Interrupts;
 using NSubstitute;
 using NUnit.Framework;
@@ -21,7 +25,11 @@ public class VdpPortControlAndDataFixture
         _ram = new VdpRam();
         _verticalCounter = new VdpVerticalCounter(_vdpRegisters);
         _horizontalCounter = new VdpHorizontalCounter();
-        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter);
+        _controlPortManager = new VdpControlPortManager(_ram, _vdpRegisters);
+        _flags = new VdpFlags();
+        _displayUpdater = Substitute.For<IVdpDisplayUpdater>();
+        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags);
+        _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter, _renderer, Substitute.For<IIoPortLogger>(), _flags, _controlPortManager);
         _vdpPort.Reset();
     }
 
@@ -30,6 +38,10 @@ public class VdpPortControlAndDataFixture
     private IVdpRam _ram;
     private IVdpVerticalCounter _verticalCounter;
     private IVdpHorizontalCounter _horizontalCounter;
+    private IVdpControlPortManager _controlPortManager;
+    private IVdpFlags _flags;
+    private IVdpDisplayUpdater _displayUpdater;
+    private IVdpDisplayModeRenderer _renderer;
     private VdpPort _vdpPort;
 
     [Test]

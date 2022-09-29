@@ -12,12 +12,12 @@ public class VdpHorizontalCounter : IVdpHorizontalCounter
 
     public byte LatchedCounterAsByte()
     {
-        return (byte)(LatchedCounter >> 1 & 0xFF);
+        return (byte)((LatchedCounter >> 1) & 0xFF);
     }
 
-    public void Increment()
+    public void Increment(int cycles)
     {
-        Counter++;
+        Counter += cycles;
     }
 
     public void Reset()
@@ -28,16 +28,14 @@ public class VdpHorizontalCounter : IVdpHorizontalCounter
 
     public void ResetLine()
     {
-        Counter = 0;
+        // Since cycles can go over 228, we add cycles from last line to next line counter
+        Counter -= 228;
     }
 
     public bool EndOfScanline()
     {
-        return Counter >= GetHorizontalLineCount();
-    }
-
-    public int GetHorizontalLineCount()
-    {
-        return 342;
+        // Z80 cycles per VDP cycle is CPU divided by 3 and renders 1 pixel per 2 cycles
+        // Z80 cycles per scanline = Z80 cycles per VDP cycle * VDP cycles per pixel * pixels per scanline = 1/3 * 2 * 342 = 228 (exactly)
+        return Counter >= 228;
     }
 }

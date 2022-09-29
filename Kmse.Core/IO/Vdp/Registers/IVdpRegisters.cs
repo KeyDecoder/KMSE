@@ -18,12 +18,18 @@ public interface IVdpRegisters
     bool IsFrameInterruptEnabled();
     bool IsSprites16By16();
     bool IsSprites8By16();
+    int GetSpriteWidth();
+    int GetSpriteHeight();
     bool IsSpritePixelsDoubledInSize();
     ushort GetNameTableBaseAddressOffset();
     ushort GetSpriteAttributeTableBaseAddressOffset();
     ushort GetSpritePatternGeneratorBaseAddressOffset();
     byte GetOverscanBackdropColour();
     byte GetBackgroundXScroll();
+    byte GetBackgroundXStartingColumn();
+    byte GetBackgroundXFineScrollValue();
     byte GetBackgroundYScroll();
+
+
     byte GetLineCounterValue();
 }

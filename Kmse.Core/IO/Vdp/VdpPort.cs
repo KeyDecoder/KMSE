@@ -1,7 +1,11 @@
-﻿using Kmse.Core.IO.Vdp.Counters;
+﻿using Kmse.Core.IO.Logging;
+using Kmse.Core.IO.Vdp.Control;
+using Kmse.Core.IO.Vdp.Counters;
+using Kmse.Core.IO.Vdp.Flags;
 using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
+using Kmse.Core.IO.Vdp.Rendering;
 using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Interrupts;
 
@@ -17,36 +21,40 @@ namespace Kmse.Core.IO.Vdp;
 public class VdpPort : IVdpPort
 {
     private readonly IVdpHorizontalCounter _horizontalCounter;
+    private readonly IIoPortLogger _ioPortLogger;
+    private readonly IVdpFlags _flags;
+    private readonly IVdpControlPortManager _controlPortManager;
+    private readonly IVdpDisplayModeRenderer _renderer;
     private readonly IZ80InterruptManagement _interruptManagement;
     private readonly IVdpRam _ram;
 
     private readonly IVdpRegisters _registers;
     private readonly IVdpVerticalCounter _verticalCounter;
-    private byte _codeRegister;
-    private bool _commandWordSecondByte;
-    private ushort _vdpCommandWord;
-    private VdpStatusFlags _vdpStatus;
 
     public VdpPort(IVdpRegisters registers, IZ80InterruptManagement interruptManagement, IVdpRam ram,
-        IVdpVerticalCounter verticalCounter, IVdpHorizontalCounter horizontalCounter)
+        IVdpVerticalCounter verticalCounter, IVdpHorizontalCounter horizontalCounter, IVdpDisplayModeRenderer renderer, IIoPortLogger ioPortLogger,
+        IVdpFlags flags, IVdpControlPortManager controlPortManager)
     {
         _interruptManagement = interruptManagement;
         _ram = ram;
         _verticalCounter = verticalCounter;
         _horizontalCounter = horizontalCounter;
+        _ioPortLogger = ioPortLogger;
+        _flags = flags;
+        _controlPortManager = controlPortManager;
+        _renderer = renderer;
         _registers = registers;
     }
 
     public void Reset()
     {
-        _vdpCommandWord = 0x00;
-        _commandWordSecondByte = false;
-        _codeRegister = 0x00;
-        _vdpStatus = 0x00;
+        _controlPortManager.Reset();
         _registers.Reset();
         _ram.Reset();
         _verticalCounter.Reset();
         _horizontalCounter.Reset();
+        _flags.Reset();
+        _renderer.Reset();
     }
 
     public byte ReadPort(byte port)
@@ -77,12 +85,12 @@ public class VdpPort : IVdpPort
         if (port % 2 == 0)
         {
             // Command word writing is reset when data port is written
-            _commandWordSecondByte = false;
+            _controlPortManager.ResetControlByte();
             _ram.WriteData(value);
         }
         else
         {
-            WriteToVdpControlPort(value);
+            _controlPortManager.WriteToVdpControlPort(value);
         }
     }
 
@@ -101,45 +109,6 @@ public class VdpPort : IVdpPort
         }
     }
 
-    /// <summary>
-    ///     Execute update of VDP based on the number of cycles that have been executed by the CPU
-    /// </summary>
-    /// <param name="cycles">Number of cycles executed since last update</param>
-    public void Execute(int cycles)
-    {
-        _horizontalCounter.Increment();
-
-        if (_horizontalCounter.EndOfScanline())
-        {
-            _horizontalCounter.ResetLine();
-            _verticalCounter.Increment();
-
-            if (_verticalCounter.EndOfActiveFrame())
-            {
-                SetFlag(VdpStatusFlags.FrameInterruptPending);
-            }
-
-            if (_verticalCounter.EndOfFrame())
-            {
-                _verticalCounter.ResetFrame();
-            }
-
-            _verticalCounter.UpdateLineCounter();
-        }
-
-        if (_registers.IsFrameInterruptEnabled() && IsFlagSet(VdpStatusFlags.FrameInterruptPending))
-        {
-            // Frame interrupt, so trigger maskable interrupt
-            _interruptManagement.SetMaskableInterrupt();
-        }
-
-        if (_registers.IsLineInterruptEnabled() && _verticalCounter.IsLineInterruptPending)
-        {
-            // Line interrupt, so trigger maskable interrupt
-            _interruptManagement.SetMaskableInterrupt();
-        }
-    }
-
     public void SetDisplayType(VdpDisplayType displayType)
     {
         _verticalCounter.SetDisplayType(displayType);
@@ -151,9 +120,9 @@ public class VdpPort : IVdpPort
         {
             HCounter = _horizontalCounter.Counter,
             VCounter = _verticalCounter.Counter,
-            CommandWord = _vdpCommandWord,
-            StatusFlags = _vdpStatus,
-            CodeRegister = _codeRegister,
+            CommandWord = _controlPortManager.CommandWord,
+            StatusFlags = _flags.Flags,
+            CodeRegister = _controlPortManager.CodeRegister,
             AddressRegister = _ram.AddressRegister,
             VdpRegisters = _registers.DumpRegisters(),
             ReadBuffer = _ram.GetReadBufferValue(),
@@ -171,6 +140,61 @@ public class VdpPort : IVdpPort
         return _ram.DumpColourRam();
     }
 
+    /// <summary>
+    ///     Execute update of VDP based on the number of cycles that have been executed by the CPU
+    /// </summary>
+    /// <param name="cycles">Number of cycles executed since last update</param>
+    public void Execute(int cycles)
+    {
+        // TODO: This needs more work to keep the CPU execution and VDP execution in sync to ensure 
+        // always renders a single frame as expected
+        // Until the more VDP emulation is done, this is sufficient for now
+        _horizontalCounter.Increment(cycles);
+
+        if (_horizontalCounter.EndOfScanline())
+        {
+            _horizontalCounter.ResetLine();
+
+            // At the end of each line, if we are inside the active frame, render the entire line
+            // This is easier since we can render all the pixels since the H counter is not incremented with a consistent value due to cycle count changes
+            if (_verticalCounter.IsInsideActiveFrame())
+            {
+                // TODO: Change renderer based on video mode
+                _renderer.RenderLine();
+            }
+
+            // Since we use the counter in rendering, we don't increment the V Counter until after we have rendered the current line
+            _verticalCounter.Increment();
+
+            if (_verticalCounter.EndOfActiveFrame())
+            {
+                _renderer.UpdateDisplay();
+                _flags.SetFlag(VdpStatusFlags.FrameInterruptPending);
+            }
+
+            if (_verticalCounter.EndOfFrame())
+            {
+                // Clear and reset
+                _renderer.ResetBuffer();
+                _verticalCounter.ResetFrame();
+            }
+
+            _verticalCounter.UpdateLineCounter();
+        }
+
+        if (_registers.IsFrameInterruptEnabled() && _flags.IsFlagSet(VdpStatusFlags.FrameInterruptPending))
+        {
+            // Frame interrupt, so trigger maskable interrupt
+            _interruptManagement.SetMaskableInterrupt();
+        }
+
+        if (_registers.IsLineInterruptEnabled() && _verticalCounter.IsLineInterruptPending)
+        {
+            // Line interrupt, so trigger maskable interrupt
+            _interruptManagement.SetMaskableInterrupt();
+        }
+    }
+
     private byte HandleHvCounterReads(byte port)
     {
         // $40 -$7F : 
@@ -186,144 +210,18 @@ public class VdpPort : IVdpPort
         // Reads from odd address return the VDP status flags.
 
         // Command word writing is reset when control port or data port read
-        _commandWordSecondByte = false;
+        _controlPortManager.ResetControlByte();
         return port % 2 == 0 ? _ram.ReadData() : ReadVdpStatus();
     }
 
     private byte ReadVdpStatus()
     {
-        var status = (byte)_vdpStatus;
+        var status = (byte)_flags.Flags;
 
         // Clear all the flags when the status is read
-        ClearFlag(VdpStatusFlags.FrameInterruptPending);
-        ClearFlag(VdpStatusFlags.SpriteCollision);
-        ClearFlag(VdpStatusFlags.SpriteOverflow);
-
+        _flags.ClearAllFlags();
         _verticalCounter.ClearLineInterruptPending();
 
         return status;
-    }
-
-    private void WriteToVdpControlPort(byte value)
-    {
-        // Command word structure
-        // This is two bytes but written into two I/O writes
-        // So we keep track of if we have written the first or second byte yet
-        //MSB LSB
-        //CD1 CD0 A13 A12 A11 A10 A09 A08    Second byte written
-        //A07 A06 A05 A04 A03 A02 A01 A00    First byte written
-
-        if (!_commandWordSecondByte)
-        {
-            // Keep upper 8 bits and set lower
-            // We maintain the upper 8 bits while writing rather than clearing (not sure why?)
-            _vdpCommandWord &= 0xFF00;
-            _vdpCommandWord |= value;
-
-            //When the first byte is written, the lower 8 bits of the address register are updated
-            // Clear lower 8 bits and set from first byte of command word but preserve the upper 6 bits until the next write
-            _ram.UpdateAddressRegisterLowerByte(value);
-        }
-        else
-        {
-            // Clear top 8 bits and set lower to add to first write
-            _vdpCommandWord &= 0x00FF;
-            _vdpCommandWord |= (ushort)(value << 8);
-
-            //When the second byte is written, the upper 6 bits of the address
-            //register and the code register are updated
-
-            // Add the bottom 6 bits of the second command word byte to the address register
-            var upperAddressValue = (byte)(value & 0x3F);
-            _ram.UpdateAddressRegisterUpperByte(upperAddressValue);
-
-            // Set code register to value in top 2 bits of second command word byte
-            _codeRegister = (byte)((value & 0xC0) >> 6);
-
-            ProcessCodeRegisterChange();
-        }
-
-        _commandWordSecondByte = !_commandWordSecondByte;
-    }
-
-    private void ProcessCodeRegisterChange()
-    {
-        switch (_codeRegister)
-        {
-            case 0:
-            {
-                _ram.ReadFromVideoRamIntoBuffer();
-                _ram.SetWriteModeToVideoRam();
-            }
-                break;
-            case 1:
-            {
-                // Writes to the data port go to VRAM.
-                _ram.SetWriteModeToVideoRam();
-            }
-                break;
-            case 2:
-            {
-                // VDP register write
-                // Writes to the data port go to VRAM.
-                _ram.SetWriteModeToVideoRam();
-
-                // MSB LSB
-                // 1   0 ?   ? R03 R02 R01 R00 Second byte written
-                // D07 D06 D05 D04 D03 D02 D01 D00    First byte written
-                // Rxx: VDP register number
-                // Dxx : VDP register data
-                var registerNumber = (byte)((_vdpCommandWord & 0x0F00) >> 8);
-                var registerData = (byte)(_vdpCommandWord & 0x00FF);
-                ProcessVdpRegisterWrite(registerNumber, registerData);
-            }
-                break;
-            case 3:
-            {
-                // Writes to the data port go to CRAM.
-                _ram.SetWriteModeToColourRam();
-            }
-                break;
-            default: throw new InvalidOperationException($"VDP code register value '{_codeRegister}' is not valid");
-        }
-    }
-
-    private void ProcessVdpRegisterWrite(byte registerNumber, byte registerData)
-    {
-        if (registerNumber > 11)
-        {
-            // There are only 11 registers, values 11 through 15 have no effect when written to.
-            return;
-        }
-
-        _registers.SetRegister(registerNumber, registerData);
-    }
-
-    private void SetFlag(VdpStatusFlags flags)
-    {
-        _vdpStatus |= flags;
-    }
-
-    private void ClearFlag(VdpStatusFlags flags)
-    {
-        _vdpStatus &= ~flags;
-    }
-
-    private void SetClearFlagConditional(VdpStatusFlags flags, bool condition)
-    {
-        if (condition)
-        {
-            SetFlag(flags);
-        }
-        else
-        {
-            ClearFlag(flags);
-        }
-    }
-
-    private bool IsFlagSet(VdpStatusFlags flags)
-    {
-        var currentSetFlags = _vdpStatus & flags;
-        return currentSetFlags == flags;
     }
 }

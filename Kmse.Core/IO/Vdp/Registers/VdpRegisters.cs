@@ -25,6 +25,22 @@ public class VdpRegisters : IVdpRegisters
     public void Reset()
     {
         _vdpRegisters = new byte[11];
+
+        // We put this into the VdpRegisters class but potentially in future if this default can be changed by user config
+        // it would need to be passed into here or set in VdpPort instead
+
+        // Start in Mode 4 by default
+        SetRegister(0x00, 0x36);
+        SetRegister(0x01, 0x80);
+        SetRegister(0x02, 0xFF);
+        SetRegister(0x03, 0xFF);
+        SetRegister(0x04, 0xFF);
+        SetRegister(0x05, 0xFF);
+        SetRegister(0x06, 0xFB);
+        SetRegister(0x07, 0x00);
+        SetRegister(0x08, 0x00);
+        SetRegister(0x09, 0x00);
+        SetRegister(0x0A, 0xFF);
     }
 
     public void SetRegister(int index, byte value)
@@ -112,6 +128,18 @@ public class VdpRegisters : IVdpRegisters
         return Bitwise.IsSet(_vdpRegisters[1], 5);
     }
 
+    public int GetSpriteWidth()
+    {
+        var initialWidth = IsSprites16By16() ? 16 : 8;
+        return IsSpritePixelsDoubledInSize() ? initialWidth * 2 : initialWidth;
+    }
+
+    public int GetSpriteHeight()
+    {
+        var initialHeight = (IsSprites16By16() || IsSprites8By16()) ? 16 : 8;
+        return IsSpritePixelsDoubledInSize() ? initialHeight * 2 : initialHeight;
+    }
+
     public bool IsSprites16By16()
     {
         return Bitwise.IsSet(_vdpRegisters[1], 1);
@@ -166,6 +194,18 @@ public class VdpRegisters : IVdpRegisters
     public byte GetBackgroundXScroll()
     {
         return _vdpRegisters[8];
+    }
+
+    public byte GetBackgroundXStartingColumn()
+    {
+        // The upper five bits are the starting column
+        return (byte)((GetBackgroundXScroll() & 0xF8) >> 3);
+    }
+
+    public byte GetBackgroundXFineScrollValue()
+    {
+        // The lower three bits are the fine scroll value
+        return (byte)(GetBackgroundXScroll() & 0x07);
     }
 
     public byte GetBackgroundYScroll()

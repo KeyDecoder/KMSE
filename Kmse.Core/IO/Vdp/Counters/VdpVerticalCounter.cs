@@ -7,6 +7,7 @@ public class VdpVerticalCounter : IVdpVerticalCounter
 {
     private readonly IVdpRegisters _registers;
     private bool _secondVCount;
+    private int _internalCounter;
     private VdpDisplayType _displayType;
     public byte Counter { get; private set; }
     public byte LineCounter { get; private set; }
@@ -64,7 +65,12 @@ public class VdpVerticalCounter : IVdpVerticalCounter
 
     public bool EndOfActiveFrame()
     {
-        return Counter == GetActiveFrameSize();
+        return !_secondVCount && Counter == GetActiveFrameSize();
+    }
+
+    public bool IsInsideActiveFrame()
+    {
+        return Counter < GetActiveFrameSize();
     }
 
     public void UpdateLineCounter()
@@ -102,6 +108,7 @@ public class VdpVerticalCounter : IVdpVerticalCounter
 
     private int GetActiveFrameSize()
     {
+        // TODO: If inside active display then this should use cached value, only use video mode from registers when inside inactive display
         var currentMode = _registers.GetVideoMode();
         return currentMode switch
         {

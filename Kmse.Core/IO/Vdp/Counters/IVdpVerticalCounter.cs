@@ -14,6 +14,7 @@ public interface IVdpVerticalCounter
     void Increment();
     bool EndOfFrame();
     bool EndOfActiveFrame();
+    bool IsInsideActiveFrame();
     void UpdateLineCounter();
     int GetVerticalLineCount();
 }
