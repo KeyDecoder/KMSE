@@ -20,9 +20,12 @@ public class ControllerPort : IControllerPort
 
     public void Reset()
     {
-        _ioPortAb = 0x00;
-        // Reset and bit 5 always set
-        _ioPortBMisc = 0x30;
+        // In the case of a controller, a pressed button returns 0, otherwise 1.
+        // Default to no buttons pressed
+
+        _ioPortAb = 0xFF;
+        // Reset and bit 5 always set as well
+        _ioPortBMisc = 0xFF;
         _ioPortControl = 0x00;
     }
 
@@ -45,6 +48,12 @@ public class ControllerPort : IControllerPort
             Reads from odd address return the I / O port B/ misc.register.
         */
 
+        // When bit 2 is set, all ports at $C0 through $FF return $FF on a SMS 2, Game Gear, and Genesis
+        if (Bitwise.IsSet(_ioPortControl, 2))
+        {
+            return 0xFF;
+        }
+
         return port % 2 == 0 ? _ioPortAb : _ioPortBMisc;
     }
 
@@ -65,12 +74,12 @@ public class ControllerPort : IControllerPort
         // D1 : Port A DOWN pin input
         // D0 : Port A UP pin input
 
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.RightButton, 5, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.LeftButton, 4, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Right, 3, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Left, 2, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Down, 1, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Up, 0, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.RightButton, 5, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.LeftButton, 4, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Right, 3, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Left, 2, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Down, 1, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Up, 0, pressed);
     }
 
     public void ChangeInputBControlState(ControllerInputStatus status, bool pressed)
@@ -85,19 +94,19 @@ public class ControllerPort : IControllerPort
         // D1 : Port B RIGHT pin input
         // D0 : Port B LEFT pin input
 
-        SetIoPortAbIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.RightButton, 3, pressed);
-        SetIoPortAbIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.LeftButton, 2, pressed);
-        SetIoPortAbIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.Right, 1, pressed);
-        SetIoPortAbIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.Left, 0, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Down, 7, pressed);
-        SetIoPortAbIfFlag(ref _ioPortAb, status, ControllerInputStatus.Up, 6, pressed);
+        SetIoPortIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.RightButton, 3, pressed);
+        SetIoPortIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.LeftButton, 2, pressed);
+        SetIoPortIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.Right, 1, pressed);
+        SetIoPortIfFlag(ref _ioPortBMisc, status, ControllerInputStatus.Left, 0, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Down, 7, pressed);
+        SetIoPortIfFlag(ref _ioPortAb, status, ControllerInputStatus.Up, 6, pressed);
     }
 
-    private static void SetIoPortAbIfFlag(ref byte ioPortValue, ControllerInputStatus status, ControllerInputStatus flag, int bit, bool pressed)
+    private static void SetIoPortIfFlag(ref byte ioPortValue, ControllerInputStatus status, ControllerInputStatus flag, int bit, bool pressed)
     {
         if (status.HasFlag(flag))
         {
-            Bitwise.SetOrClearIf(ref ioPortValue, bit, () => pressed);
+            Bitwise.SetOrClearIf(ref ioPortValue, bit, () => !pressed);
         }
     }
 }

@@ -18,10 +18,10 @@ namespace Kmse.Core.UnitTests.IoTests.ControllerPortTests
         private ControllerPort _controllerPort;
 
         [Test]
-        [TestCase(0x00, 0x30)]
-        [TestCase(1 << 7, 0xB0)]
-        [TestCase(1 << 5, 0x70)]
-        [TestCase(0xFF, 0xF0)]
+        [TestCase(0x00, 0x3F)]
+        [TestCase(1 << 7, 0xBF)]
+        [TestCase(1 << 5, 0x7F)]
+        [TestCase(0xFF, 0xFF)]
         public void WhenSettingIoPortControl(byte ioPortControl, byte expectedPortValue)
         {
             // Bits 7 and 5 of port control are copied into I/O port 0xDD bits 7 and 6 respectively
@@ -30,7 +30,7 @@ namespace Kmse.Core.UnitTests.IoTests.ControllerPortTests
             _controllerPort.ReadPort(0xDD).Should().Be(expectedPortValue);
 
             // I/O port A unchanged
-            _controllerPort.ReadPort(0xDC).Should().Be(0x00);
+            _controllerPort.ReadPort(0xDC).Should().Be(0xFF);
         }
 
         [Test]
@@ -38,96 +38,96 @@ namespace Kmse.Core.UnitTests.IoTests.ControllerPortTests
         {
             _controllerPort.ChangeResetButtonState(true);
 
-            // When controller pressed bit 4 is not set, so should be zero (and bit 5 always set)
-            _controllerPort.ReadPort(0xDD).Should().Be(0x20);
+            // When controller pressed bit 4 is not set, so should be zero (and remaining bits always set since nothing else pressed)
+            _controllerPort.ReadPort(0xDD).Should().Be(0xEF);
 
             // I/O port A unchanged
-            _controllerPort.ReadPort(0xDC).Should().Be(0);
+            _controllerPort.ReadPort(0xDC).Should().Be(0xFF);
         }
 
         [Test]
         public void WhenReleasingResetButton()
         {
             _controllerPort.ChangeResetButtonState(true);
-            _controllerPort.ReadPort(0xDD).Should().Be(0x20);
+            _controllerPort.ReadPort(0xDD).Should().Be(0xEF);
 
             _controllerPort.ChangeResetButtonState(false);
 
-            // When controller not pressed bit 4 is set (and bit 5 always set)
-            _controllerPort.ReadPort(0xDD).Should().Be(0x30);
+            // When controller not pressed bit 4 is set along with all other bits since nothing pressed
+            _controllerPort.ReadPort(0xDD).Should().Be(0xFF);
 
             // I/O port A unchanged
-            _controllerPort.ReadPort(0xDC).Should().Be(0);
+            _controllerPort.ReadPort(0xDC).Should().Be(0xFF);
         }
 
         [Test]
-        [TestCase(ControllerInputStatus.RightButton, 1 << 5)]
-        [TestCase(ControllerInputStatus.LeftButton, 1 << 4)]
-        [TestCase(ControllerInputStatus.Right, 1 << 3)]
-        [TestCase(ControllerInputStatus.Left, 1 << 2)]
-        [TestCase(ControllerInputStatus.Down, 1 << 1)]
-        [TestCase(ControllerInputStatus.Up, 1 << 0)]
-        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0x0F)]
-        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0x36)]
+        [TestCase(ControllerInputStatus.RightButton, 0xDF)]
+        [TestCase(ControllerInputStatus.LeftButton, 0xEF)]
+        [TestCase(ControllerInputStatus.Right, 0xF7)]
+        [TestCase(ControllerInputStatus.Left, 0xFB)]
+        [TestCase(ControllerInputStatus.Down, 0xFD)]
+        [TestCase(ControllerInputStatus.Up, 0xFE)]
+        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0xF0)]
+        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0xC9)]
         public void TriggeringInputAToBePressed(ControllerInputStatus status, byte expectedOutput)
         {
             _controllerPort.ChangeInputAControlState(status, true);
             _controllerPort.ReadPort(0xDC).Should().Be(expectedOutput);
 
             // I/O port B unchanged
-            _controllerPort.ReadPort(0xDD).Should().Be(0x30);
+            _controllerPort.ReadPort(0xDD).Should().Be(0xFF);
         }
 
         [Test]
-        [TestCase(ControllerInputStatus.RightButton, 0x1F)]
-        [TestCase(ControllerInputStatus.LeftButton, 0x2F)]
-        [TestCase(ControllerInputStatus.Right, 0x37)]
-        [TestCase(ControllerInputStatus.Left, 0x3B)]
-        [TestCase(ControllerInputStatus.Down, 0x3D)]
-        [TestCase(ControllerInputStatus.Up, 0x3E)]
-        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0x30)]
-        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0x09)]
+        [TestCase(ControllerInputStatus.RightButton, 0xE0)]
+        [TestCase(ControllerInputStatus.LeftButton, 0xD0)]
+        [TestCase(ControllerInputStatus.Right, 0xC8)]
+        [TestCase(ControllerInputStatus.Left, 0xC4)]
+        [TestCase(ControllerInputStatus.Down, 0xC2)]
+        [TestCase(ControllerInputStatus.Up, 0xC1)]
+        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0xCF)]
+        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0xF6)]
         public void TriggeringInputAToBeUnpressed(ControllerInputStatus status, byte expectedOutput)
         {
             // Press all the buttons and then unpress the buttons from the parameters
             _controllerPort.ChangeInputAControlState((ControllerInputStatus)0x3F, true);
-            _controllerPort.ReadPort(0xDC).Should().Be(0x3F);
+            _controllerPort.ReadPort(0xDC).Should().Be(0xC0);
             _controllerPort.ChangeInputAControlState(status, false);
             _controllerPort.ReadPort(0xDC).Should().Be(expectedOutput);
 
             // I/O port B unchanged
-            _controllerPort.ReadPort(0xDD).Should().Be(0x30);
+            _controllerPort.ReadPort(0xDD).Should().Be(0xFF);
         }
 
         [Test]
-        [TestCase(ControllerInputStatus.RightButton, 0x00, 0x38)]
-        [TestCase(ControllerInputStatus.LeftButton, 0x00, 0x34)]
-        [TestCase(ControllerInputStatus.Right, 0x00, 0x32)]
-        [TestCase(ControllerInputStatus.Left, 0x00, 0x31)]
-        [TestCase(ControllerInputStatus.Down, 0x80, 0x30)]
-        [TestCase(ControllerInputStatus.Up, 0x40, 0x30)]
-        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0xC0, 0x33)]
-        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0x80, 0x3D)]
+        [TestCase(ControllerInputStatus.RightButton, 0xFF, 0xF7)]
+        [TestCase(ControllerInputStatus.LeftButton, 0xFF, 0xFB)]
+        [TestCase(ControllerInputStatus.Right, 0xFF, 0xFD)]
+        [TestCase(ControllerInputStatus.Left, 0xFF, 0xFE)]
+        [TestCase(ControllerInputStatus.Down, 0x7F, 0xFF)]
+        [TestCase(ControllerInputStatus.Up, 0xBF, 0xFF)]
+        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0x3F, 0xFC)]
+        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0x7F, 0xF2)]
         public void TriggeringInputB(ControllerInputStatus status, byte expectedDcOutput, byte expectedDdOutput)
         {
-            _controllerPort.SetIoPortControl(0x00);
+            _controllerPort.SetIoPortControl(0xF0);
             _controllerPort.ChangeInputBControlState(status, true);
             _controllerPort.ReadPort(0xDC).Should().Be(expectedDcOutput);
             _controllerPort.ReadPort(0xDD).Should().Be(expectedDdOutput);
         }
 
         [Test]
-        [TestCase(ControllerInputStatus.RightButton, 0xC0, 0x37)]
-        [TestCase(ControllerInputStatus.LeftButton, 0xC0, 0x3B)]
-        [TestCase(ControllerInputStatus.Right, 0xC0, 0x3D)]
-        [TestCase(ControllerInputStatus.Left, 0xC0, 0x3E)]
-        [TestCase(ControllerInputStatus.Down, 0x40, 0x3F)]
-        [TestCase(ControllerInputStatus.Up, 0x80, 0x3F)]
-        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0x00, 0x3C)]
-        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0x40, 0x32)]
+        [TestCase(ControllerInputStatus.RightButton, 0x3F, 0xF8)]
+        [TestCase(ControllerInputStatus.LeftButton, 0x3F, 0xF4)]
+        [TestCase(ControllerInputStatus.Right, 0x3F, 0xF2)]
+        [TestCase(ControllerInputStatus.Left, 0x3F, 0xF1)]
+        [TestCase(ControllerInputStatus.Down, 0xBF, 0xF0)]
+        [TestCase(ControllerInputStatus.Up, 0x7F, 0xF0)]
+        [TestCase(ControllerInputStatus.Up | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.Right, 0xFF, 0xF3)]
+        [TestCase(ControllerInputStatus.LeftButton | ControllerInputStatus.Down | ControllerInputStatus.Left | ControllerInputStatus.RightButton, 0xBF, 0xFD)]
         public void TriggeringInputBToBeUnpressed(ControllerInputStatus status, byte expectedDcOutput, byte expectedDdOutput)
         {
-            _controllerPort.SetIoPortControl(0x00);
+            _controllerPort.SetIoPortControl(0xF0);
             _controllerPort.ChangeInputBControlState((ControllerInputStatus)0x3F, true);
             _controllerPort.ChangeInputBControlState(status, false);
             _controllerPort.ReadPort(0xDC).Should().Be(expectedDcOutput);
