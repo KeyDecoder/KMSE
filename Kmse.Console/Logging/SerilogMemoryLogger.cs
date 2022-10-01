@@ -42,7 +42,7 @@ public class SerilogMemoryLogger : IMemoryLogger
         _logger.Debug("Read system RAM at address {Address:X4}, got {Data}", address, data);
     }
 
-    public void CartridgeRead(ushort address, byte data)
+    public void CartridgeRead(int address, byte data)
     {
         if (!_verboseLoggingEnabled)
         {

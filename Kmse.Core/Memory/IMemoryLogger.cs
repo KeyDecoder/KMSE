@@ -12,7 +12,7 @@ namespace Kmse.Core.Memory
         void Debug(string message);
         void Error(string message);
         void MemoryRead(ushort address, byte data);
-        void CartridgeRead(ushort address, byte data);
+        void CartridgeRead(int address, byte data);
         void RamBankMemoryRead(int bank, ushort address, byte data);
 
         void MemoryWrite(ushort address, byte oldData, byte newData);

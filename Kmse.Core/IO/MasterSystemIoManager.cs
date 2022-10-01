@@ -3,7 +3,7 @@ using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Logging;
 using Kmse.Core.IO.Sound;
 using Kmse.Core.IO.Vdp;
-using Kmse.Core.Z80.Interrupts;
+using Kmse.Core.Utilities;
 
 namespace Kmse.Core.IO;
 
@@ -122,6 +122,10 @@ public class MasterSystemIoManager : IMasterSystemIoManager
             if (address % 2 == 0)
             {
                 _memoryControlRegister = value;
+
+                // When bit 2 is set, all ports at $C0 through $FF return $FF on a SMS 2, Game Gear, and Genesis
+                var ioDisabled = Bitwise.IsSet(_memoryControlRegister, 2);
+                _controllerPort.SetIoStatus(!ioDisabled);
             }
             else
             {
@@ -154,6 +158,5 @@ public class MasterSystemIoManager : IMasterSystemIoManager
 
         // Unknown port mapping, just log it and move on
         _logger.Error($"{port:X4}", "Unhandled write to I/O");
-        throw new InvalidOperationException($"Unsupported write to port at address {address:X4}");  
     }
 }

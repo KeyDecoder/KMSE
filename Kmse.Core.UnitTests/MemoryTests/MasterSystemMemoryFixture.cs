@@ -127,10 +127,11 @@ public class MasterSystemMemoryFixture
     [TestCase(0x7FFF, 1, 0x7FFF)]
     [TestCase(0x8000, 1, 0x8000)]
     [TestCase(0xBFFF, 1, 0xBFFF)]
+    [TestCase(0x1000, 5, 0x15000)]
     public void WhenReadingFromCartridgeMemoryWithFirstBankPageSet(int memoryAddress, byte firstBankPage,
         int pagedRomAddress)
     {
-        _cartridge[(ushort)pagedRomAddress].Returns((byte)0x01);
+        _cartridge[pagedRomAddress].Returns((byte)0x01);
         _memory.LoadCartridge(_cartridge);
         _memory[0xFFFD] = firstBankPage;
         var value = _memory[(ushort)memoryAddress];
@@ -147,10 +148,11 @@ public class MasterSystemMemoryFixture
     [TestCase(0x4001, 3, 0xC001)]
     [TestCase(0x8000, 1, 0x8000)]
     [TestCase(0xBFFF, 1, 0xBFFF)]
+    [TestCase(0x5000, 5, 0x15000)]
     public void WhenReadingFromCartridgeMemoryWithSecondBankPageSet(int memoryAddress, byte secondBankPage,
         int pagedRomAddress)
     {
-        _cartridge[(ushort)pagedRomAddress].Returns((byte)0x01);
+        _cartridge[pagedRomAddress].Returns((byte)0x01);
         _memory.LoadCartridge(_cartridge);
         _memory[0xFFFE] = secondBankPage;
         var value = _memory[(ushort)memoryAddress];
@@ -170,10 +172,11 @@ public class MasterSystemMemoryFixture
     [TestCase(0x8001, 3, 0xC001)]
     [TestCase(0xBFFF, 2, 0xBFFF)]
     [TestCase(0xBFFF, 3, 0xFFFF)]
+    [TestCase(0x9000, 5, 0x15000)]
     public void WhenReadingFromCartridgeMemoryWithThirdBankPageSet(int memoryAddress, byte thirdBankPage,
         int pagedRomAddress)
     {
-        _cartridge[(ushort)pagedRomAddress].Returns((byte)0x01);
+        _cartridge[pagedRomAddress].Returns((byte)0x01);
         _memory.LoadCartridge(_cartridge);
         _memory[0xFFFF] = thirdBankPage;
         var value = _memory[(ushort)memoryAddress];

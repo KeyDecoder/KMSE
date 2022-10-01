@@ -12,11 +12,9 @@ namespace Kmse.Core.IO.Controllers;
 public class ControllerPort : IControllerPort
 {
     private byte _ioPortControl;
-
     private byte _ioPortAb;
     private byte _ioPortBMisc;
-
-    private readonly object _lock = new();
+    private bool _ioEnabled;
 
     public void Reset()
     {
@@ -40,6 +38,11 @@ public class ControllerPort : IControllerPort
         Bitwise.SetOrClearIf(ref _ioPortBMisc, 6, () => Bitwise.IsSet(_ioPortControl, 5));
     }
 
+    public void SetIoStatus(bool enabled)
+    {
+        _ioEnabled = enabled;
+    }
+
     public byte ReadPort(ushort port)
     {
         /*
@@ -48,12 +51,11 @@ public class ControllerPort : IControllerPort
             Reads from odd address return the I / O port B/ misc.register.
         */
 
-        // When bit 2 is set, all ports at $C0 through $FF return $FF on a SMS 2, Game Gear, and Genesis
-        if (Bitwise.IsSet(_ioPortControl, 2))
+        if (!_ioEnabled)
         {
             return 0xFF;
         }
-
+        
         return port % 2 == 0 ? _ioPortAb : _ioPortBMisc;
     }
 

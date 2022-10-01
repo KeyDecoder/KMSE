@@ -142,7 +142,7 @@ public class MasterSystemMemory : IMasterSystemMemory
         _memoryLogger.MemoryWrite(address, oldData, data);
     }
 
-    private byte ReadRom(ushort address)
+    private byte ReadRom(int address)
     {
         var data = _cartridgeROM[address];
         _memoryLogger.CartridgeRead(address, data);
@@ -244,7 +244,7 @@ public class MasterSystemMemory : IMasterSystemMemory
             // Reading data from slot 1, use page to lookup ROM data
             // We just add since accessing inside the first slot
             var offsetInPage = (ushort)(readAddress & 0x3FFF);
-            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _firstBankPage);
+            var bankAddress = offsetInPage + MemoryPageSize * _firstBankPage;
             return ReadRom(bankAddress);
         }
 
@@ -253,7 +253,7 @@ public class MasterSystemMemory : IMasterSystemMemory
             // 0x4000 - 0x8000
             // Reading data from slot 2, use page to lookup ROM data
             var offsetInPage = (ushort)(readAddress & 0x3FFF);
-            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _secondBankPage);
+            var bankAddress = offsetInPage + MemoryPageSize * _secondBankPage;
             return ReadRom(bankAddress);
         }
 
@@ -275,7 +275,7 @@ public class MasterSystemMemory : IMasterSystemMemory
             // Reading data from slot 2, use page to lookup ROM data
             // Adjust address to offset page * 2 since slot 3
             var offsetInPage = (ushort)(readAddress & 0x3FFF);
-            var bankAddress = (ushort)(offsetInPage + MemoryPageSize * _thirdBankPage);
+            var bankAddress = offsetInPage + MemoryPageSize * _thirdBankPage;
             return ReadRom(bankAddress);
         }
 

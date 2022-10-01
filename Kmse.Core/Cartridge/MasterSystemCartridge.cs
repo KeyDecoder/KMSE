@@ -30,7 +30,7 @@ public class MasterSystemCartridge : IMasterSystemCartridge
         return LoadRom(data);
     }
 
-    public byte this[ushort address] => ReadMemory(address);
+    public byte this[int address] => ReadMemory(address);
 
     public int Length => _processedRom.Length;
 
@@ -55,7 +55,7 @@ public class MasterSystemCartridge : IMasterSystemCartridge
         return true;
     }
 
-    private byte ReadMemory(ushort address)
+    private byte ReadMemory(int address)
     {
         return _processedRom.Span[address];
     }

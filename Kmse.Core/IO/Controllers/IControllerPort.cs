@@ -3,6 +3,7 @@
 public interface IControllerPort
 {
     void Reset();
+    void SetIoStatus(bool enabled);
     void SetIoPortControl(byte value);
     byte ReadPort(ushort port);
 

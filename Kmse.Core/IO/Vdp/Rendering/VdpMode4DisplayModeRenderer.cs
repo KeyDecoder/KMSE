@@ -143,15 +143,14 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
             ResetPixels(_debugSpriteTablePixels, 0x00, 0x00, 0x00);
 
-            var pixels = _debugSpriteTablePixels;
-            //var spriteWidth = (byte)_registers.GetSpriteWidth();
-            var spriteWidth = (byte)8;
-            var spriteHeight = (byte)8;
-            var baseAddress = _registers.GetSpriteAttributeTableBaseAddressOffset();
+            // Since we are dumping all the sprites out, we don't adjust for size or zoom, just dump out all the 8x8 sprite tiles
+            const byte spriteWidth = 8;
+            const byte spriteHeight = 8;
+            const int maxPerLine = 32;
 
+            var baseAddress = _registers.GetSpriteAttributeTableBaseAddressOffset();
             var yOffset = 5;
             var spriteCounter = 0;
-            var maxPerLine = 32;
 
             ResetPixels(_debugSpriteTileMemoryPixels, 0x00, 0x00, 0x00);
 
@@ -163,10 +162,9 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
                 var xOffset = (spriteNumber % 32) * spriteWidth;
 
-                // TODO: Handle 16 pixel sprite height?
                 for (var y = 0; y < spriteHeight; y++)
                 {
-                    RenderTilePatternLine(pixels, true, patternAddress, spriteWidth, xOffset, y, yOffset+y);
+                    RenderTilePatternLine(_debugSpriteTablePixels, true, patternAddress, spriteWidth, xOffset, y, yOffset+y);
                 }
 
                 spriteCounter++;
@@ -186,13 +184,13 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 return;
             }
 
-            var pixels = _debugSpriteTileMemoryPixels;
-            var spriteWidth = (byte)_registers.GetSpriteWidth();
-            var yOffset = 5;
-            var spriteCounter = 0;
+            // Since we are dumping all the tiles out, we don't adjust for size or zoom, just dump out all the 8x8 tiles
+            const byte spriteWidth = 8;
             const int maxPerLine = 32;
             const int start = 0;
             const int end = start + 288;
+            var yOffset = 5;
+            var spriteCounter = 0;
 
             ResetPixels(_debugSpriteTileMemoryPixels, 0x00, 0x00, 0x00);
 
@@ -204,7 +202,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 for (var y = 0; y < 8; y++)
                 {
                     // Since we are rendering all the tiles and sprites, we use the tile palette
-                    RenderTilePatternLine(pixels, true, patternAddress, spriteWidth, xOffset, y, yOffset + y);
+                    RenderTilePatternLine(_debugSpriteTileMemoryPixels, true, patternAddress, spriteWidth, xOffset, y, yOffset + y);
                 }
 
                 spriteCounter++;
@@ -223,7 +221,6 @@ namespace Kmse.Core.IO.Vdp.Rendering
             var patternLineAddress = (ushort)(patternAddress + (tileYOffset * 4));
             var colourAddresses = new byte[tileWidth];
 
-            // Is this 8 bytes for zoomed/large?
             var lineData = new byte[4];
             lineData[0] = _ram.ReadRawVideoRam(patternLineAddress++);
             lineData[1] = _ram.ReadRawVideoRam(patternLineAddress++);
@@ -248,7 +245,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
             for (var i = 0; i < tileWidth; i++)
             {
                 var xCoordinate = xStart + i;
-                if (xCoordinate >= 256)
+                if (xCoordinate >= 256 || yline > 192)
                 {
                     // if Tile is partially off screen, so don't draw the rest of the line for the tile
                     break;
@@ -295,7 +292,6 @@ namespace Kmse.Core.IO.Vdp.Rendering
             var baseAddress = _registers.GetSpriteAttributeTableBaseAddressOffset();
             var spriteHeight = _registers.GetSpriteHeight();
             var spritesToDraw = new List<SpriteToDraw>();
-            var largeSprites = _registers.IsSprites8By16() || _registers.IsSprites16By16();
 
             for (var spriteNumber = 0; spriteNumber < 64; spriteNumber++)
             {
@@ -305,11 +301,6 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 var yAddress = baseAddress + (spriteNumber & 0x3F);
                 var xAddress = baseAddress + 0x80 + spriteNumber * 2;
                 var patternAddress = baseAddress + 0x81 + spriteNumber * 2;
-
-                if (largeSprites)
-                {
-                    // TODO: How to handler large sprites?
-                }
 
                 var spriteX = _ram.ReadRawVideoRam((ushort)xAddress);
                 var spriteY = _ram.ReadRawVideoRam((ushort)yAddress);

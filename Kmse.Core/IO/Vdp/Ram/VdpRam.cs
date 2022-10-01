@@ -99,7 +99,6 @@ public class VdpRam : IVdpRam
         //When the second byte is written, the upper 6 bits of the address
         //register and the code register are updated
         AddressRegister &= 0x00FF;
-
         AddressRegister |= (ushort)(value << 8);
     }
 
