@@ -28,7 +28,7 @@ public class VdpPortControlAndDataFixture
         _controlPortManager = new VdpControlPortManager(_ram, _vdpRegisters);
         _flags = new VdpFlags();
         _displayUpdater = Substitute.For<IVdpDisplayUpdater>();
-        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags);
+        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags, Substitute.For<IIoPortLogger>());
         _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter, _renderer, Substitute.For<IIoPortLogger>(), _flags, _controlPortManager);
         _vdpPort.Reset();
     }

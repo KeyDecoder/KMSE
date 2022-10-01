@@ -3,6 +3,8 @@ using Kmse.Core.IO.Vdp.Counters;
 using Kmse.Core.IO.Vdp.Flags;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
+using Kmse.Core.Utilities;
+using Kmse.Core.IO.Logging;
 
 namespace Kmse.Core.IO.Vdp.Rendering
 {
@@ -13,18 +15,24 @@ namespace Kmse.Core.IO.Vdp.Rendering
         private readonly IVdpDisplayUpdater _displayUpdater;
         private readonly IVdpVerticalCounter _verticalCounter;
         private readonly IVdpFlags _flags;
+        private readonly IIoPortLogger _ioPortLogger;
         private Memory<byte> _pixels;
+        private Memory<byte> _debugSpriteTablePixels;
+        private Memory<byte> _debugSpriteTileMemoryPixels;
 
-        public VdpMode4DisplayModeRenderer(IVdpRegisters registers, IVdpRam ram, IVdpDisplayUpdater displayUpdater, IVdpVerticalCounter verticalCounter, IVdpFlags flags)
+        public VdpMode4DisplayModeRenderer(IVdpRegisters registers, IVdpRam ram, IVdpDisplayUpdater displayUpdater, IVdpVerticalCounter verticalCounter, IVdpFlags flags, IIoPortLogger ioPortLogger)
         {
             _registers = registers;
             _ram = ram;
             _displayUpdater = displayUpdater;
             _verticalCounter = verticalCounter;
             _flags = flags;
+            _ioPortLogger = ioPortLogger;
             // Mode 4 is always 256 x 192 pixels
             // Pixels are RGBA but stored as GBRA
             _pixels = new Memory<byte>(new byte[256 * 192 * 4]);
+            _debugSpriteTablePixels = new Memory<byte>(new byte[256 * 192 * 4]);
+            _debugSpriteTileMemoryPixels = new Memory<byte>(new byte[256 * 192 * 4]);
         }
 
         public void Reset()
@@ -34,14 +42,8 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
         public void ResetBuffer()
         {
-            var colours = GetColor(_registers.GetOverscanBackdropColour());
-            for (var i = 0; i < _pixels.Span.Length; i += 4)
-            {
-                _pixels.Span[i] = colours.blue;
-                _pixels.Span[i + 1] = colours.green;
-                _pixels.Span[i + 2] = colours.red;
-                _pixels.Span[i + 3] = colours.alpha;
-            }
+            var colours = GetColor(false, _registers.GetOverscanBackdropColour());
+            ResetPixels(_pixels, colours.red, colours.green, colours.blue);
         }
 
         public void RenderLine()
@@ -51,8 +53,148 @@ namespace Kmse.Core.IO.Vdp.Rendering
         }
 
         public void UpdateDisplay()
-        {            
-            _displayUpdater.UpdateDisplay(_pixels.Span);
+        {
+            RenderAllSpritesInAddressTable();
+            RenderAllTilesAndSpritesInMemory();
+            _displayUpdater.DisplayFrame(_pixels.Span);
+        }
+
+        public void RenderAllSpritesInAddressTable()
+        {
+            if (!_displayUpdater.IsDebugSpriteTableEnabled())
+            {
+                return;
+            }
+
+            ResetPixels(_debugSpriteTablePixels, 0x00, 0x00, 0x00);
+
+            var pixels = _debugSpriteTablePixels;
+            //var spriteWidth = (byte)_registers.GetSpriteWidth();
+            var spriteWidth = (byte)8;
+            var spriteHeight = (byte)8;
+            var baseAddress = _registers.GetSpriteAttributeTableBaseAddressOffset();
+
+            var yOffset = 5;
+            var spriteCounter = 0;
+            var maxPerLine = 32;
+
+            ResetPixels(_debugSpriteTileMemoryPixels, 0x00, 0x00, 0x00);
+
+            for (var spriteNumber = 0; spriteNumber < 64; spriteNumber++)
+            {
+                var patternIndexAddress = baseAddress + 0x81 + (spriteNumber * 2);
+                var patternIndex = _ram.ReadRawVideoRam((ushort)patternIndexAddress);
+                var patternAddress = (ushort)(_registers.GetSpritePatternGeneratorBaseAddressOffset() + (patternIndex * 32));
+
+                var xOffset = (spriteNumber % 32) * spriteWidth;
+
+                // TODO: Handle 16 pixel sprite height?
+                for (var y = 0; y < spriteHeight; y++)
+                {
+                    RenderSpritePatternLine(pixels, true, patternAddress, spriteWidth, xOffset, y, yOffset+y);
+                }
+
+                spriteCounter++;
+                if (spriteCounter == maxPerLine)
+                {
+                    spriteCounter = 0;
+                    yOffset += spriteHeight;
+                }
+            }
+            _displayUpdater.DisplayDebugSpriteTable(_debugSpriteTablePixels.Span);
+        }
+
+        public void RenderAllTilesAndSpritesInMemory()
+        {
+            if (!_displayUpdater.IsDebugSpriteTileMemoryEnabled())
+            {
+                return;
+            }
+
+            var pixels = _debugSpriteTileMemoryPixels;
+            var spriteWidth = (byte)_registers.GetSpriteWidth();
+            var yOffset = 5;
+            var spriteCounter = 0;
+            var maxPerLine = 32;
+            var start = 0;
+            var end = start + 288;
+
+            ResetPixels(_debugSpriteTileMemoryPixels, 0x00, 0x00, 0x00);
+
+            for (var spriteNumber = start; spriteNumber < end; spriteNumber++)
+            {
+                var patternAddress = (ushort)(spriteNumber * 32);
+                var xOffset = (spriteNumber % 32) * 8;
+
+                for (var y = 0; y < 8; y++)
+                {
+                    // Since we are rendering all the tiles and sprites, we use the tile palette
+                    RenderSpritePatternLine(pixels, false, patternAddress, spriteWidth, xOffset, y, yOffset + y);
+                }
+
+                spriteCounter++;
+                if (spriteCounter == maxPerLine)
+                {
+                    spriteCounter = 0;
+                    yOffset += 8;
+                }
+            }
+            _displayUpdater.DisplayDebugSpriteTileMemory(_debugSpriteTileMemoryPixels.Span);
+        }
+
+        private void RenderSpritePatternLine(Memory<byte> frame, bool spritePalette, ushort patternAddress, byte spriteWidth, int xStart, int spriteYOffset, int yline)
+        {
+            // Get offset of 4 bytes for this line
+            var patternLineAddress = (ushort)(patternAddress + (spriteYOffset * 4));
+            var colourAddresses = new byte[spriteWidth];
+
+            // Is this 8 bytes for zoomed/large?
+            var lineData = new byte[4];
+            lineData[0] = _ram.ReadRawVideoRam(patternLineAddress++);
+            lineData[1] = _ram.ReadRawVideoRam(patternLineAddress++);
+            lineData[2] = _ram.ReadRawVideoRam(patternLineAddress++);
+            lineData[3] = _ram.ReadRawVideoRam(patternLineAddress);
+
+            //Each pattern uses 32 bytes.The first four bytes are bitplanes 0 through 3
+            //for line 0, the next four bytes are bitplanes 0 through 3 for line 1, etc.,
+            //up to line 7.
+
+            var pixelOffset = 0;
+            for (var i = 7; i >= 0; i--)
+            {
+                var bit = i;
+                Bitwise.SetIf(ref colourAddresses[pixelOffset], 0, () => Bitwise.IsSet(lineData[0], bit));
+                Bitwise.SetIf(ref colourAddresses[pixelOffset], 1, () => Bitwise.IsSet(lineData[1], bit));
+                Bitwise.SetIf(ref colourAddresses[pixelOffset], 2, () => Bitwise.IsSet(lineData[2], bit));
+                Bitwise.SetIf(ref colourAddresses[pixelOffset], 3, () => Bitwise.IsSet(lineData[3], bit));
+                pixelOffset++;
+            }
+
+            for (var i = 0; i < spriteWidth; i++)
+            {
+                var xCoordinate = xStart + i;
+                if (xCoordinate >= 256)
+                {
+                    // Sprite is partially off screen, so don't draw the rest of the line
+                    break;
+                }
+
+                // Sprites always use the second palette only so we skip the first 16
+                var colourAddress = (ushort)(colourAddresses[i]);
+                if (colourAddress == 0)
+                {
+                    // Address is 0 which means it is transparent, so don't write anything
+                    continue;
+                }
+
+                var colours = GetColor(spritePalette, colourAddress);
+
+                var index = GetPixelIndex(xCoordinate, yline);
+                frame.Span[index + 0] = colours.blue;
+                frame.Span[index + 1] = colours.green;
+                frame.Span[index + 2] = colours.red;
+                frame.Span[index + 3] = colours.alpha;
+            }
         }
 
         private int GetPixelIndex(int x, int y)
@@ -78,15 +220,21 @@ namespace Kmse.Core.IO.Vdp.Rendering
             var baseAddress = _registers.GetSpriteAttributeTableBaseAddressOffset();
             var spriteHeight = _registers.GetSpriteHeight();
             var spritesToDraw = new List<SpriteToDraw>();
+            var largeSprites = _registers.IsSprites8By16() || _registers.IsSprites16By16();
 
             for (var spriteNumber = 0; spriteNumber < 64; spriteNumber++)
             {
                 // Lookup the sprite attribute table to get addresses in memory for sprite information
                 // Then load the sprite information from Video RAM
 
-                var patternAddress = baseAddress + 0x81 + ((spriteNumber & 0x3F) << 1);
-                var xAddress = baseAddress + 0x80 + ((spriteNumber & 0x3F) << 1);
                 var yAddress = baseAddress + (spriteNumber & 0x3F);
+                var xAddress = baseAddress + 0x80 + spriteNumber * 2;
+                var patternAddress = baseAddress + 0x81 + spriteNumber * 2;
+
+                if (largeSprites)
+                {
+                    // TODO: How to handler large sprites?
+                }
 
                 var spriteX = _ram.ReadRawVideoRam((ushort)xAddress);
                 var spriteY = _ram.ReadRawVideoRam((ushort)yAddress);
@@ -147,7 +295,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
         private void RenderSprites()
         {
-            var spriteWidth = _registers.GetSpriteWidth();
+            var spriteWidth = (byte)_registers.GetSpriteWidth();
             var sprites = GetSpritesToDraw();
 
             // Now we have a list of sprites to draw, draw them all, but draw them in reverse order
@@ -168,53 +316,76 @@ namespace Kmse.Core.IO.Vdp.Rendering
             {
                 var sprite = sprites[spriteNumber];
 
-                var patternAddress = _registers.GetSpritePatternGeneratorBaseAddressOffset() +
-                                     (sprite.PatternIndex * 32);
+                var patternAddress = (ushort)(_registers.GetSpritePatternGeneratorBaseAddressOffset() + (sprite.PatternIndex * 32));
 
-                //Each pattern uses 32 bytes.The first four bytes are bitplanes 0 through 3
-                //for line 0, the next four bytes are bitplanes 0 through 3 for line 1, etc.,
-                //up to line 7.
+                var spriteYOffset = _verticalCounter.Counter - sprite.Y;
+                RenderSpritePatternLine(_pixels, true, patternAddress, spriteWidth, sprite.X, spriteYOffset, _verticalCounter.Counter);
 
-                // Get offset of 4 bytes for this line
-                var patternLineAddress = (ushort)(patternAddress + ((_verticalCounter.Counter - sprite.Y) * 4));
-                var colourAddresses = new byte[spriteWidth];
+                ////Each pattern uses 32 bytes.The first four bytes are bitplanes 0 through 3
+                ////for line 0, the next four bytes are bitplanes 0 through 3 for line 1, etc.,
+                ////up to line 7.
 
-                // This is not correct
-                for (var i = 0; i < spriteWidth; i+=2)
-                {
-                    // Each byte is data for 2 pixels which can select up to 15 colours from palette
-                    var data = _ram.ReadRawVideoRam(patternLineAddress);
-                    colourAddresses[i] = (byte)(data & 0x0F);
-                    colourAddresses[i+1] = (byte)((data & 0xF0) >> 4);
+                //// Get offset of 4 bytes for this line
+                //var patternLineAddress = (ushort)(patternAddress + ((_verticalCounter.Counter - sprite.Y) * 4));
+                //var colourAddresses = new byte[spriteWidth];
 
-                    patternLineAddress++;
-                }
+                //// Is this 8 bytes for zoomed/large?
+                //var lineData = new byte[4];
+                //lineData[0] = _ram.ReadRawVideoRam(patternLineAddress++);
+                //lineData[1] = _ram.ReadRawVideoRam(patternLineAddress++);
+                //lineData[2] = _ram.ReadRawVideoRam(patternLineAddress++);
+                //lineData[3] = _ram.ReadRawVideoRam(patternLineAddress);
 
-                for (var i = 0; i < spriteWidth; i++)
-                {
-                    var xCoordinate = sprite.X + i;
-                    if (xCoordinate >= 256)
-                    {
-                        // Sprite is partially off screen, so don't draw the rest of the line
-                        break;
-                    }
+                //var pixelOffset = 0;
+                //for (var i = 7; i >= 0; i--)
+                //{
+                //    var bit = i;
+                //    Bitwise.SetIf(ref colourAddresses[pixelOffset], 0, () => Bitwise.IsSet(lineData[0], bit));
+                //    Bitwise.SetIf(ref colourAddresses[pixelOffset], 1, () => Bitwise.IsSet(lineData[1], bit));
+                //    Bitwise.SetIf(ref colourAddresses[pixelOffset], 2, () => Bitwise.IsSet(lineData[2], bit));
+                //    Bitwise.SetIf(ref colourAddresses[pixelOffset], 3, () => Bitwise.IsSet(lineData[3], bit));
+                //    pixelOffset++;
+                //}
 
-                    // Sprites always use the second palette only so we skip the first 16
-                    if (colourAddresses[i] == 0)
-                    {
-                        // Address is 0 which means it is transparent, so don't write anything
-                        continue;
-                    }
+                //int zoomShift = (_registers.IsSprites16By16() ? 1 : 0);
+                //for (int pixel = 0; pixel < spriteWidth; pixel++)
+                //{
+                //    int c = (((lineData[0] >> (7 - (pixel >> zoomShift))) & 0x1) << 0);
+                //    c |= (((lineData[1] >> (7 - (pixel >> zoomShift))) & 0x1) << 1);
+                //    c |= (((lineData[2] >> (7 - (pixel >> zoomShift))) & 0x1) << 2);
+                //    c |= (((lineData[3] >> (7 - (pixel >> zoomShift))) & 0x1) << 3);
+                //    if (colourAddresses[pixel] != c)
+                //    {
+                //        Console.WriteLine("bad");
+                //    }
+                //    //colourAddresses[pixel] = (byte)c;
+                //}
 
-                    var colourAddress = (ushort)(colourAddresses[i] + 16);
-                    var colours = GetColor(colourAddress);
+                //for (var i = 0; i < spriteWidth; i++)
+                //{
+                //    var xCoordinate = sprite.X + i;
+                //    if (xCoordinate >= 256)
+                //    {
+                //        // Sprite is partially off screen, so don't draw the rest of the line
+                //        break;
+                //    }
 
-                    var index = GetPixelIndex(sprite.X + i, _verticalCounter.Counter);
-                    _pixels.Span[index + 0] = colours.blue;
-                    _pixels.Span[index + 1] = colours.green;
-                    _pixels.Span[index + 2] = colours.red;
-                    _pixels.Span[index + 3] = colours.alpha;
-                }
+                //    // Sprites always use the second palette only so we skip the first 16
+                //    if (colourAddresses[i] == 0)
+                //    {
+                //        // Address is 0 which means it is transparent, so don't write anything
+                //        continue;
+                //    }
+
+                //    var colourAddress = (ushort)(colourAddresses[i] + 16);
+                //    var colours = GetColor(colourAddress);
+
+                //    var index = GetPixelIndex(sprite.X + i, _verticalCounter.Counter);
+                //    _pixels.Span[index + 0] = colours.blue;
+                //    _pixels.Span[index + 1] = colours.green;
+                //    _pixels.Span[index + 2] = colours.red;
+                //    _pixels.Span[index + 3] = colours.alpha;
+                //}
             }
         }
 
@@ -223,8 +394,23 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
         }
 
-        private (byte blue, byte green, byte red, byte alpha) GetColor(ushort colourAddress)
+        private void ResetPixels(Memory<byte> pixels, byte red, byte green, byte blue)
         {
+            for (var i = 0; i < _pixels.Span.Length; i += 4)
+            {
+                pixels.Span[i] = blue;
+                pixels.Span[i + 1] = green;
+                pixels.Span[i + 2] = red;
+                pixels.Span[i + 3] = 0xFF;
+            }
+        }
+
+        private (byte blue, byte green, byte red, byte alpha) GetColor(bool secondPalette, ushort colourAddress)
+        {
+            if (secondPalette)
+            {
+                colourAddress += 16;
+            }
             var color = _ram.ReadRawColourRam(colourAddress);
             var alpha = (byte)0xFF;
 

@@ -29,7 +29,7 @@ public class VdpDisplayTimingFixture
         _controlPortManager = new VdpControlPortManager(_ram, _vdpRegisters);
         _flags = new VdpFlags();
         _displayUpdater = new TestDisplayUpdater();
-        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags);
+        _renderer = new VdpMode4DisplayModeRenderer(_vdpRegisters, _ram, _displayUpdater, _verticalCounter, _flags, Substitute.For<IIoPortLogger>());
         _vdpPort = new VdpPort(_vdpRegisters, _interruptManagement, _ram, _verticalCounter, _horizontalCounter, _renderer, Substitute.For<IIoPortLogger>(), _flags, _controlPortManager);
         _vdpPort.Reset();
     }
@@ -105,9 +105,27 @@ public class VdpDisplayTimingFixture
     private class TestDisplayUpdater : IVdpDisplayUpdater
     {
         public bool GotRenderCall { get; private set; }
-        public void UpdateDisplay(Span<byte> frame)
+        public void DisplayFrame(Span<byte> frame)
         {
             GotRenderCall = true;
+        }
+
+        public void DisplayDebugSpriteTable(Span<byte> frame)
+        {
+        }
+
+        public void DisplayDebugSpriteTileMemory(Span<byte> frame)
+        {
+        }
+
+        public bool IsDebugSpriteTableEnabled()
+        {
+            return false;
+        }
+
+        public bool IsDebugSpriteTileMemoryEnabled()
+        {
+            return false;
         }
     }
 }
