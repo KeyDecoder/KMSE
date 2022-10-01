@@ -5,6 +5,7 @@ namespace Kmse.Core.IO.Vdp.Counters;
 public interface IVdpVerticalCounter
 {
     byte Counter { get; }
+    int RawCounter { get; }
     byte LineCounter { get; }
     bool IsLineInterruptPending { get; }
     void Reset();

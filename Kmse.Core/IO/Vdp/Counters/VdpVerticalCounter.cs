@@ -7,8 +7,8 @@ public class VdpVerticalCounter : IVdpVerticalCounter
 {
     private readonly IVdpRegisters _registers;
     private bool _secondVCount;
-    private int _internalCounter;
     private VdpDisplayType _displayType;
+    public int RawCounter { get; private set; }
     public byte Counter { get; private set; }
     public byte LineCounter { get; private set; }
     public bool IsLineInterruptPending { get; private set; }
@@ -21,6 +21,7 @@ public class VdpVerticalCounter : IVdpVerticalCounter
     public void Reset()
     {
         Counter = 0;
+        RawCounter = 0;
         _secondVCount = false;
     }
 
@@ -43,6 +44,7 @@ public class VdpVerticalCounter : IVdpVerticalCounter
     {
         // These jumps change depending on mode and display type
         Counter++;
+        RawCounter++;
         if (_secondVCount)
         {
             return;

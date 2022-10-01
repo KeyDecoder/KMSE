@@ -173,6 +173,7 @@ public class MasterSystemMemoryFixture
     [TestCase(0xBFFF, 2, 0xBFFF)]
     [TestCase(0xBFFF, 3, 0xFFFF)]
     [TestCase(0x9000, 5, 0x15000)]
+    [TestCase(0xABCD, 31, 0x7EBCD)]
     public void WhenReadingFromCartridgeMemoryWithThirdBankPageSet(int memoryAddress, byte thirdBankPage,
         int pagedRomAddress)
     {

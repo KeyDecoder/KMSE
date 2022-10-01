@@ -96,7 +96,7 @@ public class MasterSystemMemory : IMasterSystemMemory
 
     public int GetMinimumAvailableMemorySize()
     {
-        if (IsPagingEnabled())
+        if (IsRamBankEnabled())
         {
             // If paging enabled, we can access RAM down to the start of the 3rd memory slot
             // since being used as RAM bank
@@ -123,7 +123,7 @@ public class MasterSystemMemory : IMasterSystemMemory
         _ramBank1.Span.Fill(0x00);
 }
 
-    private bool IsPagingEnabled()
+    private bool IsRamBankEnabled()
     {
         return Bitwise.IsSet(_pagingControl, 3);
     }
@@ -180,7 +180,7 @@ public class MasterSystemMemory : IMasterSystemMemory
                 return;
 
             // Allow writing to 3rd slot if RAM bank is mapped to slot 3
-            case < MemorySlot3 + MemoryPageSize when IsPagingEnabled():
+            case < MemorySlot3 + MemoryPageSize when IsRamBankEnabled():
                 if (_currentRamBank is 0 or 1)
                 {
                     WriteRamBank(_currentRamBank, (ushort)(address & 0x3FFF), data);
@@ -243,7 +243,7 @@ public class MasterSystemMemory : IMasterSystemMemory
             // 0 - 0x4000
             // Reading data from slot 1, use page to lookup ROM data
             // We just add since accessing inside the first slot
-            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var offsetInPage = readAddress;
             var bankAddress = offsetInPage + MemoryPageSize * _firstBankPage;
             return ReadRom(bankAddress);
         }
@@ -252,7 +252,7 @@ public class MasterSystemMemory : IMasterSystemMemory
         {
             // 0x4000 - 0x8000
             // Reading data from slot 2, use page to lookup ROM data
-            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var offsetInPage = (ushort)(readAddress - MemorySlot2);
             var bankAddress = offsetInPage + MemoryPageSize * _secondBankPage;
             return ReadRom(bankAddress);
         }
@@ -274,7 +274,7 @@ public class MasterSystemMemory : IMasterSystemMemory
 
             // Reading data from slot 2, use page to lookup ROM data
             // Adjust address to offset page * 2 since slot 3
-            var offsetInPage = (ushort)(readAddress & 0x3FFF);
+            var offsetInPage = (ushort)(readAddress - MemorySlot3);
             var bankAddress = offsetInPage + MemoryPageSize * _thirdBankPage;
             return ReadRom(bankAddress);
         }

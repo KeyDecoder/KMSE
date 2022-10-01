@@ -67,7 +67,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
             // For each line, we draw the line of each tile
 
             // Tile index depends on the tile line we are on x 32
-            var tileRow = ((byte)Math.Floor((double)_verticalCounter.Counter / 8));
+            var tileRow = ((byte)Math.Floor((double)_verticalCounter.RawCounter / 8));
             var tileIndex = tileRow * 32;
             for (var tileX = 0; tileX < 32; tileX++)
             {
@@ -95,8 +95,8 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 var patternAddress = (ushort)(patternIndex * 32);
 
                 var xOffset = tileX * 8;
-                var yOffset = _verticalCounter.Counter;
-                var tileYOffset = _verticalCounter.Counter - tileRow * 8;
+                var yOffset = _verticalCounter.RawCounter;
+                var tileYOffset = _verticalCounter.RawCounter - tileRow * 8;
 
                 RenderTilePatternLine(_pixels, secondPalette, patternAddress, 8, xOffset, tileYOffset, yOffset);
 
@@ -129,8 +129,8 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
                 var patternAddress = (ushort)(_registers.GetSpritePatternGeneratorBaseAddressOffset() + (sprite.PatternIndex * 32));
 
-                var spriteYOffset = _verticalCounter.Counter - sprite.Y;
-                RenderTilePatternLine(_pixels, true, patternAddress, spriteWidth, sprite.X, spriteYOffset, _verticalCounter.Counter);
+                var spriteYOffset = _verticalCounter.RawCounter - sprite.Y;
+                RenderTilePatternLine(_pixels, true, patternAddress, spriteWidth, sprite.X, spriteYOffset, _verticalCounter.RawCounter);
             }
         }
 
@@ -318,7 +318,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
                 // Check if Sprites Y is in the current line
                 // This includes the body pixels of the sprite
-                if (_verticalCounter.Counter < spriteY || _verticalCounter.Counter >= spriteY + spriteHeight)
+                if (_verticalCounter.RawCounter < spriteY || _verticalCounter.RawCounter >= spriteY + spriteHeight)
                 {
                     // Not on line, move to next
                     continue;

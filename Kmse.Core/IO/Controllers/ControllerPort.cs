@@ -25,6 +25,7 @@ public class ControllerPort : IControllerPort
         // Reset and bit 5 always set as well
         _ioPortBMisc = 0xFF;
         _ioPortControl = 0x00;
+        _ioEnabled = true;
     }
 
     public void SetIoPortControl(byte value)
