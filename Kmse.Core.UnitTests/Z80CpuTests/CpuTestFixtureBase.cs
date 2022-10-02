@@ -49,8 +49,8 @@ public abstract class CpuTestFixtureBase
         var bc = new Z80BcRegister(Memory, af.Flags, () => new Z808BitGeneralPurposeRegister(Memory, flags));
         var de = new Z80DeRegister(Memory, af.Flags, () => new Z808BitGeneralPurposeRegister(Memory, flags));
         var hl = new Z80HlRegister(Memory, af.Flags, () => new Z808BitGeneralPurposeRegister(Memory, flags));
-        var ix = new Z80IndexRegisterXy(Memory, af.Flags);
-        var iy = new Z80IndexRegisterXy(Memory, af.Flags);
+        var ix = new Z80IndexRegisterX(Memory, af.Flags);
+        var iy = new Z80IndexRegisterY(Memory, af.Flags);
         var rRegister = new Z80MemoryRefreshRegister(Memory, af.Flags);
         var iRegister = new Z80InterruptPageAddressRegister(Memory, af.Flags);
 

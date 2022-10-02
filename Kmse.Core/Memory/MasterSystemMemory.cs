@@ -308,19 +308,13 @@ public class MasterSystemMemory : IMasterSystemMemory
             }
                 break;
             case MemoryControlRegisterSlot1:
-            {
                 _firstBankPage = page;
-            }
                 break;
             case MemoryControlRegisterSlot2:
-            {
                 _secondBankPage = page;
-            }
                 break;
             case MemoryControlRegisterSlot3:
-            {
                 _thirdBankPage = page;
-            }
                 break;
             default:
                 throw new ArgumentOutOfRangeException($"Invalid memory page write: Address: 0x{address:X}");

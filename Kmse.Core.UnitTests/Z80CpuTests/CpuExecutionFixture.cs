@@ -74,7 +74,7 @@ public class CpuExecutionFixture : CpuTestFixtureBase
     [Test]
     public void WhenExecutingDdCbSpecialInstruction()
     {
-        Registers.IX = Substitute.For<IZ80IndexRegisterXy>();
+        Registers.IX = Substitute.For<IZ80IndexRegisterX>();
         var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement);
         Cpu = new Z80Cpu(Memory, Io, CpuLogger, InstructionLogger, cpuInstructions, Registers, CpuManagement);
 
@@ -96,7 +96,7 @@ public class CpuExecutionFixture : CpuTestFixtureBase
     [Test]
     public void WhenExecutingFdCbSpecialInstruction()
     {
-        Registers.IY = Substitute.For<IZ80IndexRegisterXy>();
+        Registers.IY = Substitute.For<IZ80IndexRegisterY>();
         var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement);
         Cpu = new Z80Cpu(Memory, Io, CpuLogger, InstructionLogger, cpuInstructions, Registers, CpuManagement);
 

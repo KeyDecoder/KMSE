@@ -32,8 +32,8 @@ public class Z80CpuInstructions : IZ80CpuInstructions
     private readonly IZ808BitGeneralPurposeRegister _e;
     private readonly IZ808BitGeneralPurposeRegister _h;
     private readonly IZ808BitGeneralPurposeRegister _l;
-    private readonly IZ80IndexRegisterXy _ix;
-    private readonly IZ80IndexRegisterXy _iy;
+    private readonly IZ80IndexRegisterX _ix;
+    private readonly IZ80IndexRegisterY _iy;
     private readonly IZ80MemoryRefreshRegister _rRegister;
     private readonly IZ80InterruptPageAddressRegister _iRegister;
     private readonly IZ80CpuInputOutputManager _ioManagement;

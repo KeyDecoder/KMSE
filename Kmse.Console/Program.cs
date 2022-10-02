@@ -2,10 +2,12 @@
 using Autofac.Extensions.DependencyInjection;
 using AutofacSerilogIntegration;
 using CommandLine;
+using Kmse.Console.Display;
 using Kmse.Console.Logging;
 using Kmse.Core.Infrastructure;
 using Kmse.Core.IO.DebugConsole;
 using Kmse.Core.IO.Logging;
+using Kmse.Core.IO.Vdp.Rendering;
 using Kmse.Core.Memory;
 using Kmse.Core.Z80;
 using Kmse.Core.Z80.Logging;
@@ -78,6 +80,7 @@ public class Program
                 containerBuilder.RegisterType<SerilogIoLogger>().As<IIoPortLogger>().AsSelf().SingleInstance();
                 containerBuilder.RegisterType<SerilogDebugConsoleOutput>().As<IDebugConsoleOutput>().AsSelf().SingleInstance();
                 containerBuilder.RegisterType<SerilogCpuLogger>().As<ICpuLogger>().AsSelf().SingleInstance();
+                containerBuilder.RegisterType<ConsoleDisplayUpdater>().As<IVdpDisplayUpdater>();
             })
             .ConfigureServices((_, services) =>
             {

@@ -53,8 +53,8 @@ public class TestInstructionsFixture
         var bc = new Z80BcRegister(_memory, af.Flags, () => new Z808BitGeneralPurposeRegister(_memory, flags));
         var de = new Z80DeRegister(_memory, af.Flags, () => new Z808BitGeneralPurposeRegister(_memory, flags));
         var hl = new Z80HlRegister(_memory, af.Flags, () => new Z808BitGeneralPurposeRegister(_memory, flags));
-        var ix = new Z80IndexRegisterXy(_memory, af.Flags);
-        var iy = new Z80IndexRegisterXy(_memory, af.Flags);
+        var ix = new Z80IndexRegisterX(_memory, af.Flags);
+        var iy = new Z80IndexRegisterY(_memory, af.Flags);
         var rRegister = new Z80MemoryRefreshRegister(_memory, af.Flags);
         var iRegister = new Z80InterruptPageAddressRegister(_memory, af.Flags);
 

@@ -11,8 +11,8 @@ public class Z80CpuRegisters
     public IZ80BcRegister Bc { get; set; }
     public IZ80DeRegister De { get; set; }
     public IZ80HlRegister Hl { get; set; }
-    public IZ80IndexRegisterXy IX { get; set; }
-    public IZ80IndexRegisterXy IY { get; set; }
+    public IZ80IndexRegisterX IX { get; set; }
+    public IZ80IndexRegisterY IY { get; set; }
     public IZ80MemoryRefreshRegister R { get; set; }
     public IZ80InterruptPageAddressRegister I { get; set; }
 }

@@ -30,7 +30,8 @@ public class Z80CpuModule : Module
         builder.RegisterType<Z80BcRegister>().As<IZ80BcRegister>().InstancePerLifetimeScope();
         builder.RegisterType<Z80DeRegister>().As<IZ80DeRegister>().InstancePerLifetimeScope();
         builder.RegisterType<Z80HlRegister>().As<IZ80HlRegister>().InstancePerLifetimeScope();
-        builder.RegisterType<Z80IndexRegisterXy>().As<IZ80IndexRegisterXy>().InstancePerDependency();
+        builder.RegisterType<Z80IndexRegisterX>().As<IZ80IndexRegisterX>().InstancePerLifetimeScope();
+        builder.RegisterType<Z80IndexRegisterY>().As<IZ80IndexRegisterY>().InstancePerLifetimeScope();
         builder.RegisterType<Z80InterruptPageAddressRegister>().As<IZ80InterruptPageAddressRegister>()
             .InstancePerLifetimeScope();
         builder.RegisterType<Z80MemoryRefreshRegister>().As<IZ80MemoryRefreshRegister>().InstancePerLifetimeScope();

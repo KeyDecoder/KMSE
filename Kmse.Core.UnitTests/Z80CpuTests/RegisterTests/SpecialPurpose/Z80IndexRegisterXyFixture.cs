@@ -2,7 +2,6 @@
 using Kmse.Core.Memory;
 using Kmse.Core.Z80.Model;
 using Kmse.Core.Z80.Registers.General;
-using Kmse.Core.Z80.Registers.SpecialPurpose;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -11,7 +10,7 @@ namespace Kmse.Core.UnitTests.Z80CpuTests.RegisterTests.SpecialPurpose;
 public class Z80IndexRegisterXyFixture
 {
     private IZ80FlagsManager _flags;
-    private Z80IndexRegisterXy _indexRegister;
+    private TestZ80IndexRegisterXy _indexRegister;
     private IMasterSystemMemory _memory;
 
     [SetUp]
@@ -19,7 +18,7 @@ public class Z80IndexRegisterXyFixture
     {
         _memory = Substitute.For<IMasterSystemMemory>();
         _flags = Substitute.For<IZ80FlagsManager>();
-        _indexRegister = new Z80IndexRegisterXy(_memory, _flags);
+        _indexRegister = new TestZ80IndexRegisterXy(_memory, _flags);
     }
 
     [Test]

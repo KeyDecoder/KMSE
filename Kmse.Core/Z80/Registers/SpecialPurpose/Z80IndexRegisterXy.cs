@@ -4,9 +4,9 @@ using Kmse.Core.Z80.Registers.General;
 
 namespace Kmse.Core.Z80.Registers.SpecialPurpose;
 
-public class Z80IndexRegisterXy : Z8016BitSpecialRegisterBase, IZ80IndexRegisterXy
+public abstract class Z80IndexRegisterXy : Z8016BitSpecialRegisterBase
 {
-    public Z80IndexRegisterXy(IMasterSystemMemory memory, IZ80FlagsManager flags) : base(memory, flags) { }
+    protected Z80IndexRegisterXy(IMasterSystemMemory memory, IZ80FlagsManager flags) : base(memory, flags) { }
 
     public void IncrementHigh()
     {
