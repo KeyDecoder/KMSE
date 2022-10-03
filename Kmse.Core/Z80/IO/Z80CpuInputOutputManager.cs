@@ -3,6 +3,8 @@ using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Model;
 using Kmse.Core.Z80.Registers;
 using Kmse.Core.Z80.Registers.General;
+using Microsoft.Win32;
+using System.Net;
 
 namespace Kmse.Core.Z80.IO;
 
@@ -52,5 +54,11 @@ public class Z80CpuInputOutputManager : IZ80CpuInputOutputManager
     {
         var address = Bitwise.ToUnsigned16BitValue(high, low);
         _io.WritePort(address, register.Value);
+    }
+
+    public void Write(byte high, byte low, byte value)
+    {
+        var address = Bitwise.ToUnsigned16BitValue(high, low);
+        _io.WritePort(address, value);
     }
 }

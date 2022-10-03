@@ -360,7 +360,11 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddStandardInstruction(0xFF, 11, "RST 38H", "Restart at 38h", _ => { _pc.SetAndSaveExisting(0x38); });
 
         AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { _pc.SetFromStack(); _interruptManagement.ClearMaskableInterrupt(); });
-        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ => { _pc.SetFromStack(); _interruptManagement.ResetInterruptEnableFlipFlopFromTemporaryStorage(); });
+        AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ =>
+        {
+            _pc.SetFromStack(); 
+            _interruptManagement.ResetInterruptEnableFlipFlopFromTemporaryStorage();
+        });
     }
 
     private void PopulateArthmeticAndLogicalInstructions()
@@ -1211,6 +1215,9 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddDoubleByteInstruction(0xED, 0x59, 12, "OUT (C),E", "Write I/O at B/C from E", _ => { _ioManagement.Write(_b.Value, _c.Value, _e); });
         AddDoubleByteInstruction(0xED, 0x61, 12, "OUT (C),H", "Write I/O at B/C from H", _ => { _ioManagement.Write(_b.Value, _c.Value, _h); });
         AddDoubleByteInstruction(0xED, 0x69, 12, "OUT (C),L", "Write I/O at B/C from L", _ => { _ioManagement.Write(_b.Value, _c.Value, _l); });
+
+        // Undocumented instruction
+        AddDoubleByteInstruction(0xED, 0x71, 12, "OUT (C),0", "Write 0 to I/O at B/C", _ => { _ioManagement.Write(_b.Value, _c.Value, 0); });
 
         AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ =>
         {
