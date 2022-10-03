@@ -4,11 +4,11 @@ namespace Kmse.Console.Display;
 
 public class ConsoleDisplayUpdater : IVdpDisplayUpdater
 {
-    public void DisplayFrame(Span<byte> frame) { }
+    public void DisplayFrame(ReadOnlySpan<byte> frame) { }
 
-    public void DisplayDebugSpriteTable(Span<byte> frame) { }
+    public void DisplayDebugSpriteTable(ReadOnlySpan<byte> frame) { }
 
-    public void DisplayDebugSpriteTileMemory(Span<byte> frame) { }
+    public void DisplayDebugSpriteTileMemory(ReadOnlySpan<byte> frame) { }
 
     public bool IsDebugSpriteTableEnabled()
     {

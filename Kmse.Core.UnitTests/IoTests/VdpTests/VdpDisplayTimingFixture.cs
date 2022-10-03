@@ -105,16 +105,16 @@ public class VdpDisplayTimingFixture
     private class TestDisplayUpdater : IVdpDisplayUpdater
     {
         public bool GotRenderCall { get; private set; }
-        public void DisplayFrame(Span<byte> frame)
+        public void DisplayFrame(ReadOnlySpan<byte> frame)
         {
             GotRenderCall = true;
         }
 
-        public void DisplayDebugSpriteTable(Span<byte> frame)
+        public void DisplayDebugSpriteTable(ReadOnlySpan<byte> frame)
         {
         }
 
-        public void DisplayDebugSpriteTileMemory(Span<byte> frame)
+        public void DisplayDebugSpriteTileMemory(ReadOnlySpan<byte> frame)
         {
         }
 

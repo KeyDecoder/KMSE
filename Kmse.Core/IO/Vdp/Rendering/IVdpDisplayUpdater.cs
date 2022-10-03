@@ -3,9 +3,9 @@
 public interface IVdpDisplayUpdater
 {
     // TODO: If mode changes, pass the size through update display so display can change resolution
-    void DisplayFrame(Span<byte> frame);
-    void DisplayDebugSpriteTable(Span<byte> frame);
-    void DisplayDebugSpriteTileMemory(Span<byte> frame);
+    void DisplayFrame(ReadOnlySpan<byte> frame);
+    void DisplayDebugSpriteTable(ReadOnlySpan<byte> frame);
+    void DisplayDebugSpriteTileMemory(ReadOnlySpan<byte> frame);
     bool IsDebugSpriteTableEnabled();
     bool IsDebugSpriteTileMemoryEnabled();
 }

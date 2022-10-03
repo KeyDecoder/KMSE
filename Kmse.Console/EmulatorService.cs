@@ -19,6 +19,8 @@ internal class EmulatorService : BackgroundService
     private readonly ILogger _log;
     private readonly SerilogMemoryLogger _memoryLogger;
     private readonly string _romFilename;
+    private readonly Dictionary<ControllerInputStatus, bool> _currentInputAStatus;
+    private readonly Dictionary<ControllerInputStatus, bool> _currentInputBStatus;
 
     public EmulatorService(ILifetimeScope scope, ILogger log, Options options, IHostApplicationLifetime applicationLifetime,
         SerilogCpuLogger cpuLogger, SerilogMemoryLogger memoryLogger, SerilogIoLogger ioLogger)
@@ -30,6 +32,8 @@ internal class EmulatorService : BackgroundService
         _memoryLogger = memoryLogger;
         _ioLogger = ioLogger;
         _romFilename = options.Filename;
+        _currentInputAStatus = new Dictionary<ControllerInputStatus, bool>();
+        _currentInputBStatus = new Dictionary<ControllerInputStatus, bool>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -79,8 +83,27 @@ internal class EmulatorService : BackgroundService
 
     private void UpdateControllerEmulationForKey(IControllerPort controllerPort, ConsoleKey key, bool inputA, ControllerInputStatus button)
     {
-        // TODO: Not particularly efficient since we are setting this to be pressed or not pressed each time
         var pressed = Keyboard.IsKeyDown(key);
+        var currentInputStatus = inputA ? _currentInputAStatus : _currentInputBStatus;
+        if (!currentInputStatus.ContainsKey(button))
+        {
+            // Not cached, add it and update controller
+            currentInputStatus.Add(button, pressed);
+        }
+        else
+        {
+            if (currentInputStatus[button] == pressed)
+            {
+                // Button status unchanged, don't update
+                return;
+            }
+            else
+            {
+                // Button status changed, update cached copy and allow updating emulation via controller port
+                currentInputStatus[button] = pressed;
+            }
+        }
+
         if (inputA)
         {
             controllerPort.ChangeInputAControlState(button, pressed);
