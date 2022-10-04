@@ -15,6 +15,7 @@ public class Z80Cpu : IZ80Cpu
     private const int NopCycleCount = 4;
     private readonly IZ80AfRegister _af;
     private readonly IZ80BcRegister _bc;
+    private readonly IMasterSystemMemory _memory;
     private readonly ICpuLogger _cpuLogger;
     private readonly IZ80CpuCycleCounter _cycleCounter;
     private readonly IZ80DeRegister _de;
@@ -33,6 +34,7 @@ public class Z80Cpu : IZ80Cpu
     public Z80Cpu(IMasterSystemMemory memory, IMasterSystemIoManager io, ICpuLogger cpuLogger,
         IZ80InstructionLogger instructionLogger, IZ80CpuInstructions instructions, Z80CpuRegisters registers, Z80CpuManagement cpuManagement)
     {
+        _memory = memory;
         _cpuLogger = cpuLogger;
         _instructionLogger = instructionLogger;
 

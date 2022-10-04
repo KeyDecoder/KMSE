@@ -37,6 +37,10 @@
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.debugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loggingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.instructionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuItemLogInstructionToFile = new System.Windows.Forms.ToolStripMenuItem();
+            this.memoryAccessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuItemLogMemoryAccessToFile = new System.Windows.Forms.ToolStripMenuItem();
             this.spriteTileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.spritesDebugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tileMemoryDebugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -121,9 +125,42 @@
             // 
             // loggingToolStripMenuItem
             // 
+            this.loggingToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.instructionsToolStripMenuItem,
+            this.memoryAccessToolStripMenuItem});
             this.loggingToolStripMenuItem.Name = "loggingToolStripMenuItem";
-            this.loggingToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
+            this.loggingToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loggingToolStripMenuItem.Text = "Logging";
+            // 
+            // instructionsToolStripMenuItem
+            // 
+            this.instructionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuItemLogInstructionToFile});
+            this.instructionsToolStripMenuItem.Name = "instructionsToolStripMenuItem";
+            this.instructionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.instructionsToolStripMenuItem.Text = "Instructions";
+            // 
+            // mnuItemLogInstructionToFile
+            // 
+            this.mnuItemLogInstructionToFile.CheckOnClick = true;
+            this.mnuItemLogInstructionToFile.Name = "mnuItemLogInstructionToFile";
+            this.mnuItemLogInstructionToFile.Size = new System.Drawing.Size(180, 22);
+            this.mnuItemLogInstructionToFile.Text = "To File";
+            // 
+            // memoryAccessToolStripMenuItem
+            // 
+            this.memoryAccessToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuItemLogMemoryAccessToFile});
+            this.memoryAccessToolStripMenuItem.Name = "memoryAccessToolStripMenuItem";
+            this.memoryAccessToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.memoryAccessToolStripMenuItem.Text = "Memory Access";
+            // 
+            // mnuItemLogMemoryAccessToFile
+            // 
+            this.mnuItemLogMemoryAccessToFile.CheckOnClick = true;
+            this.mnuItemLogMemoryAccessToFile.Name = "mnuItemLogMemoryAccessToFile";
+            this.mnuItemLogMemoryAccessToFile.Size = new System.Drawing.Size(180, 22);
+            this.mnuItemLogMemoryAccessToFile.Text = "To File";
             // 
             // spriteTileToolStripMenuItem
             // 
@@ -131,7 +168,7 @@
             this.spritesDebugToolStripMenuItem,
             this.tileMemoryDebugToolStripMenuItem});
             this.spriteTileToolStripMenuItem.Name = "spriteTileToolStripMenuItem";
-            this.spriteTileToolStripMenuItem.Size = new System.Drawing.Size(127, 22);
+            this.spriteTileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.spriteTileToolStripMenuItem.Text = "Sprite/Tile";
             // 
             // spritesDebugToolStripMenuItem
@@ -339,5 +376,9 @@
         private ToolStripMenuItem tileMemoryDebugToolStripMenuItem;
         private OpenFileDialog diagOpenCartridge;
         private ToolStripStatusLabel lblFramesPerSecond;
+        private ToolStripMenuItem instructionsToolStripMenuItem;
+        private ToolStripMenuItem mnuItemLogInstructionToFile;
+        private ToolStripMenuItem memoryAccessToolStripMenuItem;
+        private ToolStripMenuItem mnuItemLogMemoryAccessToFile;
     }
 }

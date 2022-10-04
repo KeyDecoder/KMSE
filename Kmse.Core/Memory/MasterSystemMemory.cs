@@ -57,6 +57,7 @@ public class MasterSystemMemory : IMasterSystemMemory
     private int _firstBankPage;
     private int _secondBankPage = 1;
     private int _thirdBankPage = 2;
+    private bool _pagingEnabled = true;
 
     private readonly bool _isCodeMasters = false;
     private bool _oneMegCartridge;
@@ -81,6 +82,10 @@ public class MasterSystemMemory : IMasterSystemMemory
         // Normally SMS would copy the first three pages of the ROM into internal memory
         // Each page is 0x4000 bytes so this is 0xC000 bytes
         // However since we access the ROM directly in the read memory method below, we can essentially skip this here
+
+        // If 32kb ROM, then don't use paging since not required
+        // This maps ROM from 0x0000 to 0x8000
+        _pagingEnabled = _cartridgeROM.Length >= 0x8000;
     }
 
     public byte this[ushort address]
@@ -230,56 +235,65 @@ public class MasterSystemMemory : IMasterSystemMemory
 
     private byte ReadMemory(ushort address)
     {
-        var readAddress = address;
-
-        if (!_isCodeMasters && readAddress < 0x400)
+        if (!_isCodeMasters && address < 0x400)
         {
             // Fixed memory in cartridge that never changes so can return directly since no paging look ups required
-            return ReadRom(readAddress);
+            return ReadRom(address);
         }
 
-        if (readAddress < MemorySlot1 + MemoryPageSize)
+        if (!_pagingEnabled && address < 0x8000)
+        {
+            return ReadRom(address);
+        }
+        else if (_pagingEnabled && address < MemorySlot3 + MemoryPageSize)
+        {
+            return ReadMemoryViaPaging(address);
+        }
+
+        return ReadRam(address);
+    }
+
+    private byte ReadMemoryViaPaging(ushort address)
+    {
+        ushort offsetInPage = 0;
+        int bankAddress = 0;
+        if (address < MemorySlot1 + MemoryPageSize)
         {
             // 0 - 0x4000
             // Reading data from slot 1, use page to lookup ROM data
             // We just add since accessing inside the first slot
-            var offsetInPage = readAddress;
-            var bankAddress = offsetInPage + MemoryPageSize * _firstBankPage;
+            offsetInPage = address;
+            bankAddress = offsetInPage + MemoryPageSize * _firstBankPage;
             return ReadRom(bankAddress);
         }
 
-        if (readAddress < MemorySlot2 + MemoryPageSize)
+        if (address < MemorySlot2 + MemoryPageSize)
         {
             // 0x4000 - 0x8000
             // Reading data from slot 2, use page to lookup ROM data
-            var offsetInPage = (ushort)(readAddress - MemorySlot2);
-            var bankAddress = offsetInPage + MemoryPageSize * _secondBankPage;
+            offsetInPage = (ushort)(address - MemorySlot2);
+            bankAddress = offsetInPage + MemoryPageSize * _secondBankPage;
             return ReadRom(bankAddress);
         }
 
-        if (readAddress < MemorySlot3 + MemoryPageSize)
+        // 0x8000 - 0xBFFF
+        if (_currentRamBank > -1 && _currentRamBank < 2)
         {
-            // 0x8000 - 0xBFFF
-            if (_currentRamBank > -1 && _currentRamBank < 2)
-            {
-                // Return data from ram bank and adjust address to offset page * 2 since slot 3
-                return ReadRamBank(_currentRamBank, (ushort)(address - MemoryPageSize * 2));
-            }
-
-            if (_currentRamBank > 1)
-            {
-                _memoryLogger.Error($"Attempted to read RAM bank {_currentRamBank} which does not exist");
-                throw new InvalidOperationException($"Attempted to read RAM bank {_currentRamBank} which does not exist");
-            }
-
-            // Reading data from slot 2, use page to lookup ROM data
-            // Adjust address to offset page * 2 since slot 3
-            var offsetInPage = (ushort)(readAddress - MemorySlot3);
-            var bankAddress = offsetInPage + MemoryPageSize * _thirdBankPage;
-            return ReadRom(bankAddress);
+            // Return data from ram bank and adjust address to offset page * 2 since slot 3
+            return ReadRamBank(_currentRamBank, (ushort)(address - MemoryPageSize * 2));
         }
 
-        return ReadRam(readAddress);
+        if (_currentRamBank > 1)
+        {
+            _memoryLogger.Error($"Attempted to read RAM bank {_currentRamBank} which does not exist");
+            throw new InvalidOperationException($"Attempted to read RAM bank {_currentRamBank} which does not exist");
+        }
+
+        // Reading data from slot 2, use page to lookup ROM data
+        // Adjust address to offset page * 2 since slot 3
+        offsetInPage = (ushort)(address - MemorySlot3);
+        bankAddress = offsetInPage + MemoryPageSize * _thirdBankPage;
+        return ReadRom(bankAddress);
     }
 
     private void WriteToMemoryControlRegisters(ushort address, byte data)

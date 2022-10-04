@@ -75,7 +75,7 @@ public class CpuExecutionFixture : CpuTestFixtureBase
     public void WhenExecutingDdCbSpecialInstruction()
     {
         Registers.IX = Substitute.For<IZ80IndexRegisterX>();
-        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement, Substitute.For<IZ80MemoryRefreshRegister>());
         Cpu = new Z80Cpu(Memory, Io, CpuLogger, InstructionLogger, cpuInstructions, Registers, CpuManagement);
 
         PrepareForTest();
@@ -96,8 +96,9 @@ public class CpuExecutionFixture : CpuTestFixtureBase
     [Test]
     public void WhenExecutingFdCbSpecialInstruction()
     {
+        var memoryRefreshRegister = Substitute.For<IZ80MemoryRefreshRegister>();
         Registers.IY = Substitute.For<IZ80IndexRegisterY>();
-        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement, memoryRefreshRegister);
         Cpu = new Z80Cpu(Memory, Io, CpuLogger, InstructionLogger, cpuInstructions, Registers, CpuManagement);
 
         PrepareForTest();
@@ -108,6 +109,8 @@ public class CpuExecutionFixture : CpuTestFixtureBase
         Memory[0x02].Returns((byte)0x02);
         Memory[0x03].Returns((byte)0x86);
         Cpu.ExecuteNextCycle().Should().Be(23);
+
+        memoryRefreshRegister.Received(1).Increment(2);
 
         var status = Cpu.GetStatus();
         status.Pc.Should().Be(0x04);

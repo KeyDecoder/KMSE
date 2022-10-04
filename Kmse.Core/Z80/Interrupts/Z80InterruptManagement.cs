@@ -6,12 +6,14 @@ namespace Kmse.Core.Z80.Interrupts;
 public class Z80InterruptManagement : IZ80InterruptManagement
 {
     private ICpuLogger _cpuLogger;
+    private readonly IZ80MemoryRefreshRegister _refreshRegister;
     private readonly IZ80ProgramCounter _programCounter;
 
-    public Z80InterruptManagement(IZ80ProgramCounter programCounter, ICpuLogger cpuLogger)
+    public Z80InterruptManagement(IZ80ProgramCounter programCounter, ICpuLogger cpuLogger, IZ80MemoryRefreshRegister refreshRegister)
     {
         _programCounter = programCounter;
         _cpuLogger = cpuLogger;
+        _refreshRegister = refreshRegister;
     }
 
     /// <summary>
@@ -25,6 +27,8 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     ///     IFF2
     /// </summary>
     public bool InterruptEnableFlipFlopTempStorageStatus { get; private set; }
+
+    public bool MaskableInterruptDelay { get; private set; }
 
     /// <summary>
     ///     Current Interrupt mode, used for maskable interrupts
@@ -89,6 +93,8 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     {
         InterruptEnableFlipFlopStatus = true;
         InterruptEnableFlipFlopTempStorageStatus = true;
+        // When enabling interrupts, we always skip handling the interrupt for the the first instruction after an EI
+        MaskableInterruptDelay = true;
         ClearMaskableInterrupt();
     }
 
@@ -121,6 +127,15 @@ public class Z80InterruptManagement : IZ80InterruptManagement
             return ProcessNonMaskableInterrupt();
         }
 
+        // When an EI instruction is executed, any pending interrupt request is not accepted until after the
+        // instruction following EI is executed.This single instruction delay is necessary when the
+        // next instruction is a return instruction.
+        if (MaskableInterruptDelay)
+        {
+            MaskableInterruptDelay = false;
+            return 0;
+        }
+
         if (InterruptEnableFlipFlopStatus && MaskableInterrupt)
         {
             return ProcessMaskableInterrupt();
@@ -133,6 +148,8 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     {
         _cpuLogger.LogInstruction(_programCounter.Value, "NMI", "Non Maskable Interrupt", "Non Maskable Interrupt",
             string.Empty);
+
+        _refreshRegister.Increment(1);
 
         // Copy state of IFF1 into IFF2 to keep a copy and reset IFF1 so processing can continue without a masked interrupt occuring
         // This gets copied back with a RETN occurs
@@ -153,6 +170,8 @@ public class Z80InterruptManagement : IZ80InterruptManagement
     {
         _cpuLogger.LogInstruction(_programCounter.Value, "MI", "Maskable Interrupt", "Maskable Interrupt",
             $"Mode {InterruptMode}");
+
+        _refreshRegister.Increment(1);
 
         DisableMaskableInterrupts();
 

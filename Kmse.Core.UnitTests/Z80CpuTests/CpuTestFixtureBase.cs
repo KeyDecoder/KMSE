@@ -59,7 +59,7 @@ public abstract class CpuTestFixtureBase
 
         var ioManagement = new Z80CpuInputOutputManager(Io, af.Flags);
         var memoryManagement = new Z80CpuMemoryManagement(Memory, af.Flags);
-        InterruptManagement = new Z80InterruptManagement(pc, CpuLogger);
+        InterruptManagement = new Z80InterruptManagement(pc, CpuLogger, rRegister);
         var cycleCounter = new Z80CpuCycleCounter();
         var runningStateManager = new Z80CpuRunningStateManager(CpuLogger);
 
@@ -84,7 +84,7 @@ public abstract class CpuTestFixtureBase
             CycleCounter = cycleCounter,
             RunningStateManager = runningStateManager,
         };
-        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(Memory, Io, CpuLogger, Registers, CpuManagement, rRegister);
         Cpu = new Z80Cpu(Memory, Io, CpuLogger, InstructionLogger, cpuInstructions, Registers, CpuManagement);
     }
 }

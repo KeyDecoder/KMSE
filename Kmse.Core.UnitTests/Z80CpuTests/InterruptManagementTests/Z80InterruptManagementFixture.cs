@@ -11,12 +11,14 @@ public class Z80InterruptManagementFixture
 {
     private Z80InterruptManagement _interruptManagement;
     private IZ80ProgramCounter _programCounter;
+    private IZ80MemoryRefreshRegister _refreshRegister;
 
     [SetUp]
     public void Setup()
     {
         _programCounter = Substitute.For<IZ80ProgramCounter>();
-        _interruptManagement = new Z80InterruptManagement(_programCounter, Substitute.For<ICpuLogger>());
+        _refreshRegister = Substitute.For<IZ80MemoryRefreshRegister>();
+        _interruptManagement = new Z80InterruptManagement(_programCounter, Substitute.For<ICpuLogger>(), _refreshRegister);
     }
 
     [Test]
@@ -65,6 +67,7 @@ public class Z80InterruptManagementFixture
         var cycleCount = _interruptManagement.ProcessInterrupts();
 
         cycleCount.Should().Be(11);
+        _refreshRegister.Received(1).Increment(1);
         _programCounter.Received(1).SetAndSaveExisting(0x66);
         _interruptManagement.NonMaskableInterrupt.Should().BeFalse();
     }
@@ -100,6 +103,25 @@ public class Z80InterruptManagementFixture
     }
 
     [Test]
+    public void WhenProcessingMaskableInterruptThenInterruptNotHandledOnNextInstruction()
+    {
+        _interruptManagement.SetInterruptMode(1);
+        _interruptManagement.EnableMaskableInterrupts();
+        _interruptManagement.SetMaskableInterrupt();
+
+        var cycleCount = _interruptManagement.ProcessInterrupts();
+
+        cycleCount.Should().Be(0);
+        _refreshRegister.DidNotReceive().Increment(1);
+
+        _interruptManagement.MaskableInterrupt.Should().BeTrue();
+        _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeTrue();
+        _interruptManagement.InterruptEnableFlipFlopTempStorageStatus.Should().BeTrue();
+
+        _programCounter.DidNotReceiveWithAnyArgs().SetAndSaveExisting(0);
+    }
+
+    [Test]
     [TestCase(0)]
     [TestCase(1)]
     public void WhenProcessingMaskableInterruptMode0Or1ThenJumpTo38H(byte mode)
@@ -108,9 +130,11 @@ public class Z80InterruptManagementFixture
         _interruptManagement.EnableMaskableInterrupts();
         _interruptManagement.SetMaskableInterrupt();
 
+        _interruptManagement.ProcessInterrupts();
         var cycleCount = _interruptManagement.ProcessInterrupts();
 
         cycleCount.Should().Be(11);
+        _refreshRegister.Received(1).Increment(1);
 
         _interruptManagement.MaskableInterrupt.Should().BeFalse();
         _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeFalse();
@@ -126,9 +150,11 @@ public class Z80InterruptManagementFixture
         _interruptManagement.EnableMaskableInterrupts();
         _interruptManagement.SetMaskableInterrupt();
 
+        _interruptManagement.ProcessInterrupts();
         var cycleCount = _interruptManagement.ProcessInterrupts();
 
         cycleCount.Should().Be(4);
+        _refreshRegister.Received(1).Increment(1);
 
         _interruptManagement.MaskableInterrupt.Should().BeFalse();
         _interruptManagement.InterruptEnableFlipFlopStatus.Should().BeFalse();

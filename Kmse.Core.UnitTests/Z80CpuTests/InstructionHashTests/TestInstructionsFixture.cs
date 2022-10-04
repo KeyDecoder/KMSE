@@ -63,7 +63,7 @@ public class TestInstructionsFixture
 
         var ioManagement = new Z80CpuInputOutputManager(_io, af.Flags);
         var memoryManagement = new Z80CpuMemoryManagement(_memory, af.Flags);
-        var interruptManagement = new Z80InterruptManagement(pc, _cpuLogger);
+        var interruptManagement = new Z80InterruptManagement(pc, _cpuLogger, rRegister);
         var cycleCounter = new Z80CpuCycleCounter();
         var runningStateManager = new Z80CpuRunningStateManager(_cpuLogger);
 
@@ -89,7 +89,7 @@ public class TestInstructionsFixture
             RunningStateManager = runningStateManager
         };
 
-        var cpuInstructions = new Z80CpuInstructions(_memory, _io, _cpuLogger, registers, cpuManagement);
+        var cpuInstructions = new Z80CpuInstructions(_memory, _io, _cpuLogger, registers, cpuManagement, rRegister);
         _cpu = new Z80Cpu(_memory, _io, _cpuLogger, instructionLogger, cpuInstructions, registers, cpuManagement);
     }
 

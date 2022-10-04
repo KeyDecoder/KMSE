@@ -6,6 +6,10 @@ using System.Security;
 using Autofac;
 using Kmse.Core;
 using Kmse.Core.IO.Controllers;
+using Kmse.Core.Z80;
+using Kmse.Core.Z80.Model;
+using Kmse.Core.Z80.Registers.General;
+using Kmse.Core.Z80.Registers.SpecialPurpose;
 using Timer = System.Windows.Forms.Timer;
 
 namespace Kmse.TestUi
@@ -15,6 +19,9 @@ namespace Kmse.TestUi
         private readonly ILifetimeScope _scope;
         private IMasterSystemConsole _console;
         private IControllerPort _controllers;
+        private IZ80Cpu _cpu;
+        private IZ80FlagsManager _flags;
+        private IZ80ProgramCounter _pc;
         private ILifetimeScope _emulationScope;
 
         delegate void LogMessageCallback(string text);
@@ -22,21 +29,24 @@ namespace Kmse.TestUi
         private Thread _emulatorThread;
         private CancellationTokenSource _emulationCancellationTokenSource;
 
-        private Bitmap _mainFrameBitmap;
-        private Bitmap _debugSpritesBitmap;
-        private Bitmap _debugTileMemoryBitmap;
+        private readonly Bitmap _mainFrameBitmap;
+        private readonly Bitmap _debugSpritesBitmap;
+        private readonly Bitmap _debugTileMemoryBitmap;
 
-        private BufferedGraphics _mainFrameBufferedGraphics;
-        private BufferedGraphics _debugSpritesBufferedGraphics;
-        private BufferedGraphics _debugTileMemoryBufferedGraphics;
+        private readonly BufferedGraphics _mainFrameBufferedGraphics;
+        private readonly BufferedGraphics _debugSpritesBufferedGraphics;
+        private readonly BufferedGraphics _debugTileMemoryBufferedGraphics;
 
-        private SemaphoreSlim _mainDisplayUpdateSemaphore;
-        private SemaphoreSlim _debugSpritesDisplayUpdateSemaphore;
-        private SemaphoreSlim _debugTileMemoryDisplayUpdateSemaphore;
+        private readonly SemaphoreSlim _mainDisplayUpdateSemaphore;
+        private readonly SemaphoreSlim _debugSpritesDisplayUpdateSemaphore;
+        private readonly SemaphoreSlim _debugTileMemoryDisplayUpdateSemaphore;
 
-        private readonly Timer _fpsTimer;
-        private Stopwatch _fpsStopWatch;
+        private readonly Timer _fpsTimer = new();
+        private readonly Stopwatch _fpsStopWatch;
         private int _frameCount;
+
+        private TextWriter _instructionLogWriter;
+        private TextWriter _memoryAccessWriter;
 
         public frmMain(ILifetimeScope scope)
         {
@@ -58,35 +68,9 @@ namespace Kmse.TestUi
             _debugSpritesDisplayUpdateSemaphore = new SemaphoreSlim(1);
             _debugTileMemoryDisplayUpdateSemaphore = new SemaphoreSlim(1);
 
-            _fpsTimer = new Timer();
             _fpsTimer.Interval = 1000;
             _fpsStopWatch = new Stopwatch();
             _fpsTimer.Tick += UpdateFramesPerSecond;
-        }
-
-        private void WriteToDebugLogControl(string text)
-        {
-            if (txtDebugLog.InvokeRequired)
-            {
-                var callback = new LogMessageCallback(WriteToDebugLogControl);
-                try
-                {
-                    Invoke(callback, text);
-                }
-                catch (ObjectDisposedException)
-                {
-                }
-
-                return;
-            }
-
-            try
-            {
-                txtDebugLog.AppendText($"{text}{Environment.NewLine}");
-            }
-            catch (ObjectDisposedException)
-            {
-            }
         }
 
         public void LogDebug(string message)
@@ -109,12 +93,23 @@ namespace Kmse.TestUi
         {
             // Disable this for now to avoid overloading the UI
             //WriteToDebugLogControl(message);
+            if (IsLogInstructionsToFileEnabled())
+            {
+                _instructionLogWriter ??= new StreamWriter($@"instructions-{Path.GetFileNameWithoutExtension(_currentCartridgeFilename)}-{DateTime.Now.ToString("ddMMyyyyhhmm")}.txt");
+                _instructionLogWriter.WriteLine($"{message} {GetRegistersAsString()} {GetFlagsAsString()}");
+            }
         }
 
         public void LogMemoryOperation(string message)
         {
             // Disable this for now to avoid overloading the UI
             //WriteToDebugLogControl(message);
+
+            if (IsLogMemoryAccessToFileEnabled())
+            {
+                _memoryAccessWriter ??= new StreamWriter($@"memoryaccess-{Path.GetFileNameWithoutExtension(_currentCartridgeFilename)}-{DateTime.Now.ToString("ddMMyyyyhhmm")}.txt");
+                _memoryAccessWriter.WriteLine($"{_pc.Value:X4}: {message} {GetRegistersAsString()} {GetFlagsAsString()}");
+            }
         }
 
         public void DrawMainFrame(ReadOnlySpan<byte> frame)
@@ -156,7 +151,62 @@ namespace Kmse.TestUi
             return spritesDebugToolStripMenuItem.Checked;
         }
 
-        private void WriteFrameToBitMap(ReadOnlySpan<byte> frame, Bitmap bitmap, SemaphoreSlim semaphore)
+        public bool IsLogInstructionsToFileEnabled()
+        {
+            return mnuItemLogInstructionToFile.Checked;
+        }
+
+        public bool IsLogMemoryAccessToFileEnabled()
+        {
+            return mnuItemLogMemoryAccessToFile.Checked;
+        }
+
+        private string GetRegistersAsString()
+        {
+            var status = _cpu.GetStatus();
+            return $"AF:{status.Af.Word:X4} BC:{status.Bc.Word:X4} DE:{status.De.Word:X4} HL:{status.Hl.Word:X4} IX:{status.Ix.Word:X4} IY:{status.Iy.Word:X4} PC: {status.Pc:X4} SP:{status.StackPointer:X4}";
+        }
+
+        private string GetFlagsAsString()
+        {
+            // ReSharper disable once UseStringInterpolation
+            return string.Format("({0}{1}{2}{3}{4}{5}{6}{7})",
+                _flags.IsFlagSet(Z80StatusFlags.SignS) ? "S" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.ZeroZ) ? "Z" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.NotUsedX5) ? "X5" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.HalfCarryH) ? "H" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.NotUsedX3) ? "X3" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.ParityOverflowPV) ? "P" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.AddSubtractN) ? "N" : "-",
+                _flags.IsFlagSet(Z80StatusFlags.CarryC) ? "C" : "-");
+        }
+
+        private void WriteToDebugLogControl(string text)
+        {
+            if (txtDebugLog.InvokeRequired)
+            {
+                var callback = new LogMessageCallback(WriteToDebugLogControl);
+                try
+                {
+                    Invoke(callback, text);
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+
+                return;
+            }
+
+            try
+            {
+                txtDebugLog.AppendText($"{text}{Environment.NewLine}");
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        private static void WriteFrameToBitMap(ReadOnlySpan<byte> frame, Bitmap bitmap, SemaphoreSlim semaphore)
         {
             if (!semaphore.Wait(10))
             {
@@ -262,6 +312,9 @@ namespace Kmse.TestUi
             _emulationScope = _scope.BeginLifetimeScope();
             _console = _emulationScope.Resolve<IMasterSystemConsole>();
             _controllers = _emulationScope.Resolve<IControllerPort>();
+            _cpu = _emulationScope.Resolve<IZ80Cpu>();
+            _flags = _emulationScope.Resolve<IZ80FlagsManager>();
+            _pc = _emulationScope.Resolve<IZ80ProgramCounter>();
 
             var status = await _console.LoadCartridge(_currentCartridgeFilename, _emulationCancellationTokenSource.Token);
             if (!status)
@@ -375,6 +428,13 @@ namespace Kmse.TestUi
             {
                 _emulationCancellationTokenSource?.Cancel();
             }
+
+            _emulatorThread?.Join(TimeSpan.FromSeconds(1));
+
+            _instructionLogWriter?.Flush();
+            _memoryAccessWriter?.Flush();
+            _instructionLogWriter?.Dispose();
+            _memoryAccessWriter?.Dispose();
         }
 
         private void UpdateFramesPerSecond(object sender, EventArgs e)

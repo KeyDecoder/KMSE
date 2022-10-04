@@ -16,6 +16,7 @@ namespace Kmse.Core.Z80.Instructions;
 public class Z80CpuInstructions : IZ80CpuInstructions
 {
     private readonly ICpuLogger _cpuLogger;
+    private readonly IZ80MemoryRefreshRegister _refreshRegister;
     private readonly IMasterSystemIoManager _io;
     private readonly IMasterSystemMemory _memory;
     private readonly IZ80ProgramCounter _pc;
@@ -42,9 +43,10 @@ public class Z80CpuInstructions : IZ80CpuInstructions
     private readonly IZ80CpuCycleCounter _cycleCounter;
     private readonly IZ80CpuRunningStateManager _runningStateManager;
 
-    public Z80CpuInstructions(IMasterSystemMemory memory, IMasterSystemIoManager io, ICpuLogger cpuLogger, Z80CpuRegisters registers, Z80CpuManagement cpuManagement)
+    public Z80CpuInstructions(IMasterSystemMemory memory, IMasterSystemIoManager io, ICpuLogger cpuLogger, Z80CpuRegisters registers, Z80CpuManagement cpuManagement, IZ80MemoryRefreshRegister refreshRegister)
     {
         _cpuLogger = cpuLogger;
+        _refreshRegister = refreshRegister;
         _memory = memory;
         _io = io;
 
@@ -104,6 +106,8 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
     private Instruction ProcessGenericNonPrefixedOpCode(byte opCode)
     {
+        _refreshRegister.Increment(1);
+
         if (!_genericInstructions.TryGetValue(opCode, out var instruction))
         {
             _cpuLogger.Error($"Unhandled instruction - {opCode:X2}");
@@ -120,6 +124,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         // Normal CB instruction, just do a lookup for the instruction
         if (mode == CbInstructionModes.Normal)
         {
+            _refreshRegister.Increment(2);
             if (!_cbInstructions.TryGetValue(opCode, out var instruction))
             {
                 _cpuLogger.Error($"Unhandled 0xCB instruction - {opCode:X2}");
@@ -130,6 +135,9 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         // Special instruction which is actually 4 bytes and has started with a different prefix op code
         // FD/DD CB XX OpCode
+
+        // Undocumented note, even though this does 3 instruction fetches for special instructions, it still only increments the refresh register by 2
+        _refreshRegister.Increment(2);
 
         // We need to read another byte which is the actual op code we use to lookup since third byte is data
         var fourthOpCode = _pc.GetNextInstruction();
@@ -168,6 +176,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
             return ProcessCbOpCode(CbInstructionModes.DD);
         }
 
+        _refreshRegister.Increment(2);
         if (!_ddInstructions.TryGetValue(secondOpCode, out var instruction))
         {
             _cpuLogger.Error($"Unhandled 0xDD instruction - {secondOpCode:X2}");
@@ -186,6 +195,8 @@ public class Z80CpuInstructions : IZ80CpuInstructions
             // ie. FD CB data opcode
             return ProcessCbOpCode(CbInstructionModes.FD);
         }
+
+        _refreshRegister.Increment(2);
         if (!_fdInstructions.TryGetValue(secondOpCode, out var instruction))
         {
             _cpuLogger.Error($"Unhandled 0xFD instruction - {secondOpCode:X2}");
@@ -196,6 +207,8 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
     private Instruction ProcessEdOpCode()
     {
+        _refreshRegister.Increment(2);
+
         // Two byte op code, so get next part of instruction and use that to lookup instruction
         var secondOpCode = _pc.GetNextInstruction();
         if (!_edInstructions.TryGetValue(secondOpCode, out var instruction))

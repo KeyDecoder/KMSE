@@ -57,7 +57,7 @@ public class MasterSystemCartridge : IMasterSystemCartridge
 
     private byte ReadMemory(int address)
     {
-        if (address > _processedRom.Length)
+        if (address >= _processedRom.Length)
         {
             _logger.Error("Attempt to read past end of available cartridge memory (request: {Address}, ROM length: {Length}", address, _processedRom.Length);
             return 0x00;
