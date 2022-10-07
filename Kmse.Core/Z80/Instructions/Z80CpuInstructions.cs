@@ -331,7 +331,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddStandardInstruction(0x10, DynamicCycleHandling, "DJNZ $+2", "Decrement, Jump if Non-Zero", _ =>
         {
-            _b.Decrement();
+            _b.DecrementNoFlags();
             var offset = _pc.GetNextDataByte();
             if (_b.Value != 0)
             {
@@ -372,7 +372,10 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddStandardInstruction(0xF7, 11, "RST 30H", "Restart at 30h", _ => { _pc.SetAndSaveExisting(0x30); });
         AddStandardInstruction(0xFF, 11, "RST 38H", "Restart at 38h", _ => { _pc.SetAndSaveExisting(0x38); });
 
-        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ => { _pc.SetFromStack(); _interruptManagement.ClearMaskableInterrupt(); });
+        AddDoubleByteInstruction(0xED, 0x4D, 14, "RETI", "Return from Interrupt", _ =>
+        {
+            _pc.SetFromStack(); 
+        });
         AddDoubleByteInstruction(0xED, 0x45, 14, "RETN", "Return from NMI", _ =>
         {
             _pc.SetFromStack(); 

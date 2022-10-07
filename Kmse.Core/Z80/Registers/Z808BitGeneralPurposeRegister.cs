@@ -25,6 +25,12 @@ public class Z808BitGeneralPurposeRegister : Z808BitRegister, IZ808BitGeneralPur
         CheckDecrementFlags(newValue, oldValue);
     }
 
+    public void DecrementNoFlags()
+    {
+        var newValue = (byte)(Value - 1);
+        Set(newValue);
+    }
+
     public void ClearBit(int bit)
     {
         if (bit is < 0 or > 7)
