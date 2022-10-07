@@ -255,8 +255,8 @@ public class MasterSystemMemory : IMasterSystemMemory
 
     private byte ReadMemoryViaPaging(ushort address)
     {
-        ushort offsetInPage = 0;
-        int bankAddress = 0;
+        ushort offsetInPage;
+        int bankAddress;
         if (address < MemorySlot1 + MemoryPageSize)
         {
             // 0 - 0x4000

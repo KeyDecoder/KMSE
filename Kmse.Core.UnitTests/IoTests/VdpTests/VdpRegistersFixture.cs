@@ -51,7 +51,7 @@ public class VdpRegistersFixture
         }
 
         _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeFalse();
-        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeFalse();
+        _registers.IsHorizontalScrollingEnabledForRows0To15().Should().BeFalse();
         _registers.MaskColumn0WithOverscanColor().Should().BeTrue();
         _registers.IsLineInterruptEnabled().Should().BeTrue();
         _registers.ShiftSpritesLeftBy8Pixels().Should().BeTrue();
@@ -86,7 +86,7 @@ public class VdpRegistersFixture
         _registers.SetRegister(0x0A, 0xFF);
 
         _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeTrue();
-        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeTrue();
+        _registers.IsHorizontalScrollingEnabledForRows0To15().Should().BeTrue();
         _registers.MaskColumn0WithOverscanColor().Should().BeTrue();
         _registers.IsLineInterruptEnabled().Should().BeTrue();
         _registers.ShiftSpritesLeftBy8Pixels().Should().BeFalse();
@@ -140,7 +140,7 @@ public class VdpRegistersFixture
         }
 
         _registers.IsVerticalScrollingEnabledForColumns24To31().Should().BeTrue();
-        _registers.IsHorizontalScrollingEnabledForRows0To1().Should().BeTrue();
+        _registers.IsHorizontalScrollingEnabledForRows0To15().Should().BeTrue();
         _registers.MaskColumn0WithOverscanColor().Should().BeFalse();
         _registers.IsLineInterruptEnabled().Should().BeFalse();
         _registers.ShiftSpritesLeftBy8Pixels().Should().BeFalse();

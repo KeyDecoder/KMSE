@@ -19,6 +19,15 @@ namespace Kmse.Core.IO.Vdp.Rendering
         private Memory<byte> _pixels;
         private Memory<byte> _debugSpriteTablePixels;
         private Memory<byte> _debugSpriteTileMemoryPixels;
+        private Memory<PixelStatus> _pixelInformation;
+
+        private enum PixelStatus
+        {
+            Transparent,
+            BackgroundLowPriority,
+            BackgroundHighPriority,
+            Sprite
+        }
 
         public VdpMode4DisplayModeRenderer(IVdpRegisters registers, IVdpRam ram, IVdpDisplayUpdater displayUpdater, IVdpVerticalCounter verticalCounter, IVdpFlags flags, IIoPortLogger ioPortLogger)
         {
@@ -33,6 +42,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
             _pixels = new Memory<byte>(new byte[256 * 192 * 4]);
             _debugSpriteTablePixels = new Memory<byte>(new byte[256 * 192 * 4]);
             _debugSpriteTileMemoryPixels = new Memory<byte>(new byte[256 * 192 * 4]);
+            _pixelInformation = new Memory<PixelStatus>(new PixelStatus[256 * 192]);
         }
 
         public void Reset()
@@ -44,6 +54,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
         {
             var colours = GetColor(false, _registers.GetOverscanBackdropColour());
             ResetPixels(_pixels, colours.red, colours.green, colours.blue);
+            _pixelInformation.Span.Fill(PixelStatus.Transparent);
         }
 
         public void RenderLine()
@@ -62,15 +73,35 @@ namespace Kmse.Core.IO.Vdp.Rendering
         private void RenderBackground()
         {
             var nameTableBaseAddress = _registers.GetNameTableBaseAddressOffset();
+            var startingColumn = _registers.GetBackgroundXStartingColumn();
+            var fineScrollValue = _registers.GetBackgroundXFineScrollValue();
+            var yScroll = _registers.GetBackgroundYScroll();
+            var maskColumn0 = _registers.MaskColumn0WithOverscanColor();
+            var column0Mask = _registers.GetOverscanBackdropColour();
 
             // Background is 32 8x8 tiles across each line
             // For each line, we draw the line of each tile
 
+            if (_verticalCounter.RawCounter > 192)
+            {
+                // Gone below active display
+                return;
+            }
+
             // Tile index depends on the tile line we are on x 32
             var tileRow = ((byte)Math.Floor((double)_verticalCounter.RawCounter / 8));
-            var tileIndex = tileRow * 32;
-            for (var tileX = 0; tileX < 32; tileX++)
+
+            if (_registers.IsHorizontalScrollingEnabledForRows0To15() && tileRow < 2)
             {
+                // Scrolling is disabled for rows 0 - 15 or top two sets of tiles, so set starting column and fine scroll value to 0
+                fineScrollValue = 0;
+                startingColumn = 0;
+            }
+
+            var tileIndex = (tileRow * 32) + (32 - startingColumn);
+            for (var column = 0; column < 32; column++)
+            {
+                // Tile index in name table starts at start column and wraps at 32
                 var address = (ushort)(nameTableBaseAddress + (tileIndex * 2));
                 var firstByte = _ram.ReadRawVideoRam(address);
                 address++;
@@ -94,11 +125,37 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 var patternIndex = (byte)(tileInformation & 0xFF);
                 var patternAddress = (ushort)(patternIndex * 32);
 
-                var xOffset = tileX * 8;
+                var xOffset = (column * 8) + fineScrollValue;
+                // Wrap around if goes off the edge due to fine scroll
+                xOffset %= 256;
                 var yOffset = _verticalCounter.RawCounter;
                 var tileYOffset = _verticalCounter.RawCounter - tileRow * 8;
 
-                RenderTilePatternLine(_pixels, secondPalette, patternAddress, 8, xOffset, tileYOffset, yOffset);
+                if (xOffset >= 0)
+                {
+                    RenderTilePatternLine(_pixels, secondPalette, patternAddress, 8, xOffset, tileYOffset, yOffset,
+                        false, priority, true);
+                }
+
+                if (maskColumn0 && column == 0)
+                {
+                    // Mask first column out and leave as background colour
+                    // Note that we override what was there since some backgrounds will draw partially as they scroll horizontally 
+                    // and this hides that
+                    var colours = GetColor(secondPalette, column0Mask);
+                    for (var i = 0; i < 8; i++)
+                    {
+                        var index = GetPixelIndex(i, _verticalCounter.RawCounter);
+                        _pixels.Span[index + 0] = colours.blue;
+                        _pixels.Span[index + 1] = colours.green;
+                        _pixels.Span[index + 2] = colours.red;
+                        _pixels.Span[index + 3] = colours.alpha;
+                    }
+
+                    // Mark as high priority background since sprites cannot display over this
+                    SetPixelStatus(xOffset, yOffset, PixelStatus.BackgroundHighPriority);
+                    continue;
+                }
 
                 tileIndex++;
             }
@@ -130,7 +187,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 var patternAddress = (ushort)(_registers.GetSpritePatternGeneratorBaseAddressOffset() + (sprite.PatternIndex * 32));
 
                 var spriteYOffset = _verticalCounter.RawCounter - sprite.Y;
-                RenderTilePatternLine(_pixels, true, patternAddress, spriteWidth, sprite.X, spriteYOffset, _verticalCounter.RawCounter);
+                RenderTilePatternLine(_pixels, true, patternAddress, spriteWidth, sprite.X, spriteYOffset, _verticalCounter.RawCounter, true, false, true);
             }
         }
 
@@ -164,7 +221,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
 
                 for (var y = 0; y < spriteHeight; y++)
                 {
-                    RenderTilePatternLine(_debugSpriteTablePixels, true, patternAddress, spriteWidth, xOffset, y, yOffset+y);
+                    RenderTilePatternLine(_debugSpriteTablePixels, true, patternAddress, spriteWidth, xOffset, y, yOffset+y, true, false, false);
                 }
 
                 spriteCounter++;
@@ -202,7 +259,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 for (var y = 0; y < 8; y++)
                 {
                     // Since we are rendering all the tiles and sprites, we use the tile palette
-                    RenderTilePatternLine(_debugSpriteTileMemoryPixels, true, patternAddress, spriteWidth, xOffset, y, yOffset + y);
+                    RenderTilePatternLine(_debugSpriteTileMemoryPixels, true, patternAddress, spriteWidth, xOffset, y, yOffset + y, true, false, false);
                 }
 
                 spriteCounter++;
@@ -215,7 +272,7 @@ namespace Kmse.Core.IO.Vdp.Rendering
             _displayUpdater.DisplayDebugSpriteTileMemory(_debugSpriteTileMemoryPixels.Span);
         }
 
-        private void RenderTilePatternLine(Memory<byte> frame, bool secondPalette, ushort patternAddress, byte tileWidth, int xStart, int tileYOffset, int yline)
+        private void RenderTilePatternLine(Memory<byte> frame, bool secondPalette, ushort patternAddress, byte tileWidth, int xStart, int tileYOffset, int yline, bool isSprite, bool tileHighPriority, bool usePixelInformation)
         {
             // Get offset of 4 bytes for this line
             var patternLineAddress = (ushort)(patternAddress + (tileYOffset * 4));
@@ -252,14 +309,46 @@ namespace Kmse.Core.IO.Vdp.Rendering
                 }
 
                 var colourAddress = (ushort)(colourAddresses[i]);
-
                 if (colourAddress == 0)
                 {
                     // Address is 0 which means it is transparent, so don't write anything
                     continue;
                 }
-
                 var colours = GetColor(secondPalette, colourAddress);
+
+                if (usePixelInformation)
+                {
+                    var status = GetPixelStatus(xCoordinate, yline);
+                    if (status == PixelStatus.Transparent)
+                    {
+                        if (isSprite)
+                        {
+                            SetPixelStatus(xCoordinate, yline, PixelStatus.Sprite);
+                        }
+                        else
+                        {
+                            SetPixelStatus(xCoordinate, yline,
+                                tileHighPriority
+                                    ? PixelStatus.BackgroundHighPriority
+                                    : PixelStatus.BackgroundLowPriority);
+                        }
+
+                        // Allow it to draw
+                    }
+                    else if (isSprite && status == PixelStatus.Sprite)
+                    {
+                        // Don't draw over top of sprites at all
+                        // Assume drawn from highest priority to lowest priority order
+                        // Also sprite overlap, flag sprite collision
+                        _flags.SetFlag(VdpStatusFlags.SpriteCollision);
+                        continue;
+                    }
+                    else if (isSprite && status == PixelStatus.BackgroundHighPriority)
+                    {
+                        // Don't draw over background high priority
+                        continue;
+                    }
+                }
 
                 var index = GetPixelIndex(xCoordinate, yline);
                 frame.Span[index + 0] = colours.blue;
@@ -277,6 +366,18 @@ namespace Kmse.Core.IO.Vdp.Rendering
             // index 0 is x position 1 blue, index 1 is x position 1, y position 0 green, index 2 is x position 1, y position 0 red, index 3 is x position 1, y position 0 alpha
             // index 1 is x position 2 blue, index 1 is x position 1, y position 0 green, index 2 is x position 1, y position 0 red, index 3 is x position 1, y position 0 alpha
             return x * 4 + y * 256 * 4;
+        }
+
+        private PixelStatus GetPixelStatus(int x, int y)
+        {
+            var offset = x + y * 256;
+            return _pixelInformation.Span[offset];
+        }
+
+        private void SetPixelStatus(int x, int y, PixelStatus status)
+        {
+            var offset = x + y * 256;
+            _pixelInformation.Span[offset] = status;
         }
 
         private class SpriteToDraw

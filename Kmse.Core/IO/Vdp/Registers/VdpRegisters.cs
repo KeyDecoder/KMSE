@@ -63,7 +63,7 @@ public class VdpRegisters : IVdpRegisters
         return !Bitwise.IsSet(_vdpRegisters[0], 7);
     }
 
-    public bool IsHorizontalScrollingEnabledForRows0To1()
+    public bool IsHorizontalScrollingEnabledForRows0To15()
     {
         return !Bitwise.IsSet(_vdpRegisters[0], 6);
     }
