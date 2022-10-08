@@ -347,7 +347,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddStandardInstruction(0xDC, DynamicCycleHandling, "CALL C,NN", "Conditional Call If Carry Set", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
         AddStandardInstruction(0xD4, DynamicCycleHandling, "CALL NC,NN", "Conditional Call If Carry Not Set", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.CarryC, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
         AddStandardInstruction(0xFC, DynamicCycleHandling, "CALL M,NN", "Conditional Call If Negative", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
-        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Negative", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
+        AddStandardInstruction(0xF4, DynamicCycleHandling, "CALL P,NN", "Conditional Call If Positive", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.SignS, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
         AddStandardInstruction(0xCC, DynamicCycleHandling, "CALL Z,NN", "Conditional Call If Zero", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
         AddStandardInstruction(0xC4, DynamicCycleHandling, "CALL NZ,NN", "Conditional Call If Not Zero", _ => { _cycleCounter.Increment(_pc.CallIfNotFlagCondition(Z80StatusFlags.ZeroZ, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
         AddStandardInstruction(0xEC, DynamicCycleHandling, "CALL PE,NN", "Conditional Call If Parity Even", _ => { _cycleCounter.Increment(_pc.CallIfFlagCondition(Z80StatusFlags.ParityOverflowPV, _pc.GetNextTwoDataBytes()) ? 17 : 10); });
@@ -477,14 +477,12 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddDoubleByteInstruction(0xED, 0xA1, 16, "CPI", "Compare and Increment", _ => { CompareIncrement(); });
         AddDoubleByteInstruction(0xED, 0xB1, DynamicCycleHandling, "CPIR", "Compare, Increment, Repeat", _ =>
         {
-            //if (_bc.Word == 0)
-            //{
-            //    // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
-            //    //_bc.Word = 64 * 1024;
-
-            //    _cycleCounter.Increment(16;
-            //    return;
-            //}
+            if (_bc.Value == 0)
+            {
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation
+                // This then loops through all the memory it can
+                _bc.Set(0xFFF);
+            }
 
             CompareIncrement();
 
@@ -505,14 +503,12 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         AddDoubleByteInstruction(0xED, 0xA9, 16, "CPD", "Compare and Decrement", _ => { CompareDecrement(); });
         AddDoubleByteInstruction(0xED, 0xB9, 21 / 16, "CPDR", "Compare, Decrement, Repeat", _ =>
         {
-            //if (_bc.Word == 0)
-            //{
-            //    // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
-            //    //_bc.Word = 64 * 1024;
-
-            //    _cycleCounter.Increment(16;
-            //    return;
-            //}
+            if (_bc.Value == 0)
+            {
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation
+                // This then loops through all the memory it can
+                _bc.Set(0xFFF);
+            }
 
             CompareDecrement();
 
@@ -1015,32 +1011,18 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddDoubleByteInstruction(0xED, 0xA0, 16, "LDI", "Load and Increment", _ =>
         {
-            _memoryManagement.CopyMemory(_hl, _de);
-            _hl.Increment();
-            _de.Increment();
-            _bc.Decrement();
-            _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+            LoadAndIncrement();
         });
         AddDoubleByteInstruction(0xED, 0xB0, DynamicCycleHandling, "LDIR", "Load, Increment, Repeat", _ =>
         {
             if (_bc.Value == 0)
             {
-                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
-                //_bc.Word = 64 * 1024;
-
-                _cycleCounter.Increment(16);
-                return;
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation
+                // This then loops through all the memory it can
+                _bc.Set(0xFFF);
             }
 
-            _memoryManagement.CopyMemory(_hl, _de);
-            _hl.Increment();
-            _de.Increment();
-            _bc.Decrement();
-            _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+            LoadAndIncrement();
 
             if (_bc.Value != 0)
             {
@@ -1057,33 +1039,22 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         });
         AddDoubleByteInstruction(0xED, 0xA8, 16, "LDD", "Load and Decrement", _ =>
         {
-            _memoryManagement.CopyMemory(_hl, _de);
-            _hl.Decrement();
-            _de.Decrement();
-            _bc.Decrement();
-            _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
-            _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+            LoadAndDecrement();
         });
         AddDoubleByteInstruction(0xED, 0xB8, DynamicCycleHandling, "LDDR", "Load, Decrement, Repeat", _ =>
         {
             if (_bc.Value == 0)
             {
-                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation but no emulator does this
-                //_bc.Word = 64 * 1024;
-
-                _cycleCounter.Increment(16);
-                return;
+                // BC was set to 0 before instruction was executed, so set to 64kb accordingly to documentation
+                // This then loops through all the memory it can
+                _bc.Set(0xFFF);
             }
 
-            _memoryManagement.CopyMemory(_hl, _de);
-            _hl.Decrement();
-            _de.Decrement();
-            _bc.Decrement();
-            _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
-            _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+            LoadAndDecrement();
+
             // This is not a typo, for some reason in LDDR the PV flag is reset unlike the other LDx instructions
-            _flags.ClearFlag(Z80StatusFlags.ParityOverflowPV);
+            // It is unclear if this should be cleared or this is treated like a normal load and decrement operation
+            //_flags.ClearFlag(Z80StatusFlags.ParityOverflowPV);
 
             if (_bc.Value != 0)
             {
@@ -1138,32 +1109,17 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddDoubleByteInstruction(0xED, 0xA2, 16, "INI", "Input and Increment", _ =>
         {
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            var data = _io.ReadPort(portAddress);
-            _memoryManagement.WriteToMemory(_hl, data);
-            _b.Decrement();
-            _hl.Increment();
-            _flags.SetIfZero(_b.Value);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            InputAndIncrement();
         });
         AddDoubleByteInstruction(0xED, 0xB2, DynamicCycleHandling, "INIR", "Input, Increment, Repeat", _ =>
         {
-            if (_b.Value == 0)
+            if (_bc.Value == 0)
             {
-                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
-                //_bc.Word = 256;
-
-                _cycleCounter.Increment(16);
-                return;
+                // If B is set to 0 prior to instruction execution, 256 bytes of data are input
+                _b.Set(255);
             }
 
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            var data = _io.ReadPort(portAddress);
-            _memoryManagement.WriteToMemory(_hl, data);
-            _b.Decrement();
-            _hl.Increment();
-            _flags.SetFlag(Z80StatusFlags.ZeroZ);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            InputAndIncrement();
 
             if (_b.Value != 0)
             {
@@ -1181,32 +1137,17 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddDoubleByteInstruction(0xED, 0xAA, 16, "IND", "Input and Decrement", _ =>
         {
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            var data = _io.ReadPort(portAddress);
-            _memoryManagement.WriteToMemory(_hl, data);
-            _b.Decrement();
-            _hl.Decrement();
-            _flags.SetIfZero(_b.Value);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            InputAndDecrement();
         });
         AddDoubleByteInstruction(0xED, 0xBA, DynamicCycleHandling, "INDR", "Input, Decrement, Repeat", _ =>
         {
-            if (_b.Value == 0)
+            if (_bc.Value == 0)
             {
-                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
-                //_bc.Word = 256;
-
-                _cycleCounter.Increment(16);
-                return;
+                // If B is set to 0 prior to instruction execution, 256 bytes of data are input
+                _b.Set(255);
             }
 
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            var data = _io.ReadPort(portAddress);
-            _memoryManagement.WriteToMemory(_hl, data);
-            _b.Decrement();
-            _hl.Decrement();
-            _flags.SetFlag(Z80StatusFlags.ZeroZ);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            InputAndDecrement();
 
             if (_b.Value != 0)
             {
@@ -1237,34 +1178,17 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddDoubleByteInstruction(0xED, 0xA3, 16, "OUTI", "Output and Increment", _ =>
         {
-            var data = _memoryManagement.ReadFromMemory(_hl);
-            _b.Decrement();
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            _io.WritePort(portAddress, data);
-
-            _hl.Increment();
-            _flags.SetIfZero(_b.Value);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            OutputAndIncrement();
         });
         AddDoubleByteInstruction(0xED, 0xB3, DynamicCycleHandling, "OTIR", "Output, Increment, Repeat", _ =>
         {
-            if (_b.Value == 0)
+            if (_bc.Value == 0)
             {
-                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
-                //_bc.Word = 256;
-
-                _cycleCounter.Increment(16);
-                return;
+                // If B is set to 0 prior to instruction execution, 256 bytes of data are input
+                _b.Set(255);
             }
 
-            var data = _memoryManagement.ReadFromMemory(_hl);
-            _b.Decrement();
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            _io.WritePort(portAddress, data);
-
-            _hl.Increment();
-            _flags.SetFlag(Z80StatusFlags.ZeroZ);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            OutputAndIncrement();
 
             if (_b.Value != 0)
             {
@@ -1282,34 +1206,17 @@ public class Z80CpuInstructions : IZ80CpuInstructions
 
         AddDoubleByteInstruction(0xED, 0xAB, 16, "OUTD", "Output and Decrement", _ =>
         {
-            var data = _memoryManagement.ReadFromMemory(_hl);
-            _b.Decrement();
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            _io.WritePort(portAddress, data);
-
-            _hl.Decrement();
-            _flags.SetIfZero(_b.Value);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            OutputAndDecrement();
         });
         AddDoubleByteInstruction(0xED, 0xBB, DynamicCycleHandling, "OTDR", "Output, Decrement, Repeat", _ =>
         {
-            if (_b.Value == 0)
+            if (_bc.Value == 0)
             {
-                // B was set to 0 before instruction was executed, so set to 256 bytes accordingly to documentation but no emulator does this
-                //_bc.Word = 256;
-
-                _cycleCounter.Increment(16);
-                return;
+                // If B is set to 0 prior to instruction execution, 256 bytes of data are input
+                _b.Set(255);
             }
 
-            var data = _memoryManagement.ReadFromMemory(_hl);
-            _b.Decrement();
-            var portAddress = (ushort)((_b.Value << 8) + _c.Value);
-            _io.WritePort(portAddress, data);
-
-            _hl.Decrement();
-            _flags.SetFlag(Z80StatusFlags.ZeroZ);
-            _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+            OutputAndDecrement();
 
             if (_b.Value != 0)
             {
@@ -1451,7 +1358,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
     {
         var value = _memory[_hl.Value];
         // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
-        var difference = _accumulator.Value - (sbyte)value;
+        var difference = _accumulator.Value - value;
 
         _hl.Increment();
         _bc.Decrement();
@@ -1468,7 +1375,7 @@ public class Z80CpuInstructions : IZ80CpuInstructions
     {
         var value = _memory[_hl.Value];
         // The compare is the difference and we do a subtract so we can tell if the comparison would be negative or not
-        var difference = _accumulator.Value - (sbyte)value;
+        var difference = _accumulator.Value - value;
 
         _hl.Decrement();
         _bc.Decrement();
@@ -1477,6 +1384,71 @@ public class Z80CpuInstructions : IZ80CpuInstructions
         _flags.SetClearFlagConditional(Z80StatusFlags.ZeroZ, _af.High == value);
         _flags.SetIfHalfCarry(_accumulator.Value, value, difference);
         _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+        _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+    }
+
+    private void LoadAndIncrement()
+    {
+        _memoryManagement.CopyMemory(_hl, _de);
+        _hl.Increment();
+        _de.Increment();
+        _bc.Decrement();
+        _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+        _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+        _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+    }
+
+    private void LoadAndDecrement()
+    {
+        _memoryManagement.CopyMemory(_hl, _de);
+        _hl.Decrement();
+        _de.Decrement();
+        _bc.Decrement();
+        _flags.ClearFlag(Z80StatusFlags.HalfCarryH);
+        _flags.ClearFlag(Z80StatusFlags.AddSubtractN);
+        _flags.SetClearFlagConditional(Z80StatusFlags.ParityOverflowPV, _bc.Value != 0);
+    }
+
+    private void InputAndIncrement()
+    {
+        var data = _io.ReadPort(_bc.Value);
+        _memoryManagement.WriteToMemory(_hl, data);
+        _b.Decrement();
+        _hl.Increment();
+        _flags.SetIfZero(_b.Value);
+        _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+    }
+
+    private void InputAndDecrement()
+    {
+        var data = _io.ReadPort(_bc.Value);
+        _memoryManagement.WriteToMemory(_hl, data);
+        _b.Decrement();
+        _hl.Decrement();
+        _flags.SetIfZero(_b.Value);
+        _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+    }
+
+    void OutputAndIncrement()
+    {
+        var data = _memoryManagement.ReadFromMemory(_hl);
+        _b.Decrement();
+        _io.WritePort(_bc.Value, data);
+
+        _hl.Increment();
+        _flags.SetIfZero(_b.Value);
+        _flags.SetFlag(Z80StatusFlags.AddSubtractN);
+    }
+
+    void OutputAndDecrement()
+    {
+        var data = _memoryManagement.ReadFromMemory(_hl);
+        _b.Decrement();
+        var portAddress = (ushort)((_b.Value << 8) + _c.Value);
+        _io.WritePort(portAddress, data);
+
+        _hl.Decrement();
+        _flags.SetIfZero(_b.Value);
         _flags.SetFlag(Z80StatusFlags.AddSubtractN);
     }
 }

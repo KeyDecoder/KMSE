@@ -101,23 +101,9 @@ public class Z80ProgramCounter : Z8016BitSpecialRegisterBase, IZ80ProgramCounter
 
     public void JumpByOffset(byte offset)
     {
-        var newPcLocation = Register.Word;
-
-        // Range is -126 to +129 so we need a signed version
-        // However sbyte only goes from -128 to +127 but we need -126 to +129 so have to do this manually
-        if (offset <= 129)
-        {
-            newPcLocation += offset;
-        }
-        else
-        {
-            // 256 minus our offset gives us a positive number for where it would rollover at 129
-            // And we minus this since this would be negative number
-            newPcLocation -= (ushort)(256 - offset);
-        }
-
-        // Note we don't need to add one here since we always increment the Pc after we read from it, so it's already pointing to next command at this point
-        Set(newPcLocation);
+        // Range is -127 to +129 so we need a signed version
+        var newAddress = (ushort)(Register.Word + ((sbyte)offset));
+        Set(newAddress);
     }
 
     public bool JumpByOffsetIfFlagHasStatus(Z80StatusFlags flag, byte offset, bool status)

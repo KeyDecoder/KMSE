@@ -57,6 +57,15 @@ public class Z80InterruptManagement : IZ80InterruptManagement
 
     public bool InterruptWaiting()
     {
+        // When an EI instruction is executed, any pending interrupt request is not accepted until after the
+        // instruction following EI is executed.This single instruction delay is necessary when the
+        // next instruction is a return instruction.
+        if (MaskableInterruptDelay)
+        {
+            MaskableInterruptDelay = false;
+            return false;
+        }
+
         return NonMaskableInterrupt || (InterruptEnableFlipFlopStatus && MaskableInterrupt);
     }
 
@@ -125,15 +134,6 @@ public class Z80InterruptManagement : IZ80InterruptManagement
         if (NonMaskableInterrupt)
         {
             return ProcessNonMaskableInterrupt();
-        }
-
-        // When an EI instruction is executed, any pending interrupt request is not accepted until after the
-        // instruction following EI is executed.This single instruction delay is necessary when the
-        // next instruction is a return instruction.
-        if (MaskableInterruptDelay)
-        {
-            MaskableInterruptDelay = false;
-            return 0;
         }
 
         if (InterruptEnableFlipFlopStatus && MaskableInterrupt)

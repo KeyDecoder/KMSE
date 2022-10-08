@@ -45,7 +45,7 @@ public class VdpRegisters : IVdpRegisters
 
     public void SetRegister(int index, byte value)
     {
-        if (index is < 0 or > 11)
+        if (index is < 0 or >= 11)
         {
             throw new ArgumentOutOfRangeException(nameof(index), $"Invalid register index {index}");
         }
