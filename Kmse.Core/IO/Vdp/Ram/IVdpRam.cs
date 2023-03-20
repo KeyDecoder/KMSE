@@ -22,4 +22,8 @@ public interface IVdpRam
     void WriteToColourRam(ushort address, byte value);
     byte ReadRawVideoRam(ushort address);
     byte ReadRawColourRam(ushort address);
+    ushort GetTileInformation(ushort baseAddress, int tileIndex);
+    (byte spriteX, byte spriteY, byte patternIndex) GetSpriteInformation(ushort baseAddress, int spriteNumber);
+    byte[] GetTile(ushort patternAddress, int yOffset, byte tileWidth);
+    (byte blue, byte green, byte red, byte alpha) GetColor(ushort address, bool useSecondPalette);
 }

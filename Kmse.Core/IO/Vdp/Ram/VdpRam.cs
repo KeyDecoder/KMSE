@@ -1,4 +1,6 @@
 ﻿using Kmse.Core.IO.Vdp.Model;
+using Kmse.Core.Utilities;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Kmse.Core.IO.Vdp.Ram;
 
@@ -146,5 +148,88 @@ public class VdpRam : IVdpRam
     public byte ReadRawColourRam(ushort address)
     {
         return _cRam[address];
+    }
+
+    public ushort GetTileInformation(ushort baseAddress, int tileIndex)
+    {
+        // Tile index in name table starts at start column and wraps at 32
+        var address = (ushort)(baseAddress + (tileIndex * 2));
+        var firstByte = ReadRawVideoRam(address);
+        address++;
+        var secondByte = ReadRawVideoRam(address);
+        return Bitwise.ToUnsigned16BitValue(secondByte, firstByte);
+    }
+
+    public (byte spriteX, byte spriteY, byte patternIndex) GetSpriteInformation(ushort baseAddress, int spriteNumber)
+    {
+        var yAddress = baseAddress + (spriteNumber & 0x3F);
+        var xAddress = baseAddress + 0x80 + spriteNumber * 2;
+        var patternAddress = baseAddress + 0x81 + spriteNumber * 2;
+
+        var spriteX = ReadRawVideoRam((ushort)xAddress);
+        var spriteY = ReadRawVideoRam((ushort)yAddress);
+        var patternIndex = ReadRawVideoRam((ushort)patternAddress);
+
+        return (spriteX, spriteY, patternIndex);
+    }
+
+    public byte[] GetTile(ushort patternAddress, int yOffset, byte tileWidth)
+    {
+        // Get offset of 4 bytes for this line
+        var patternLineAddress = (ushort)(patternAddress + (yOffset * 4));
+        var colourAddresses = new byte[tileWidth];
+
+        var lineData = new byte[4];
+        lineData[0] = ReadRawVideoRam(patternLineAddress++);
+        lineData[1] = ReadRawVideoRam(patternLineAddress++);
+        lineData[2] = ReadRawVideoRam(patternLineAddress++);
+        lineData[3] = ReadRawVideoRam(patternLineAddress);
+
+        // Each pattern uses 32 bytes.The first four bytes are bitplanes 0 through 3
+        // for line 0, the next four bytes are bitplanes 0 through 3 for line 1, etc.,
+        // up to line 7.
+
+        var pixelOffset = 0;
+        for (var i = 7; i >= 0; i--)
+        {
+            var bit = i;
+            Bitwise.SetIf(ref colourAddresses[pixelOffset], 0, () => Bitwise.IsSet(lineData[0], bit));
+            Bitwise.SetIf(ref colourAddresses[pixelOffset], 1, () => Bitwise.IsSet(lineData[1], bit));
+            Bitwise.SetIf(ref colourAddresses[pixelOffset], 2, () => Bitwise.IsSet(lineData[2], bit));
+            Bitwise.SetIf(ref colourAddresses[pixelOffset], 3, () => Bitwise.IsSet(lineData[3], bit));
+            pixelOffset++;
+        }
+
+        return colourAddresses;
+    }
+
+    public (byte blue, byte green, byte red, byte alpha) GetColor(ushort address, bool useSecondPalette)
+    {
+        if (useSecondPalette)
+        {
+            address += 16;
+        }
+        var color = ReadRawColourRam(address);
+        const byte alpha = 0xFF;
+
+        // --BBGGRR
+        var red = (byte)(color & 0x03);
+        var green = (byte)((color >> 2) & 0x03);
+        var blue = (byte)((color >> 4) & 0x03);
+
+        return (ConvertPaletteToColourByte(blue), ConvertPaletteToColourByte(green),
+            ConvertPaletteToColourByte(red), alpha);
+    }
+
+    private byte ConvertPaletteToColourByte(byte value)
+    {
+        return value switch
+        {
+            0 => 0,
+            1 => 85,
+            2 => 170,
+            3 => 255,
+            _ => throw new InvalidOperationException($"Colour value {value:X2} is not supported")
+        };
     }
 }

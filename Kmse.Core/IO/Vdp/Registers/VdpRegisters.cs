@@ -213,6 +213,18 @@ public class VdpRegisters : IVdpRegisters
         return _vdpRegisters[9];
     }
 
+    public byte GetBackgroundYStartingRow()
+    {
+        // The upper five bits are the starting column
+        return (byte)((GetBackgroundYScroll() & 0xF8) >> 3);
+    }
+
+    public byte GetBackgroundYFineScrollValue()
+    {
+        // The lower three bits are the fine scroll value
+        return (byte)(GetBackgroundYScroll() & 0x07);
+    }
+
     public byte GetLineCounterValue()
     {
         return _vdpRegisters[10];

@@ -29,7 +29,7 @@ public interface IVdpRegisters
     byte GetBackgroundXStartingColumn();
     byte GetBackgroundXFineScrollValue();
     byte GetBackgroundYScroll();
-
-
+    byte GetBackgroundYStartingRow();
+    byte GetBackgroundYFineScrollValue();
     byte GetLineCounterValue();
 }

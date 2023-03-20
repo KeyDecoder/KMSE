@@ -499,9 +499,34 @@ namespace Kmse.TestUi
             e.Handled = true;
         }
 
-        private void frmMain_Load(object sender, EventArgs e)
+        private async void frmMain_Load(object sender, EventArgs e)
         {
             this.ActiveControl = picMain;
+
+            // DEBUG code
+            spritesDebugToolStripMenuItem.Checked = false;
+            tileMemoryDebugToolStripMenuItem.Checked = true;
+            picSprites.Visible = spritesDebugToolStripMenuItem.Checked;
+            picTileMemory.Visible = tileMemoryDebugToolStripMenuItem.Checked;
+            //_currentCartridgeFilename = @"C:\development\smsemulator\California Games (USA, Europe).sms";
+            _currentCartridgeFilename = @"C:\development\smsemulator\bios13.sms";
+            //_currentCartridgeFilename = @"C:\development\smsemulator\Sonic The Hedgehog 2 (Europe).sms";
+            lblCartridgeName.Text = $@"Current Cartridge: {Path.GetFileNameWithoutExtension(_currentCartridgeFilename)}";
+            btnStart.Enabled = false;
+            btnStop.Enabled = true;
+            btnPause.Enabled = true;
+            btnPause.Text = "Pause";
+            await StartEmulation();
+        }
+
+        private void spritesDebugToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            picSprites.Visible = spritesDebugToolStripMenuItem.Checked;
+        }
+
+        private void tileMemoryDebugToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            picTileMemory.Visible = tileMemoryDebugToolStripMenuItem.Checked;
         }
     }
 }

@@ -6,6 +6,7 @@ using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
 using Kmse.Core.IO.Vdp.Rendering;
+using Kmse.Core.IO.Vdp.Rendering.DebugRendering;
 using Kmse.Core.Utilities;
 using Kmse.Core.Z80.Interrupts;
 
@@ -24,6 +25,7 @@ public class VdpPort : IVdpPort
     private readonly IIoPortLogger _ioPortLogger;
     private readonly IVdpFlags _flags;
     private readonly IVdpControlPortManager _controlPortManager;
+    private readonly IVdpDebugRenderer _debugRenderer;
     private readonly IVdpDisplayModeRenderer _renderer;
     private readonly IZ80InterruptManagement _interruptManagement;
     private readonly IVdpRam _ram;
@@ -33,7 +35,7 @@ public class VdpPort : IVdpPort
 
     public VdpPort(IVdpRegisters registers, IZ80InterruptManagement interruptManagement, IVdpRam ram,
         IVdpVerticalCounter verticalCounter, IVdpHorizontalCounter horizontalCounter, IVdpDisplayModeRenderer renderer, IIoPortLogger ioPortLogger,
-        IVdpFlags flags, IVdpControlPortManager controlPortManager)
+        IVdpFlags flags, IVdpControlPortManager controlPortManager, IVdpDebugRenderer debugRenderer)
     {
         _interruptManagement = interruptManagement;
         _ram = ram;
@@ -42,6 +44,7 @@ public class VdpPort : IVdpPort
         _ioPortLogger = ioPortLogger;
         _flags = flags;
         _controlPortManager = controlPortManager;
+        _debugRenderer = debugRenderer;
         _renderer = renderer;
         _registers = registers;
     }
@@ -168,6 +171,9 @@ public class VdpPort : IVdpPort
 
             if (_verticalCounter.EndOfActiveFrame())
             {
+                _debugRenderer.RenderAllTilesAndSpritesInMemory();
+                _debugRenderer.RenderAllSpritesInAddressTable();
+
                 _renderer.UpdateDisplay();
                 _flags.SetFlag(VdpStatusFlags.FrameInterruptPending);
             }

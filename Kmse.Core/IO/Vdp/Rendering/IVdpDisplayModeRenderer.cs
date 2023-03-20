@@ -6,6 +6,4 @@ public interface IVdpDisplayModeRenderer
     void ResetBuffer();
     void RenderLine();
     void UpdateDisplay();
-    void RenderAllSpritesInAddressTable();
-    void RenderAllTilesAndSpritesInMemory();
 }

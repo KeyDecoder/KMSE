@@ -137,14 +137,14 @@
             this.instructionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuItemLogInstructionToFile});
             this.instructionsToolStripMenuItem.Name = "instructionsToolStripMenuItem";
-            this.instructionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.instructionsToolStripMenuItem.Size = new System.Drawing.Size(158, 22);
             this.instructionsToolStripMenuItem.Text = "Instructions";
             // 
             // mnuItemLogInstructionToFile
             // 
             this.mnuItemLogInstructionToFile.CheckOnClick = true;
             this.mnuItemLogInstructionToFile.Name = "mnuItemLogInstructionToFile";
-            this.mnuItemLogInstructionToFile.Size = new System.Drawing.Size(180, 22);
+            this.mnuItemLogInstructionToFile.Size = new System.Drawing.Size(107, 22);
             this.mnuItemLogInstructionToFile.Text = "To File";
             // 
             // memoryAccessToolStripMenuItem
@@ -152,14 +152,14 @@
             this.memoryAccessToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuItemLogMemoryAccessToFile});
             this.memoryAccessToolStripMenuItem.Name = "memoryAccessToolStripMenuItem";
-            this.memoryAccessToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.memoryAccessToolStripMenuItem.Size = new System.Drawing.Size(158, 22);
             this.memoryAccessToolStripMenuItem.Text = "Memory Access";
             // 
             // mnuItemLogMemoryAccessToFile
             // 
             this.mnuItemLogMemoryAccessToFile.CheckOnClick = true;
             this.mnuItemLogMemoryAccessToFile.Name = "mnuItemLogMemoryAccessToFile";
-            this.mnuItemLogMemoryAccessToFile.Size = new System.Drawing.Size(180, 22);
+            this.mnuItemLogMemoryAccessToFile.Size = new System.Drawing.Size(107, 22);
             this.mnuItemLogMemoryAccessToFile.Text = "To File";
             // 
             // spriteTileToolStripMenuItem
@@ -177,8 +177,9 @@
             this.spritesDebugToolStripMenuItem.CheckOnClick = true;
             this.spritesDebugToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.spritesDebugToolStripMenuItem.Name = "spritesDebugToolStripMenuItem";
-            this.spritesDebugToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
+            this.spritesDebugToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.spritesDebugToolStripMenuItem.Text = "Sprites";
+            this.spritesDebugToolStripMenuItem.Click += new System.EventHandler(this.spritesDebugToolStripMenuItem_Click);
             // 
             // tileMemoryDebugToolStripMenuItem
             // 
@@ -187,8 +188,9 @@
             this.tileMemoryDebugToolStripMenuItem.CheckOnClick = true;
             this.tileMemoryDebugToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.tileMemoryDebugToolStripMenuItem.Name = "tileMemoryDebugToolStripMenuItem";
-            this.tileMemoryDebugToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
+            this.tileMemoryDebugToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.tileMemoryDebugToolStripMenuItem.Text = "Tile Memory";
+            this.tileMemoryDebugToolStripMenuItem.Click += new System.EventHandler(this.tileMemoryDebugToolStripMenuItem_Click);
             // 
             // toolStrip1
             // 
@@ -279,6 +281,7 @@
             // picSprites
             // 
             this.picSprites.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.picSprites.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.picSprites.Dock = System.Windows.Forms.DockStyle.Fill;
             this.picSprites.Location = new System.Drawing.Point(0, 384);
             this.picSprites.Name = "picSprites";
@@ -302,6 +305,7 @@
             // picTileMemory
             // 
             this.picTileMemory.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.picTileMemory.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.picTileMemory.Dock = System.Windows.Forms.DockStyle.Top;
             this.picTileMemory.Location = new System.Drawing.Point(0, 0);
             this.picTileMemory.Name = "picTileMemory";

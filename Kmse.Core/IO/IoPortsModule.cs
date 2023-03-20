@@ -6,10 +6,11 @@ using Kmse.Core.IO.Vdp;
 using Kmse.Core.IO.Vdp.Control;
 using Kmse.Core.IO.Vdp.Counters;
 using Kmse.Core.IO.Vdp.Flags;
-using Kmse.Core.IO.Vdp.Model;
 using Kmse.Core.IO.Vdp.Ram;
 using Kmse.Core.IO.Vdp.Registers;
 using Kmse.Core.IO.Vdp.Rendering;
+using Kmse.Core.IO.Vdp.Rendering.DebugRendering;
+using Kmse.Core.IO.Vdp.Rendering.Sprites;
 
 namespace Kmse.Core.IO;
 
@@ -30,5 +31,7 @@ public class IoPortsModule : Module
         builder.RegisterType<VdpFlags>().As<IVdpFlags>().InstancePerLifetimeScope();
         builder.RegisterType<VdpControlPortManager>().As<IVdpControlPortManager>().InstancePerLifetimeScope();
         builder.RegisterType<VdpMode4DisplayModeRenderer>().As<IVdpDisplayModeRenderer>().InstancePerLifetimeScope();//.Keyed<VdpVideoMode>(VdpVideoMode.Mode4);
+        builder.RegisterType<VdpDebugRenderer>().As<IVdpDebugRenderer>().InstancePerLifetimeScope();
+        builder.RegisterType<SpriteRenderInformation>().As<ISpriteRenderInformation>().InstancePerLifetimeScope();
     }
 }

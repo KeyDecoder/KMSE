@@ -16,6 +16,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{46E5F1C2-6BF1-490C-8F07-6C8ADA845B51}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		LICENSE = LICENSE
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{F56B93C2-FD19-4C24-B97C-C147BD1066F9}"
