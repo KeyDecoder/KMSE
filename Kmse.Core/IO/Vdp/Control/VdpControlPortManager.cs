@@ -51,7 +51,7 @@ public class VdpControlPortManager : IVdpControlPortManager
             CommandWord &= 0xFF00;
             CommandWord |= value;
 
-            //When the first byte is written, the lower 8 bits of the address register are updated
+            // When the first byte is written, the lower 8 bits of the address register are updated
             // Clear lower 8 bits and set from first byte of command word but preserve the upper 6 bits until the next write
             _ram.UpdateAddressRegisterLowerByte(value);
         }

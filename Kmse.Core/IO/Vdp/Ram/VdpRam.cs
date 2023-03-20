@@ -45,6 +45,8 @@ public class VdpRam : IVdpRam
         {
             case DataPortWriteMode.VideoRam:
                 WriteToVideoRam(AddressRegister, value);
+                // An additional quirk is that writing to the VRAM will also load the buffer with the value written.
+                _readBuffer = value;
                 break;
             case DataPortWriteMode.ColourRam:
                 WriteToColourRam(AddressRegister, value);
@@ -54,9 +56,6 @@ public class VdpRam : IVdpRam
         }
 
         IncrementAddressRegister();
-
-        // An additional quirk is that writing to the data port will also load the buffer with the value written.
-        _readBuffer = value;
     }
 
     public byte GetReadBufferValue()
